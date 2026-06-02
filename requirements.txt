@@ -1,0 +1,32 @@
+# --- Storage Core ---
+ladybug
+
+# ---Embeddings (local, 384-dim) ---
+sentence-transformers>=2.7.0   # all-MiniLM-L6-v2 -> FLOAT[384]
+
+# --- Entity extraction (GLiNER primary, spaCy fallback) ---
+gliner>=0.2.0
+spacy>=3.7.0
+
+# --- Deep Merge LLM (local) ---
+groq>=0.11.0                   # cloud LLM API (deep-merge + intent fallback)
+python-dotenv>=1.0.0           # load GROQ_API_KEY from .env
+
+# --- Data / numerics ---
+numpy>=1.26.0
+pandas>=2.1.0                  # conn.execute(...).get_as_df()
+
+# --- Loaders (generic ingest) ---
+python-frontmatter>=1.1.0      # .md front-matter parsing
+pypdf>=4.0.0                   # .pdf loader
+
+# --- Benchmark ---
+tiktoken>=0.7.0                # context-window token counting
+
+# --- Integrations ---
+langchain-core>=0.2.0          # BaseRetriever subclass
+
+# --- API (TraceRAG STUDIO dashboard) ---
+fastapi>=0.110.0
+uvicorn[standard]>=0.29.0
+

@@ -1,0 +1,36 @@
+# --- Secrets / environment ---
+.env
+.env.*
+!.env.example
+
+# --- TraceRAG data store ---
+*.lbug
+memory.lbug
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+
+# --- Benchmark output ---
+results.csv
+
+# --- Frontend (Vite / Node) ---
+node_modules/
+dist/
+dist-ssr/
+*.local
+.vite/
+.next/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# --- OS / editor ---
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json
