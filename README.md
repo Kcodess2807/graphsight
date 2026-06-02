@@ -6,7 +6,7 @@
 
 **TraceRAG** is a local-first, headless GraphRAG curation and debugging layer built natively on **LadybugDB**. 
 
-It eliminates the "dual-database sync hell" of running separate vector and graph databases by orchestrating both semantic vectors and relational graphs over a single, ACID-compliant `.lbug` file. TraceRAG provides human-in-the-loop entity curation, visual query tracing, and drop-in LangChain compatibility to make agent memory reliable in production.
+It eliminates the 'dual-database sync hell' by combining native vector indexes + graph storage in a single .lbug file. TraceRAG provides human-in-the-loop entity curation, visual query tracing, and drop-in LangChain compatibility to make agent memory reliable in production.
 
 ---
 
@@ -30,5 +30,6 @@ TraceRAG is not a new database. It is an orchestration and observability layer b
 * **Visual Query Tracer:** A Cytoscape.js UI that visually maps the router's execution plan, showing exactly which semantic chunks were retrieved and which graph edges were traversed.
 * **Headless-First & CI-Ready:** Designed to run via CLI in deployment pipelines, with the UI completely decoupled.
 * **Dynamic Schema Inference:** Automatically generates `CREATE NODE TABLE` and `CREATE REL TABLE` schemas during the first extraction run.
+* Drop-in LangChain BaseRetriever + LlamaIndex compatibility (one-line swap).
 
 ---
