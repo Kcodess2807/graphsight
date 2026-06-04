@@ -108,6 +108,22 @@ def _flatten(obj: dict, prefix: str = "") -> dict:
 
 
 # --------------------------------------------------------------------------- #
+# Reusable single-document ingest (shared by main() and external loaders)
+# --------------------------------------------------------------------------- #
+def ingest_text(
+    engine: CurationEngine, extractor: EntityExtractor, doc_id: str, text: str
+) -> IngestStats:
+    """Run one text blob through the pipeline: spaCy/GLiNER extraction ->
+    two-tier curation -> graph write. Returns the per-document IngestStats.
+
+    NOTE: callers must invoke ``db.build_vector_index()`` once after the final
+    document (the HNSW index is static and can't be updated incrementally).
+    """
+    entities = extractor.extract(text)
+    return engine.ingest(doc_id, text, entities)
+
+
+# --------------------------------------------------------------------------- #
 # CLI
 # --------------------------------------------------------------------------- #
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
@@ -129,12 +145,15 @@ def main(argv: list[str] | None = None) -> int:
         format="%(asctime)s  %(levelname)-7s %(name)s  %(message)s",
     )
     # Keep -v focused on TraceRAG; mute third-party HTTP/SDK chatter.
-    for noisy in ("httpx", "httpcore", "groq", "sentence_transformers"):
+    for noisy in ("httpx", "httpcore", "openai", "sentence_transformers"):
         logging.getLogger(noisy).setLevel(logging.WARNING)
 
-    if args.reset and args.db.exists():
-        logger.info("Reset: removing %s", args.db)
-        args.db.unlink()
+    if args.reset:
+        # Remove the .lbug file AND its sidecars (.wal / .lock / .tmp) — a stale
+        # .wal from a force-killed process otherwise blocks a fresh open.
+        for p in sorted(args.db.parent.glob(args.db.name + "*")):
+            logger.info("Reset: removing %s", p)
+            p.unlink()
 
     extractor = EntityExtractor()
     db = TraceDB(args.db)
