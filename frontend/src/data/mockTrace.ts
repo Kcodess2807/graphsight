@@ -1,0 +1,366 @@
+import type { TraceState } from "@/types/trace";
+
+/**
+ * Hardcoded trace for the sample query:
+ *   "Which PR merged by engineer X caused the payments outage?"
+ *
+ * The router classifies this as RELATIONAL (markers: "which pr", "caused"),
+ * so it leans graph-heavy (β = 0.85). The highlighted answer path is:
+ *   INC-238 (incident doc) → PR #402 → payments-service
+ * authored by Priya Raman, traversing the RELATES_TO / CAUSED edges.
+ *
+ * Node coordinates are hand-laid for a clean left-to-right reasoning flow.
+ */
+export const MOCK_TRACE: TraceState = {
+  id: "trace_8f21c9",
+  query: "Which PR caused the payments outage?",
+  computedAt: "2026-06-02T14:21:09Z",
+  weights: {
+    vector: 0.15,
+    graph: 0.85,
+    intent: "relational",
+  },
+  confidence: {
+    score: 0.92,
+    uncertainty: 0.04,
+    rationale:
+      "High graph connectivity (3 corroborating CAUSED edges, confidence ≥ 0.88) and a single dominant traced path. Vector arm agreed on the top incident chunk.",
+  },
+  steps: [
+    {
+      id: "step-1",
+      index: 1,
+      title: "Vector Recall",
+      detail: "Found 8 chunks (similarity > 0.88) from the incident corpus.",
+      status: "complete",
+      badge: "8 chunks",
+      arm: "vector",
+      durationMs: 180,
+    },
+    {
+      id: "step-2",
+      index: 2,
+      title: "Graph Traversal",
+      detail: "Navigated 3 hops from PR #402 across CAUSED / MERGED_INTO edges.",
+      status: "complete",
+      badge: "3 hops",
+      arm: "graph",
+      durationMs: 640,
+    },
+    {
+      id: "step-3",
+      index: 3,
+      title: "Context Assembly",
+      detail: "Synthesized a 2,450-token grounded context for the LLM.",
+      status: "complete",
+      badge: "2,450 tok",
+      durationMs: 420,
+    },
+  ],
+  metrics: {
+    tokens: { used: 2450, budget: 8192, reductionPct: 64 },
+    peakRamGb: 2.1,
+    queryTimeSec: 1.24,
+  },
+  graph: {
+    nodes: [
+      // ---- Active traced path (Document → PR → Service) ----
+      {
+        id: "doc-inc-238",
+        label: "INC-238 Postmortem",
+        type: "Document",
+        active: true,
+        position: { x: 40, y: 240 },
+        similarity: 0.94,
+        meta: {
+          subtitle: "Incident report · payments",
+          status: "Resolved",
+          timestamp: "2026-05-28",
+          snippet:
+            "Checkout 5xx rate spiked to 38% at 14:02 UTC, traced to a regression in the refund idempotency path…",
+        },
+      },
+      {
+        id: "pr-402",
+        label: "PR #402",
+        type: "PR",
+        active: true,
+        position: { x: 330, y: 180 },
+        meta: {
+          subtitle: "Refactor refund idempotency keys",
+          owner: "Priya Raman",
+          status: "Merged",
+          timestamp: "2026-05-27",
+          snippet:
+            "Replaced UUID idempotency keys with a hash of (order_id, amount) — collided on partial refunds.",
+        },
+      },
+      {
+        id: "svc-payments",
+        label: "payments-service",
+        type: "Service",
+        active: true,
+        position: { x: 620, y: 240 },
+        meta: {
+          subtitle: "Tier-0 service · 1.2k rps",
+          owner: "Payments Platform",
+          status: "Degraded → Recovered",
+          timestamp: "2026-05-28",
+          snippet:
+            "Owns checkout, refunds, and payout reconciliation. SLO: 99.95% availability.",
+        },
+      },
+      // ---- Supporting active context ----
+      {
+        id: "person-priya",
+        label: "Priya Raman",
+        type: "Person",
+        active: true,
+        position: { x: 330, y: 30 },
+        meta: {
+          subtitle: "Staff Engineer · Payments Platform",
+          status: "Author of PR #402",
+          timestamp: "Joined 2023",
+        },
+      },
+      // ---- Quiet / inactive neighbourhood ----
+      {
+        id: "repo-payments",
+        label: "payments-monorepo",
+        type: "Repo",
+        active: false,
+        position: { x: 620, y: 70 },
+        meta: { subtitle: "Source repository", owner: "Payments Platform" },
+      },
+      {
+        id: "ticket-5821",
+        label: "JIRA-5821",
+        type: "Ticket",
+        active: false,
+        position: { x: 60, y: 430 },
+        meta: {
+          subtitle: "Refund key collision",
+          status: "Done",
+          timestamp: "2026-05-29",
+        },
+      },
+      {
+        id: "team-payments",
+        label: "Payments Platform",
+        type: "Team",
+        active: false,
+        position: { x: 880, y: 170 },
+        meta: { subtitle: "12 engineers · on-call rotation" },
+      },
+      {
+        id: "svc-checkout",
+        label: "checkout-gateway",
+        type: "Service",
+        active: false,
+        position: { x: 880, y: 330 },
+        meta: { subtitle: "Edge service · depends on payments" },
+      },
+      {
+        id: "person-dan",
+        label: "Dan Whitfield",
+        type: "Person",
+        active: false,
+        position: { x: 330, y: 430 },
+        meta: { subtitle: "SRE · incident commander" },
+      },
+      {
+        id: "doc-runbook",
+        label: "Refund Runbook",
+        type: "Document",
+        active: false,
+        position: { x: 60, y: 60 },
+        similarity: 0.81,
+        meta: { subtitle: "Ops runbook" },
+      },
+      {
+        id: "pr-410",
+        label: "PR #410",
+        type: "PR",
+        active: false,
+        position: { x: 360, y: 330 },
+        meta: { subtitle: "Hotfix: revert idempotency change", owner: "Dan Whitfield", status: "Merged" },
+      },
+      {
+        id: "tool-datadog",
+        label: "Datadog",
+        type: "Tool",
+        active: false,
+        position: { x: 900, y: 60 },
+        meta: { subtitle: "APM · alerted on 5xx spike" },
+      },
+      {
+        id: "svc-ledger",
+        label: "ledger-service",
+        type: "Service",
+        active: false,
+        position: { x: 660, y: 420 },
+        meta: { subtitle: "Double-entry ledger" },
+      },
+      {
+        id: "ticket-5830",
+        label: "JIRA-5830",
+        type: "Ticket",
+        active: false,
+        position: { x: 150, y: 540 },
+        meta: { subtitle: "Add idempotency regression test" },
+      },
+      // ---- Orphans (hidden until toggled) ----
+      {
+        id: "doc-orphan-1",
+        label: "Q1 Capacity Plan",
+        type: "Document",
+        active: false,
+        orphan: true,
+        position: { x: 900, y: 470 },
+        meta: { subtitle: "Unlinked document" },
+      },
+      {
+        id: "tool-orphan-2",
+        label: "PagerDuty",
+        type: "Tool",
+        active: false,
+        orphan: true,
+        position: { x: 470, y: 560 },
+        meta: { subtitle: "No edges in this trace" },
+      },
+    ],
+    edges: [
+      // ---- Active traced path ----
+      {
+        id: "e-doc-pr",
+        source: "doc-inc-238",
+        target: "pr-402",
+        confidence: 0.91,
+        active: true,
+        relation: "IMPLICATES",
+      },
+      {
+        id: "e-pr-svc",
+        source: "pr-402",
+        target: "svc-payments",
+        confidence: 0.96,
+        active: true,
+        relation: "CAUSED",
+      },
+      {
+        id: "e-priya-pr",
+        source: "person-priya",
+        target: "pr-402",
+        confidence: 0.99,
+        active: true,
+        relation: "AUTHORED",
+      },
+      // ---- Quiet supporting edges ----
+      {
+        id: "e-pr-repo",
+        source: "pr-402",
+        target: "repo-payments",
+        confidence: 0.88,
+        active: false,
+        relation: "MERGED_INTO",
+      },
+      {
+        id: "e-ticket-pr",
+        source: "ticket-5821",
+        target: "pr-402",
+        confidence: 0.74,
+        active: false,
+        relation: "FIXED_BY",
+      },
+      {
+        id: "e-svc-team",
+        source: "svc-payments",
+        target: "team-payments",
+        confidence: 0.9,
+        active: false,
+        relation: "OWNED_BY",
+      },
+      {
+        id: "e-checkout-payments",
+        source: "svc-checkout",
+        target: "svc-payments",
+        confidence: 0.82,
+        active: false,
+        relation: "DEPENDS_ON",
+      },
+      {
+        id: "e-dan-pr410",
+        source: "person-dan",
+        target: "pr-410",
+        confidence: 0.95,
+        active: false,
+        relation: "AUTHORED",
+      },
+      {
+        id: "e-pr410-svc",
+        source: "pr-410",
+        target: "svc-payments",
+        confidence: 0.7,
+        active: false,
+        relation: "MITIGATED",
+      },
+      {
+        id: "e-runbook-svc",
+        source: "doc-runbook",
+        target: "svc-payments",
+        confidence: 0.6,
+        active: false,
+        relation: "DESCRIBES",
+      },
+      {
+        id: "e-datadog-svc",
+        source: "tool-datadog",
+        target: "svc-payments",
+        confidence: 0.65,
+        active: false,
+        relation: "MONITORS",
+      },
+      {
+        id: "e-ledger-payments",
+        source: "svc-ledger",
+        target: "svc-payments",
+        confidence: 0.58,
+        active: false,
+        relation: "RECONCILES_WITH",
+      },
+      {
+        id: "e-ticket5830-ticket5821",
+        source: "ticket-5830",
+        target: "ticket-5821",
+        confidence: 0.55,
+        active: false,
+        relation: "FOLLOWS",
+      },
+    ],
+  },
+};
+
+/** Recent / preset queries for the ⌘K command palette. */
+export const QUERY_PRESETS: { label: string; intent: "relational" | "conceptual" }[] =
+  [
+    {
+      label: "Which PR caused the payments outage?",
+      intent: "relational",
+    },
+    {
+      label: "Who owns the checkout-gateway service?",
+      intent: "relational",
+    },
+    {
+      label: "Summarize the refund idempotency regression",
+      intent: "conceptual",
+    },
+    {
+      label: "What tickets are linked to INC-238?",
+      intent: "relational",
+    },
+    {
+      label: "Explain how the ledger reconciles partial refunds",
+      intent: "conceptual",
+    },
+  ];

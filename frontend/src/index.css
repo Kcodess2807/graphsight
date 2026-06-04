@@ -1,0 +1,94 @@
+@import "reactflow/dist/style.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* TraceRAG — strict light mode. Soft off-white canvas, pure-white surfaces. */
+    --background: 0 0% 98%; /* zinc-50 / #FAFAFA */
+    --foreground: 240 10% 12%; /* zinc-900 */
+
+    --card: 0 0% 100%; /* pure white surfaces */
+    --card-foreground: 240 10% 12%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 12%;
+
+    /* Primary accent — confident electric indigo (#4F46E5) */
+    --primary: 243 75% 59%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 240 5% 96%;
+    --secondary-foreground: 240 6% 25%;
+
+    --muted: 240 5% 96%;
+    --muted-foreground: 240 4% 58%; /* zinc-500 */
+
+    --accent: 243 75% 96%; /* faint indigo wash */
+    --accent-foreground: 243 75% 40%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 240 6% 90%; /* zinc-200 hairline */
+    --input: 240 6% 90%;
+    --ring: 243 75% 59%; /* indigo focus ring */
+
+    --radius: 0.75rem; /* rounded-xl base */
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "cv11", "ss01";
+    text-rendering: optimizeLegibility;
+  }
+}
+
+@layer utilities {
+  .font-mono {
+    font-feature-settings: "tnum", "zero";
+  }
+  /* Frosted control pill */
+  .glass {
+    background: rgba(255, 255, 255, 0.72);
+    backdrop-filter: blur(12px) saturate(160%);
+    -webkit-backdrop-filter: blur(12px) saturate(160%);
+  }
+  /* Dotted-grid canvas background */
+  .dotted-grid {
+    background-color: #ffffff;
+    background-image: radial-gradient(
+      hsl(240 6% 86%) 1px,
+      transparent 1px
+    );
+    background-size: 22px 22px;
+  }
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(240 6% 84%) transparent;
+  }
+}
+
+/* React Flow surface tuning to match the light theme */
+.react-flow__attribution {
+  display: none;
+}
+.react-flow__node {
+  cursor: pointer;
+}
+.react-flow__handle {
+  opacity: 0;
+  pointer-events: none;
+}
