@@ -23,6 +23,9 @@ from tracerag.db import TraceDB
 from tracerag.router import TraceRouter
 from tracerag.integrations.langchain import format_page_content
 
+from database import init_db
+from routers import history
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("tracerag.api")
 
@@ -36,6 +39,12 @@ async def lifespan(app: FastAPI):
     db.init_schema()
     _state["db"] = db
     _state["router"] = TraceRouter(db)
+    # Postgres history is optional: if APP_DATABASE_URL is unset or unreachable,
+    # the API still boots for pure retrieval — only history endpoints fail.
+    try:
+        init_db()
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("Postgres history disabled (%s).", exc)
     logger.info("TraceRAG STUDIO API ready (db=%s)", config.DB_PATH)
     try:
         yield
@@ -44,6 +53,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="TraceRAG STUDIO API", version="0.1.0", lifespan=lifespan)
+app.include_router(history.router)
 
 # Allow the React dev server to call us.
 app.add_middleware(
@@ -57,6 +67,7 @@ app.add_middleware(
 class TraceRequest(BaseModel):
     query: str
     top_k: int | None = None
+    session_id: str | None = None  # set -> persist this execution to Postgres
 
 
 class SubgraphRequest(BaseModel):
@@ -73,6 +84,14 @@ def trace(req: TraceRequest) -> dict:
     # the UI can show exactly what the generation model would receive.
     for node, result in zip(response.results, payload["results"]):
         result["page_content"] = format_page_content(node)
+    # Persist to Postgres history when a session is attached (best-effort).
+    if req.session_id:
+        payload["trace_id"] = history.persist_trace(
+            session_id=req.session_id,
+            query=req.query,
+            execution_plan=payload["trace_log"],
+            graph_payload=payload["results"],
+        )
     return payload
 
 

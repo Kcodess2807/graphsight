@@ -9,8 +9,8 @@ gliner>=0.2.0
 spacy>=3.7.0
 
 # --- Deep Merge LLM (local) ---
-groq>=0.11.0                   # cloud LLM API (deep-merge + intent fallback)
-python-dotenv>=1.0.0           # load GROQ_API_KEY from .env
+openai>=1.40.0                 # OpenRouter client (deep-merge + intent + judge)
+python-dotenv>=1.0.0           # load OPENROUTER_API_KEY from .env
 
 # --- Data / numerics ---
 numpy>=1.26.0
@@ -29,4 +29,13 @@ langchain-core>=0.2.0          # BaseRetriever subclass
 # --- API (TraceRAG STUDIO dashboard) ---
 fastapi>=0.110.0
 uvicorn[standard]>=0.29.0
+
+# --- History store (Neon Postgres via SQLModel) ---
+sqlmodel>=0.0.16              # User / ChatSession / TraceLog tables
+psycopg2-binary>=2.9.9        # Postgres driver for the postgresql:// engine
+
+# --- Ops / testing ---
+tqdm>=4.66.0                  # ingest progress bars
+aiohttp>=3.9.0                 # scripts/stress_test.py load generator
+slowapi>=0.1.9                 # FastAPI rate limiting (see api.py hardening)
 
