@@ -111,8 +111,10 @@ MAX_DEGREE = int(os.getenv("TRACERAG_MAX_DEGREE", "10"))
 GLINER_MODEL = os.getenv("TRACERAG_GLINER_MODEL", "urchade/gliner_medium-v2.1")
 SPACY_MODEL = os.getenv("TRACERAG_SPACY_MODEL", "en_core_web_sm")
 
-#: Zero-shot entity labels for the MLOps / Jira domain.
-ENTITY_LABELS = ["Person", "Service", "Repo", "Ticket", "PR", "Team", "Tool"]
+#: Zero-shot entity labels for the MLOps / Jira domain. "Repo" dropped — in a
+#: microservices context Service/Tool/Library carry the topology, while "Repo"
+#: mostly mis-caught filenames (ctx.py) and version strings, adding noise.
+ENTITY_LABELS = ["Person", "Service", "Library", "Ticket", "PR", "Team", "Tool"]
 
 # --- spaCy fallback ontology enforcement ---------------------------------- #
 # The spaCy fallback over-extracts (dates, numbers, markdown symbols), creating
@@ -125,8 +127,10 @@ SPACY_BLOCKED_LABELS = ("CARDINAL", "DATE", "TIME", "PERCENT", "MONEY",
 #: Reject extracted spans shorter than this many characters.
 MIN_ENTITY_CHARS = int(os.getenv("TRACERAG_MIN_ENTITY_CHARS", "3"))
 
-#: GLiNER confidence floor for keeping an extracted span.
-GLINER_THRESHOLD = float(os.getenv("TRACERAG_GLINER_THRESHOLD", "0.4"))
+#: GLiNER confidence floor for keeping an extracted span. 0.55 is the sweet
+#: spot that slices off generic terms (app, issues, stable) and weak title
+#: fragments while keeping high-confidence hits (usernames, frameworks).
+GLINER_THRESHOLD = float(os.getenv("TRACERAG_GLINER_THRESHOLD", "0.55"))
 
 #: GLiNER has a strict context window. We feed it WORD-based sliding windows so
 #: long Markdown / Jira logs never silently drop entities past the limit.

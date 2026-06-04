@@ -6,6 +6,11 @@ sentence-transformers>=2.7.0   # all-MiniLM-L6-v2 -> FLOAT[384]
 
 # --- Entity extraction (GLiNER primary, spaCy fallback) ---
 gliner>=0.2.0
+# PIN: onnxruntime 1.18+ (incl. 1.26) fails "DLL load failed ... initialization
+# routine failed" on Windows/Anaconda boxes lacking the newer MSVC runtime,
+# which silently demotes GLiNER to the spaCy fallback (type pollution). 1.17.1
+# loads against the installed runtime. Do not bump without re-verifying import.
+onnxruntime==1.17.1
 spacy>=3.7.0
 
 # --- Deep Merge LLM (local) ---
@@ -38,4 +43,5 @@ psycopg2-binary>=2.9.9        # Postgres driver for the postgresql:// engine
 tqdm>=4.66.0                  # ingest progress bars
 aiohttp>=3.9.0                 # scripts/stress_test.py load generator
 slowapi>=0.1.9                 # FastAPI rate limiting (see api.py hardening)
+requests>=2.31.0              # scripts/ingest_github.py live PR connector
 
