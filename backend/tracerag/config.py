@@ -15,7 +15,7 @@ from pathlib import Path
 # --------------------------------------------------------------------------- #
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
-# Load a local .env (e.g. GROQ_API_KEY) if present. No-op if python-dotenv is
+# Load a local .env (e.g. OPENROUTER_API_KEY) if present. No-op if python-dotenv is
 # not installed or the file is absent — real env vars still take precedence.
 try:
     from dotenv import load_dotenv
@@ -42,19 +42,25 @@ EMBED_DIM = 384  # all-MiniLM-L6-v2; change this AND the schema together.
 
 
 # --------------------------------------------------------------------------- #
-# LLM (Groq cloud API) — deep-merge curation + router intent fallback
+# LLM (OpenRouter, OpenAI-compatible) — deep-merge curation, router intent,
+# and the benchmark judge. High-context models let us drop judge truncation.
 # --------------------------------------------------------------------------- #
-GROQ_API_KEY = os.getenv("GROQ_API_KEY")
-# llama3-8b-8192 was decommissioned by Groq; llama-3.1-8b-instant is the
-# current fast Llama-3 model (good for YES/NO disambiguation).
-GROQ_MODEL = os.getenv("GROQ_MODEL", "llama-3.1-8b-instant")
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
+OPENROUTER_BASE_URL = os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1")
+#: Any OpenRouter model slug — e.g. "google/gemini-flash-1.5" or
+#: "anthropic/claude-3-haiku". Verify the exact slug on openrouter.ai/models.
+OPENROUTER_MODEL = os.getenv("OPENROUTER_MODEL", "anthropic/claude-3-haiku")
+#: OpenRouter-recommended attribution headers.
+OPENROUTER_SITE_URL = os.getenv("OPENROUTER_SITE_URL",
+                                "https://github.com/Kcodess2807/TraceRAG")
+OPENROUTER_APP_TITLE = os.getenv("OPENROUTER_APP_TITLE", "TraceRAG")
 
 
 # --------------------------------------------------------------------------- #
 # Two-tier curation thresholds (cosine similarity)
 # --------------------------------------------------------------------------- #
 #   sim >= FAST_MERGE_THRESHOLD               -> Fast Mode auto-merge (0 LLM calls)
-#   DEEP_MERGE_THRESHOLD <= sim < FAST_MERGE  -> Deep Merge (ask Groq YES/NO)
+#   DEEP_MERGE_THRESHOLD <= sim < FAST_MERGE  -> Deep Merge (ask the LLM YES/NO)
 #   sim <  DEEP_MERGE_THRESHOLD               -> create a new node
 FAST_MERGE_THRESHOLD = float(os.getenv("TRACERAG_FAST_MERGE", "0.92"))
 DEEP_MERGE_THRESHOLD = float(os.getenv("TRACERAG_DEEP_MERGE", "0.85"))
@@ -91,12 +97,12 @@ TOP_K_GRAPH = int(os.getenv("TRACERAG_TOP_K_GRAPH", "10"))
 
 # Graph traversal (Stream B) tuning.
 GRAPH_SEED_TOP_N = int(os.getenv("TRACERAG_GRAPH_SEED_TOP_N", "3"))
-GRAPH_SEED_MIN_SIM = float(os.getenv("TRACERAG_GRAPH_SEED_MIN_SIM", "0.70"))
+GRAPH_SEED_MIN_SIM = float(os.getenv("TRACERAG_GRAPH_SEED_MIN_SIM", "0.35"))
 GRAPH_NEIGHBOR_K = int(os.getenv("TRACERAG_GRAPH_NEIGHBOR_K", "5"))
 GRAPH_MAX_HOPS = int(os.getenv("TRACERAG_GRAPH_MAX_HOPS", "2"))
-
-#: Max distinct chunk snippets appended to each retrieved entity's page_content.
-RETRIEVAL_SNIPPETS_PER_NODE = int(os.getenv("TRACERAG_SNIPPETS_PER_NODE", "3"))
+#: Do NOT traverse through hub super-nodes (degree > MAX_DEGREE) — they connect
+#: to nearly everything and flood the context with irrelevant neighbors.
+MAX_DEGREE = int(os.getenv("TRACERAG_MAX_DEGREE", "10"))
 
 
 # --------------------------------------------------------------------------- #
@@ -107,6 +113,17 @@ SPACY_MODEL = os.getenv("TRACERAG_SPACY_MODEL", "en_core_web_sm")
 
 #: Zero-shot entity labels for the MLOps / Jira domain.
 ENTITY_LABELS = ["Person", "Service", "Repo", "Ticket", "PR", "Team", "Tool"]
+
+# --- spaCy fallback ontology enforcement ---------------------------------- #
+# The spaCy fallback over-extracts (dates, numbers, markdown symbols), creating
+# "hairball" super-nodes. Only high-signal label types survive — the statistical
+# NER labels plus the deterministic EntityRuler labels (TICKET/PULL_REQUEST/SERVICE).
+SPACY_ALLOWED_LABELS = ("PERSON", "ORG", "PRODUCT", "GPE",
+                        "TICKET", "PULL_REQUEST", "SERVICE")
+SPACY_BLOCKED_LABELS = ("CARDINAL", "DATE", "TIME", "PERCENT", "MONEY",
+                        "QUANTITY", "ORDINAL")
+#: Reject extracted spans shorter than this many characters.
+MIN_ENTITY_CHARS = int(os.getenv("TRACERAG_MIN_ENTITY_CHARS", "3"))
 
 #: GLiNER confidence floor for keeping an extracted span.
 GLINER_THRESHOLD = float(os.getenv("TRACERAG_GLINER_THRESHOLD", "0.4"))

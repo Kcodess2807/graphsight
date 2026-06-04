@@ -3,9 +3,12 @@
 .env.*
 !.env.example
 
-# --- TraceRAG data store ---
+# --- TraceRAG data store (incl. LadybugDB WAL / sidecar files) ---
 *.lbug
+*.lbug.wal
+*.lbug-shm
 memory.lbug
+memory.lbug.wal
 
 # --- Python ---
 __pycache__/
@@ -17,6 +20,16 @@ env/
 
 # --- Benchmark output ---
 results.csv
+results_*.csv
+
+# --- Large / generated datasets (not version-controlled) ---
+backend/datasets/GFG_FINAL.csv
+backend/datasets/*.csv
+
+# --- Trace-history persistence (SQLite, generated at runtime) ---
+*.db
+*.sqlite
+*.sqlite3
 
 # --- Frontend (Vite / Node) ---
 node_modules/

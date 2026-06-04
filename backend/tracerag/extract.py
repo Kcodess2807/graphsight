@@ -58,14 +58,64 @@ def sliding_window_words(
             break
 
 
-# Best-effort spaCy label -> domain type (fallback only).
+# spaCy/EntityRuler label -> domain type (whitelisted labels only; see
+# config.SPACY_ALLOWED_LABELS). Anything not here is dropped at the source.
 _SPACY_LABEL_MAP = {
+    # Statistical NER
     "PERSON": "Person",
-    "ORG": "Team",
+    "ORG": "Service",
     "PRODUCT": "Tool",
-    "WORK_OF_ART": "Tool",
-    "FAC": "Service",
+    "GPE": "Location",
+    # Deterministic EntityRuler
+    "TICKET": "Ticket",
+    "PULL_REQUEST": "PR",
+    "SERVICE": "Service",
 }
+
+# Deterministic regex/token patterns for structured engineering entities,
+# matched by an EntityRuler placed BEFORE the statistical `ner` (so the ruler
+# wins). Inline (?i) flags sit at the start of each regex (Python 3.11+ rule).
+_RULER_LABELS = frozenset({"TICKET", "PULL_REQUEST", "SERVICE"})
+_ENTITY_RULER_PATTERNS = [
+    # Any Jira project key: INC-123, OPS-456, SRCTREEWIN-14221, JRASERVER-9
+    {"label": "TICKET",
+     "pattern": [{"TEXT": {"REGEX": r"(?i)^[A-Z][A-Z0-9]+-\d+$"}}]},
+    # PR #402, PR 402
+    {"label": "PULL_REQUEST",
+     "pattern": [{"LOWER": "pr"}, {"TEXT": "#", "OP": "?"}, {"IS_DIGIT": True}]},
+    # payment-service (single token, if the tokenizer keeps it whole)
+    {"label": "SERVICE",
+     "pattern": [{"TEXT": {"REGEX": r"(?i)^[a-z0-9]+-service$"}}]},
+    # payment-service split by spaCy into ["payment", "-", "service"]
+    {"label": "SERVICE",
+     "pattern": [{"TEXT": {"REGEX": r"(?i)^[a-z0-9]+$"}},
+                 {"TEXT": "-"}, {"LOWER": "service"}]},
+]
+
+# Leading/trailing markdown & list punctuation to trim off noisy spaCy spans.
+_EDGE_JUNK = " \t\r\n-*#•|>:.,;"
+
+
+def clean_entity_text(raw: str) -> str | None:
+    """Sanitize an extracted surface form; return cleaned text or None to drop.
+
+    Drops spans that are empty, too short, purely numeric, or made only of
+    special characters / leading punctuation — the markdown & number noise that
+    turns the fallback graph into a hairball.
+    """
+    if not raw:
+        return None
+    # Collapse internal whitespace/newlines, then trim edge punctuation.
+    text = re.sub(r"\s+", " ", raw).strip().strip(_EDGE_JUNK).strip()
+    if len(text) < config.MIN_ENTITY_CHARS:
+        return None
+    if re.fullmatch(r"[\W_]+", text):          # only special chars
+        return None
+    if re.fullmatch(r"[\d.,%$]+", text):       # entirely numeric (2026, 1,000, 50%)
+        return None
+    if not text[0].isalnum():                  # starts with a special char (#, -, *)
+        return None
+    return text
 
 
 class EntityExtractor:
@@ -101,12 +151,18 @@ class EntityExtractor:
 
             try:
                 logger.info("Loading spaCy model: %s", config.SPACY_MODEL)
-                self._spacy = spacy.load(config.SPACY_MODEL)
+                nlp = spacy.load(config.SPACY_MODEL)
             except OSError as exc:
                 raise RuntimeError(
                     f"spaCy model '{config.SPACY_MODEL}' not found. "
                     f"Run: python -m spacy download {config.SPACY_MODEL}"
                 ) from exc
+            # Deterministic engineering entities take priority: the ruler runs
+            # BEFORE `ner`, so the statistical model respects its spans.
+            if "entity_ruler" not in nlp.pipe_names:
+                ruler = nlp.add_pipe("entity_ruler", before="ner")
+                ruler.add_patterns(_ENTITY_RULER_PATTERNS)
+            self._spacy = nlp
         return self._spacy
 
     # --- public API ---------------------------------------------------- #
@@ -130,8 +186,11 @@ class EntityExtractor:
                 logger.warning("GLiNER failed on a window (%s); skipping.", exc)
                 continue
             for p in preds:
+                clean = clean_entity_text(p["text"])
+                if clean is None:
+                    continue
                 found.append(ExtractedEntity(
-                    text=p["text"].strip(),
+                    text=clean,
                     type=p["label"],
                     score=float(p.get("score", 1.0)),
                     start=win.offset + p["start"],
@@ -146,8 +205,28 @@ class EntityExtractor:
         found: list[ExtractedEntity] = []
         for win in sliding_window_words(text):
             for ent in nlp(win.text).ents:
+                # Ontology enforcement: whitelist high-signal labels, drop the
+                # date/number/quantity noise.
+                if ent.label_ not in config.SPACY_ALLOWED_LABELS:
+                    continue
+                if ent.label_ in config.SPACY_BLOCKED_LABELS:
+                    continue
+                if ent.label_ in _RULER_LABELS:
+                    # Deterministic match — trust it, just trim whitespace.
+                    clean = ent.text.strip()
+                    if not clean:
+                        continue
+                    # Canonicalize ticket keys so 'srctreewin-14221' and
+                    # 'SRCTREEWIN-14221' resolve to the exact same node.
+                    if ent.label_ == "TICKET":
+                        clean = clean.upper()
+                else:
+                    # Statistical NER — sanitize (drop numerics, <3 chars, junk).
+                    clean = clean_entity_text(ent.text)
+                    if clean is None:
+                        continue
                 found.append(ExtractedEntity(
-                    text=ent.text.strip(),
+                    text=clean,
                     type=_SPACY_LABEL_MAP.get(ent.label_, ent.label_),
                     score=1.0,
                     start=win.offset + ent.start_char,

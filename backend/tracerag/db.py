@@ -138,6 +138,18 @@ class TraceDB:
             {"doc_id": doc_id, "entity_id": entity_id},
         )
 
+    def find_nodes_by_label(self, label: str) -> list[dict[str, Any]]:
+        """Exact, case-insensitive match of entities by their label.
+
+        Used for deterministic query-side entity linking (e.g. a query
+        mentioning 'OPS-142' lands directly on that ticket node).
+        """
+        return self._records(self.execute(
+            f"MATCH (e:{config.NODE_TABLE}) WHERE lower(e.label) = lower($label) "
+            f"RETURN e.id AS id, e.label AS label, e.type AS type;",
+            {"label": label},
+        ))
+
     def node_exists(self, node_id: str) -> bool:
         rows = self._records(self.execute(
             f"MATCH (e:{config.NODE_TABLE} {{id: $id}}) RETURN e.id AS id LIMIT 1;",
@@ -175,15 +187,27 @@ class TraceDB:
         return rows
 
     def neighbors(self, node_id: str, k: int = config.TOP_K_GRAPH) -> list[dict[str, Any]]:
-        """One-hop graph neighbours of a node."""
+        """One-hop graph neighbours, strongest edge first (deterministic order)."""
         result = self.execute(
             f"MATCH (a:{config.NODE_TABLE} {{id: $id}})"
             f"-[r:{config.REL_TABLE}]-(b:{config.NODE_TABLE}) "
             f"RETURN b.id AS id, b.label AS label, b.type AS type, "
-            f"r.confidence AS confidence LIMIT $k;",
+            f"r.confidence AS confidence "
+            f"ORDER BY r.confidence DESC, b.id ASC "
+            f"LIMIT $k;",
             {"id": node_id, "k": k},
         )
         return self._records(result)
+
+    def node_degree(self, node_id: str) -> int:
+        """Distinct one-hop neighbour count — used to detect hub super-nodes."""
+        rows = self._records(self.execute(
+            f"MATCH (a:{config.NODE_TABLE} {{id: $id}})"
+            f"-[r:{config.REL_TABLE}]-(b:{config.NODE_TABLE}) "
+            f"RETURN count(DISTINCT b.id) AS d;",
+            {"id": node_id},
+        ))
+        return int(rows[0]["d"]) if rows else 0
 
     def documents_for_entities(self, entity_ids: list[str]) -> dict[str, list[dict]]:
         """Fetch the chunk text of every Document that MENTIONS the given entities.

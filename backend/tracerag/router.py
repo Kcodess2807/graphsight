@@ -42,7 +42,8 @@ class TraceRouter:
         self.db = db
         self.embed_model = embed_model
         self._embedder = None   # lazy
-        self._groq = None       # lazy
+        self._llm = None        # lazy (OpenRouter)
+        self._extractor = None  # lazy (query-side entity linking)
 
     # --- lazy clients -------------------------------------------------- #
     def _get_embedder(self):
@@ -53,16 +54,39 @@ class TraceRouter:
             self._embedder = SentenceTransformer(self.embed_model)
         return self._embedder
 
+    def _get_extractor(self):
+        if self._extractor is None:
+            from .extract import EntityExtractor
+
+            self._extractor = EntityExtractor()
+        return self._extractor
+
+    def _link_query_entities(self, query: str, meta: dict[str, dict]) -> list[str]:
+        """Deterministic seeds: extract entities from the query and look up
+        their exact matching graph nodes by label (tickets, PRs, services)."""
+        ids: list[str] = []
+        try:
+            entities = self._get_extractor().extract(query)
+        except Exception as exc:  # noqa: BLE001 — never let linking break a query
+            logger.debug("query entity extraction failed (%s)", exc)
+            return ids
+        for ent in entities:
+            for node in self.db.find_nodes_by_label(ent.text):
+                nid = node["id"]
+                meta.setdefault(nid, {"label": node["label"], "type": node["type"]})
+                ids.append(nid)
+        return list(dict.fromkeys(ids))  # dedupe, preserve order
+
     def embed_query(self, text: str) -> list[float]:
         vec = self._get_embedder().encode(text, normalize_embeddings=True)
         return [float(x) for x in vec]
 
-    def _get_groq(self):
-        if self._groq is None:
-            from groq import Groq
+    def _get_llm(self):
+        if self._llm is None:
+            from .llm import make_client
 
-            self._groq = Groq(api_key=config.GROQ_API_KEY)
-        return self._groq
+            self._llm = make_client()
+        return self._llm
 
     # --- 1. intent classification -------------------------------------- #
     def _classify_intent(self, query: str) -> tuple[float, float, str]:
@@ -81,8 +105,8 @@ class TraceRouter:
             f"tracing a sequence of events/people (reply RELATIONAL)?\n\n{query}"
         )
         try:
-            resp = self._get_groq().chat.completions.create(
-                model=config.GROQ_MODEL,
+            resp = self._get_llm().chat.completions.create(
+                model=config.OPENROUTER_MODEL,
                 messages=[{"role": "user", "content": prompt}],
                 temperature=0,
             )
@@ -97,33 +121,29 @@ class TraceRouter:
         return w["vector"], w["graph"], "semantic"
 
     # --- 2A. vector stream --------------------------------------------- #
-    def _vector_stream(
-        self, query: str, meta: dict[str, dict]
-    ) -> dict[str, float]:
+    def _vector_hits(
+        self, query: str, k: int, meta: dict[str, dict]
+    ) -> list[tuple[str, float]]:
+        """Top-k vector hits as an ordered (id, similarity) list, best first."""
         embedding = self.embed_query(query)
         try:
-            hits = self.db.vector_search(embedding, k=config.TOP_K_VECTOR)
+            hits = self.db.vector_search(embedding, k=k)
         except Exception as exc:  # noqa: BLE001 — empty index, etc.
             logger.debug("vector_search returned nothing (%s)", exc)
-            return {}
-        scores: dict[str, float] = {}
+            return []
+        out: list[tuple[str, float]] = []
         for h in hits:
             nid = h["id"]
             if nid is None:
                 continue
-            scores[nid] = float(h["similarity"])  # already 1 - distance
             meta.setdefault(nid, {"label": h.get("label"), "type": h.get("type")})
-        return scores
+            out.append((nid, float(h["similarity"])))  # similarity = 1 - distance
+        return out
 
     # --- 2B. graph stream ---------------------------------------------- #
     def _graph_stream(
-        self, vector_scores: dict[str, float], meta: dict[str, dict]
-    ) -> tuple[dict[str, float], list[str], list[dict]]:
-        seeds = [
-            nid for nid, sv in sorted(vector_scores.items(), key=lambda kv: -kv[1])
-            if sv >= config.GRAPH_SEED_MIN_SIM
-        ][: config.GRAPH_SEED_TOP_N]
-
+        self, seeds: list[str], meta: dict[str, dict]
+    ) -> tuple[dict[str, float], list[dict]]:
         s_g: dict[str, float] = {seed: 1.0 for seed in seeds}
         hops: list[dict] = []
 
@@ -133,6 +153,11 @@ class TraceRouter:
         for _ in range(config.GRAPH_MAX_HOPS):
             next_frontier: list[tuple[str, float]] = []
             for node_id, acc in frontier:
+                # Super-node defense: don't traverse THROUGH a hub (degree >
+                # MAX_DEGREE). It still appears as a reached neighbour, but we
+                # won't fan out from it and flood the context.
+                if self.db.node_degree(node_id) > config.MAX_DEGREE:
+                    continue
                 for nb in self.db.neighbors(node_id, k=config.GRAPH_NEIGHBOR_K):
                     to_id = nb.get("id")
                     if to_id is None:
@@ -149,20 +174,81 @@ class TraceRouter:
             frontier = next_frontier
             if not frontier:
                 break
-        return s_g, seeds, hops
+        return s_g, hops
 
     def _attach_documents(self, results: list[RoutedNode]) -> None:
         docs_by_entity = self.db.documents_for_entities([r.id for r in results])
         for r in results:
             r.documents = docs_by_entity.get(r.id, [])
 
-    # --- 3. fuse + trace ----------------------------------------------- #
+    def build_context(self, results: list[RoutedNode]) -> str:
+        """Assemble the final, globally-deduplicated context for the LLM.
+
+        Two concerns are solved together:
+
+        * **Redundancy Trap** — each chunk (keyed by doc id) is emitted once;
+          a chunk re-surfaced by another arm becomes a 1-line trace marker.
+        * **Truncation priority** — the context is split into a high-value
+          ``SYSTEM TRACES`` block (entity identities + relationship markers,
+          all cheap) placed FIRST, then a ``DOCUMENT CHUNKS`` block of the heavy
+          ~300-word text. If the consumer truncates at N chars, the graph
+          traversal facts survive intact and only fuzzy text is lost.
+        """
+        seen_chunk_ids: set[str] = set()
+        graph_traces: list[str] = []   # cheap structural facts -> top
+        text_chunks: list[str] = []    # heavy fuzzy text -> bottom (truncated first)
+
+        for node in results:
+            label = node.label or node.id
+            ntype = node.type or "Unknown"
+            graph_traces.append(f"- {label} ({ntype})")
+            for d in node.documents:
+                cid = d.get("doc_id")
+                text = (d.get("content") or "").strip()
+                if not text:
+                    continue
+                if cid not in seen_chunk_ids:
+                    seen_chunk_ids.add(cid)
+                    text_chunks.append(f"[{label}] {text}")
+                else:
+                    # Duplicate chunk: keep the relationship fact, drop the text.
+                    graph_traces.append(f"  [Trace: {label} ({ntype}) -> {cid}]")
+
+        sections: list[str] = []
+        if graph_traces:
+            sections.append("SYSTEM TRACES:\n" + "\n".join(graph_traces))
+        if text_chunks:
+            sections.append("DOCUMENT CHUNKS:\n" + "\n\n".join(text_chunks))
+        return "\n\n".join(sections)
+
+    # --- 3. dynamic throttle + fuse + trace ---------------------------- #
     def route(self, query: str, top_k: int | None = None) -> RouterResponse:
         alpha, beta, intent = self._classify_intent(query)
+        total_k = top_k if top_k is not None else config.TOP_K_VECTOR
         meta: dict[str, dict] = {}
 
-        vector_scores = self._vector_stream(query, meta)
-        graph_scores, seeds, hops = self._graph_stream(vector_scores, meta)
+        # A pool of vector hits provides fuzzy graph seeds and the candidate
+        # pool we later throttle for fusion.
+        pool = self._vector_hits(query, config.TOP_K_VECTOR, meta)
+
+        # Seeds = deterministic query-side entity links FIRST (exact ticket/PR/
+        # service matches), then fuzzy cosine seeds (sim >= GRAPH_SEED_MIN_SIM).
+        linked_seeds = self._link_query_entities(query, meta)
+        fuzzy_seeds = [
+            nid for nid, sv in sorted(pool, key=lambda kv: -kv[1])
+            if sv >= config.GRAPH_SEED_MIN_SIM
+        ][: config.GRAPH_SEED_TOP_N]
+        seeds = list(dict.fromkeys(linked_seeds + fuzzy_seeds))  # dedupe, linked first
+
+        # Graph traversal — count the connected nodes it discovers.
+        graph_scores, hops = self._graph_stream(seeds, meta)
+        seed_set = set(seeds)
+        graph_hits = sum(1 for nid in graph_scores if nid not in seed_set)
+
+        # Dynamic throttle: the more high-precision graph hits, the fewer bulky
+        # vector chunks we pull. vector_k = max(2, total_k - graph_hits).
+        vector_k = max(2, total_k - graph_hits)
+        vector_scores = dict(pool[:vector_k])
 
         results: list[RoutedNode] = []
         for nid in set(vector_scores) | set(graph_scores):
@@ -178,8 +264,7 @@ class TraceRouter:
                 score_graph=sg,
             ))
         results.sort(key=lambda r: r.score_total, reverse=True)
-        if top_k is not None:
-            results = results[:top_k]
+        results = results[:total_k]
 
         # Augmented Generation: fetch the raw chunk text mentioning the final
         # entities so the LangChain wrapper can pass real context to the LLM.
@@ -187,7 +272,15 @@ class TraceRouter:
 
         trace_log = {
             "intent": {"alpha": alpha, "beta": beta, "type": intent},
-            "execution_path": {"vector_seeds": seeds, "graph_hops": hops},
-            "metrics": {"total_nodes_evaluated": len(vector_scores) + len(graph_scores)},
+            "execution_path": {
+                "linked_seeds": linked_seeds,   # deterministic query-entity matches
+                "vector_seeds": seeds,           # full seed set (linked + fuzzy)
+                "graph_hops": hops,
+            },
+            "metrics": {
+                "graph_hits": graph_hits,
+                "vector_k": vector_k,
+                "total_nodes_evaluated": len(vector_scores) + len(graph_scores),
+            },
         }
         return RouterResponse(query=query, results=results, trace_log=trace_log)

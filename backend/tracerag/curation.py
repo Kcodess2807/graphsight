@@ -2,7 +2,7 @@
 
 For each extracted entity:
     sim >= FAST_MERGE_THRESHOLD (0.92)              -> Fast Mode: reuse existing id
-    DEEP_MERGE_THRESHOLD (0.85) <= sim < 0.92       -> ask Groq YES/NO
+    DEEP_MERGE_THRESHOLD (0.85) <= sim < 0.92       -> ask the LLM YES/NO
     sim <  DEEP_MERGE_THRESHOLD                      -> mint a new slug id
 
 Edges: Document -[MENTIONS]-> every entity; Entity -[RELATES_TO]-> Entity only
@@ -59,7 +59,7 @@ class CurationEngine:
         self.db = db
         self.embed_model = embed_model
         self._embedder = None        # lazy
-        self._groq = None            # lazy
+        self._llm = None             # lazy (OpenRouter)
         # In-memory dedup index. The DB's HNSW index is static (can't be queried
         # mid-ingest while embeddings are still being written), so curation does
         # its own cosine search over normalized embeddings here. Pre-loaded with
@@ -83,12 +83,12 @@ class CurationEngine:
         vec = self._get_embedder().encode(text, normalize_embeddings=True)
         return [float(x) for x in vec]
 
-    def _get_groq(self):
-        if self._groq is None:
-            from groq import Groq
+    def _get_llm(self):
+        if self._llm is None:
+            from .llm import make_client
 
-            self._groq = Groq(api_key=config.GROQ_API_KEY)
-        return self._groq
+            self._llm = make_client()
+        return self._llm
 
     # --- in-memory dedup index ----------------------------------------- #
     def _ensure_index_loaded(self) -> None:
@@ -174,14 +174,14 @@ class CurationEngine:
             f"entity? Answer ONLY YES or NO."
         )
         try:
-            resp = self._get_groq().chat.completions.create(
-                model=config.GROQ_MODEL,
+            resp = self._get_llm().chat.completions.create(
+                model=config.OPENROUTER_MODEL,
                 messages=[{"role": "user", "content": prompt}],
                 temperature=0,
             )
             answer = resp.choices[0].message.content.strip().upper()
         except Exception as exc:  # noqa: BLE001 — fail safe: do not merge
-            logger.warning("Groq deep-merge failed (%s); treating as NO.", exc)
+            logger.warning("Deep-merge LLM failed (%s); treating as NO.", exc)
             return False
         return answer.startswith("YES")
 
