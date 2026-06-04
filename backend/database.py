@@ -53,7 +53,11 @@ def init_db() -> None:
     """Create the history tables if they don't exist (idempotent)."""
     # Import models so their tables register on SQLModel.metadata before create.
     from models import ChatSession, TraceLog, User  # noqa: F401
+    from sqlalchemy.orm import configure_mappers
 
+    # Validate relationships NOW (at startup) instead of on the first query, so
+    # a mapper misconfig fails loudly here rather than as a confusing 500 later.
+    configure_mappers()
     SQLModel.metadata.create_all(get_engine())
     logger.info("Postgres history schema ready.")
 

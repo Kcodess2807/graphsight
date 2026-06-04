@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { PanelLeft, Network } from "lucide-react";
+import { History, PanelLeft, Network } from "lucide-react";
 import { toast } from "sonner";
 import {
   ResizableHandle,
@@ -9,11 +9,42 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LeftPane } from "@/components/left/LeftPane";
 import { VisualTracer } from "@/components/right/VisualTracer";
+import { HistorySidebar } from "@/components/left/HistorySidebar";
 import { MOCK_TRACE, QUERY_PRESETS } from "@/data/mockTrace";
-import { API_BASE, runTraceQuery } from "@/lib/api";
+import {
+  API_BASE,
+  createSession,
+  fetchSessionTraces,
+  hydrateTraceFromLog,
+  listSessions,
+  runTraceQuery,
+  type ChatSessionDto,
+} from "@/lib/api";
+import { useSessionUser } from "@/lib/useSessionUser";
 import type { TraceState } from "@/types/trace";
 
 const API_HINT = `Could not reach ${API_BASE}`;
+
+/** A blank canvas state for a fresh "New chat" (no nodes, no metrics). */
+const EMPTY_TRACE: TraceState = {
+  id: "trace_empty",
+  query: "",
+  computedAt: new Date(0).toISOString(),
+  weights: { vector: 0.5, graph: 0.5, intent: "conceptual" },
+  confidence: {
+    score: 0,
+    uncertainty: 0,
+    rationale: "New session — run a query to begin.",
+  },
+  steps: [],
+  metrics: {
+    tokens: { used: 0, budget: 0, reductionPct: 0 },
+    peakRamGb: 0,
+    queryTimeSec: 0,
+    nodesEvaluated: 0,
+  },
+  graph: { nodes: [], edges: [] },
+};
 
 /** SSR-safe media query hook. */
 function useMediaQuery(query: string) {
@@ -59,36 +90,132 @@ export function TraceDashboard() {
   const [loading, setLoading] = useState(true);
   const isDesktop = useMediaQuery("(min-width: 1024px)");
 
+  // --- Session / history state (only meaningful when signed in) ----------- //
+  const { userId, email } = useSessionUser();
+  const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
+  const [sessionsList, setSessionsList] = useState<ChatSessionDto[]>([]);
+  const [sessionsLoading, setSessionsLoading] = useState(false);
+  const historyEnabled = Boolean(userId);
+
+  // Load the user's sessions on sign-in (and clear them on sign-out).
+  useEffect(() => {
+    if (!userId) {
+      setSessionsList([]);
+      return;
+    }
+    let cancelled = false;
+    setSessionsLoading(true);
+    listSessions(userId)
+      .then((rows) => {
+        if (!cancelled) setSessionsList(rows);
+      })
+      .catch((err) => console.error("[TraceRAG] listSessions failed:", err))
+      .finally(() => {
+        if (!cancelled) setSessionsLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [userId]);
+
   /**
    * The chained integration flow:
    *   1. loading on
-   *   2. POST /api/trace  →  extract every unique execution-path node id
-   *   3. POST /api/subgraph with those ids
-   *   4. merge + lay out into a TraceState, push to React state
+   *   2. (signed in, no active session) → POST /api/sessions to start one
+   *   3. POST /api/trace {session_id}  →  extract execution-path node ids
+   *   4. POST /api/subgraph with those ids
+   *   5. merge + lay out into a TraceState, push to React state
    * Falls back to a derived sample trace if the backend is unreachable, so the
-   * UI never ends up blank during a demo.
+   * UI never ends up blank during a demo. `persist` is false for the on-mount
+   * demo query so we don't create a stray session every page load.
    */
-  const handleSearch = useCallback(async (q: string) => {
-    setQuery(q);
+  const handleSearch = useCallback(
+    async (q: string, opts?: { persist?: boolean }) => {
+      const persist = opts?.persist ?? true;
+      setQuery(q);
+      setLoading(true);
+      const toastId = toast.loading("Tracing query…", {
+        description: "POST /api/trace → /api/subgraph",
+      });
+      try {
+        // Lazily start a session on the user's first query of a new chat.
+        let sessionId = activeSessionId;
+        if (persist && userId && !sessionId) {
+          try {
+            const created = await createSession(
+              userId,
+              q.slice(0, 30) || "New chat",
+              email ?? undefined
+            );
+            sessionId = created.id;
+            setActiveSessionId(created.id);
+            setSessionsList((prev) => [created, ...prev]);
+          } catch (err) {
+            // Persistence is best-effort — never block retrieval on it.
+            console.error("[TraceRAG] createSession failed:", err);
+          }
+        }
+
+        const state = await runTraceQuery(q, sessionId ?? undefined);
+        setTrace(state);
+        const tracedNodes = state.graph.nodes.filter((n) => n.active).length;
+        const tracedEdges = state.graph.edges.filter((e) => e.active).length;
+        toast.success("Trace computed", {
+          id: toastId,
+          description: `${tracedNodes} nodes · ${tracedEdges} traced edges · ${state.metrics.queryTimeSec}s`,
+        });
+      } catch (err) {
+        console.error("[TraceRAG] live trace failed, falling back to sample:", err);
+        setTrace(deriveTrace(q));
+        toast.warning("Backend unreachable — showing sample trace", {
+          id: toastId,
+          description: `${API_HINT}. Wired correctly; this is the offline fallback.`,
+        });
+      } finally {
+        setLoading(false);
+      }
+    },
+    [activeSessionId, userId, email]
+  );
+
+  // New chat: drop the active session and blank the canvas.
+  const handleNewChat = useCallback(() => {
+    setActiveSessionId(null);
+    setQuery("");
+    setTrace(EMPTY_TRACE);
+    setLoading(false);
+  }, []);
+
+  // Re-open a past session: hydrate the canvas from its latest stored trace,
+  // with NO LLM call (only a pure /api/subgraph graph read).
+  const handleSelectSession = useCallback(async (sessionId: string) => {
+    setActiveSessionId(sessionId);
     setLoading(true);
-    const toastId = toast.loading("Tracing query…", {
-      description: "POST /api/trace → /api/subgraph",
-    });
+    const toastId = toast.loading("Restoring session…");
     try {
-      const state = await runTraceQuery(q);
+      const logs = await fetchSessionTraces(sessionId);
+      if (logs.length === 0) {
+        setTrace(EMPTY_TRACE);
+        setQuery("");
+        toast.message("Empty session", {
+          id: toastId,
+          description: "No traces saved yet — run a query.",
+        });
+        return;
+      }
+      const latest = logs[logs.length - 1]; // oldest → newest
+      const state = await hydrateTraceFromLog(latest);
       setTrace(state);
-      const tracedNodes = state.graph.nodes.filter((n) => n.active).length;
-      const tracedEdges = state.graph.edges.filter((e) => e.active).length;
-      toast.success("Trace computed", {
+      setQuery(latest.query);
+      toast.success("Session restored", {
         id: toastId,
-        description: `${tracedNodes} nodes · ${tracedEdges} traced edges · ${state.metrics.queryTimeSec}s`,
+        description: `${state.graph.nodes.length} nodes re-rendered (no LLM call).`,
       });
     } catch (err) {
-      console.error("[TraceRAG] live trace failed, falling back to sample:", err);
-      setTrace(deriveTrace(q));
-      toast.warning("Backend unreachable — showing sample trace", {
+      console.error("[TraceRAG] hydrate session failed:", err);
+      toast.error("Could not restore session", {
         id: toastId,
-        description: `${API_HINT}. Wired correctly; this is the offline fallback.`,
+        description: API_HINT,
       });
     } finally {
       setLoading(false);
@@ -96,41 +223,59 @@ export function TraceDashboard() {
   }, []);
 
   // Attempt a live trace on mount for the default query (falls back to sample).
+  // persist:false so the demo query never creates a session.
   useEffect(() => {
-    void handleSearch(MOCK_TRACE.query);
+    void handleSearch(MOCK_TRACE.query, { persist: false });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
     <div className="flex h-[100dvh] flex-col overflow-hidden bg-background">
       {isDesktop ? (
-        <ResizablePanelGroup direction="horizontal" className="flex-1">
-          <ResizablePanel
-            defaultSize={35}
-            minSize={26}
-            maxSize={48}
-            className="min-w-[320px]"
-          >
-            <LeftPane
-              trace={trace}
-              loading={loading}
-              query={query}
-              onQueryChange={handleSearch}
+        <div className="flex min-h-0 flex-1">
+          {historyEnabled && (
+            <HistorySidebar
+              sessions={sessionsList}
+              activeSessionId={activeSessionId}
+              loading={sessionsLoading}
+              onSelect={handleSelectSession}
+              onNewChat={handleNewChat}
             />
-          </ResizablePanel>
-          <ResizableHandle withHandle />
-          <ResizablePanel defaultSize={65} minSize={40}>
-            <div className="h-full bg-white">
-              <VisualTracer trace={trace} loading={loading} />
-            </div>
-          </ResizablePanel>
-        </ResizablePanelGroup>
+          )}
+          <ResizablePanelGroup direction="horizontal" className="min-w-0 flex-1">
+            <ResizablePanel
+              defaultSize={35}
+              minSize={26}
+              maxSize={48}
+              className="min-w-[320px]"
+            >
+              <LeftPane
+                trace={trace}
+                loading={loading}
+                query={query}
+                onQueryChange={handleSearch}
+              />
+            </ResizablePanel>
+            <ResizableHandle withHandle />
+            <ResizablePanel defaultSize={65} minSize={40}>
+              <div className="h-full bg-white">
+                <VisualTracer trace={trace} loading={loading} />
+              </div>
+            </ResizablePanel>
+          </ResizablePanelGroup>
+        </div>
       ) : (
         <MobileLayout
           trace={trace}
           loading={loading}
           query={query}
           onQueryChange={handleSearch}
+          historyEnabled={historyEnabled}
+          sessions={sessionsList}
+          sessionsLoading={sessionsLoading}
+          activeSessionId={activeSessionId}
+          onSelectSession={handleSelectSession}
+          onNewChat={handleNewChat}
         />
       )}
     </div>
@@ -142,11 +287,23 @@ function MobileLayout({
   loading,
   query,
   onQueryChange,
+  historyEnabled,
+  sessions,
+  sessionsLoading,
+  activeSessionId,
+  onSelectSession,
+  onNewChat,
 }: {
   trace: TraceState;
   loading: boolean;
   query: string;
   onQueryChange: (q: string) => void;
+  historyEnabled: boolean;
+  sessions: ChatSessionDto[];
+  sessionsLoading: boolean;
+  activeSessionId: string | null;
+  onSelectSession: (sessionId: string) => void;
+  onNewChat: () => void;
 }) {
   return (
     <Tabs defaultValue="log" className="flex h-full flex-col">
@@ -160,6 +317,12 @@ function MobileLayout({
             <Network className="h-4 w-4" />
             Visual Tracer
           </TabsTrigger>
+          {historyEnabled && (
+            <TabsTrigger value="history">
+              <History className="h-4 w-4" />
+              History
+            </TabsTrigger>
+          )}
         </TabsList>
       </div>
       <TabsContent value="log" className="min-h-0 flex-1 data-[state=inactive]:hidden">
@@ -176,6 +339,21 @@ function MobileLayout({
       >
         <VisualTracer trace={trace} loading={loading} />
       </TabsContent>
+      {historyEnabled && (
+        <TabsContent
+          value="history"
+          className="min-h-0 flex-1 data-[state=inactive]:hidden"
+        >
+          <HistorySidebar
+            sessions={sessions}
+            activeSessionId={activeSessionId}
+            loading={sessionsLoading}
+            onSelect={onSelectSession}
+            onNewChat={onNewChat}
+            className="w-full border-r-0"
+          />
+        </TabsContent>
+      )}
     </Tabs>
   );
 }

@@ -3,9 +3,13 @@
 Stored in Neon Postgres, NOT in the `.lbug` graph. Each `/api/trace` execution
 can be persisted as a TraceLog so the UI can re-render past sessions exactly,
 including the router analytics (execution_plan) and the React Flow graph payload.
-"""
 
-from __future__ import annotations
+NOTE: deliberately NO `from __future__ import annotations` here. That import
+stringifies every annotation, so SQLModel would hand SQLAlchemy the literal
+"list['ChatSession']" as a relationship target instead of a resolvable forward
+reference (InvalidRequestError). PEP 604 unions / forward refs below work
+natively on Python 3.10+ without it.
+"""
 
 from datetime import datetime, timezone
 from uuid import uuid4

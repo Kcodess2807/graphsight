@@ -67,6 +67,27 @@ export interface SubgraphResponse {
 }
 
 // --------------------------------------------------------------------------- //
+// History store (Postgres) wire shapes
+// --------------------------------------------------------------------------- //
+export interface ChatSessionDto {
+  id: string;
+  user_id: string;
+  title: string;
+  created_at: string;
+}
+
+/** One persisted execution. graph_payload = router `results`, execution_plan =
+ *  the `trace_log` — together enough to rebuild the canvas with no LLM call. */
+export interface TraceLogDto {
+  id: string;
+  session_id: string;
+  query: string;
+  execution_plan: TraceLog;
+  graph_payload: TraceResult[];
+  created_at: string;
+}
+
+// --------------------------------------------------------------------------- //
 // Raw fetches
 // --------------------------------------------------------------------------- //
 async function postJSON<T>(path: string, body: unknown): Promise<T> {
@@ -81,14 +102,60 @@ async function postJSON<T>(path: string, body: unknown): Promise<T> {
   return (await res.json()) as T;
 }
 
-/** Endpoint A. */
-export function fetchTrace(query: string): Promise<TraceResponse> {
-  return postJSON<TraceResponse>("/api/trace", { query });
+async function getJSON<T>(path: string): Promise<T> {
+  const res = await fetch(`${API_BASE}${path}`);
+  if (!res.ok) {
+    throw new Error(`${path} → HTTP ${res.status} ${res.statusText}`);
+  }
+  return (await res.json()) as T;
+}
+
+/** Endpoint A. Pass `sessionId` to persist the execution to Postgres history. */
+export function fetchTrace(
+  query: string,
+  sessionId?: string
+): Promise<TraceResponse> {
+  return postJSON<TraceResponse>("/api/trace", {
+    query,
+    session_id: sessionId,
+  });
 }
 
 /** Endpoint B. */
 export function fetchSubgraph(nodeIds: string[]): Promise<SubgraphResponse> {
   return postJSON<SubgraphResponse>("/api/subgraph", { node_ids: nodeIds });
+}
+
+// --------------------------------------------------------------------------- //
+// History endpoints (Postgres-backed)
+// --------------------------------------------------------------------------- //
+/** Create a new chat session, or rename an existing one when `sessionId` is set. */
+export function createSession(
+  userId: string,
+  title: string,
+  email?: string,
+  sessionId?: string
+): Promise<ChatSessionDto> {
+  return postJSON<ChatSessionDto>("/api/sessions", {
+    user_id: userId,
+    title,
+    email,
+    session_id: sessionId,
+  });
+}
+
+/** All of a user's sessions, newest first. */
+export function listSessions(userId: string): Promise<ChatSessionDto[]> {
+  return getJSON<ChatSessionDto[]>(
+    `/api/sessions?user_id=${encodeURIComponent(userId)}`
+  );
+}
+
+/** Full trace history for a session, oldest → newest. */
+export function fetchSessionTraces(sessionId: string): Promise<TraceLogDto[]> {
+  return getJSON<TraceLogDto[]>(
+    `/api/sessions/${encodeURIComponent(sessionId)}/traces`
+  );
 }
 
 // --------------------------------------------------------------------------- //
@@ -322,11 +389,37 @@ export function adaptToTraceState(
  *   4. merge + lay out into a TraceState
  * Returns the adapted state plus the measured latency.
  */
-export async function runTraceQuery(query: string): Promise<TraceState> {
+export async function runTraceQuery(
+  query: string,
+  sessionId?: string
+): Promise<TraceState> {
   const t0 = performance.now();
-  const trace = await fetchTrace(query);
+  const trace = await fetchTrace(query, sessionId);
   const nodeIds = extractNodeIds(trace.trace_log);
   const subgraph = await fetchSubgraph(nodeIds);
   const elapsed = performance.now() - t0;
   return adaptToTraceState(query, trace, subgraph, elapsed);
+}
+
+/**
+ * Rebuild a canvas `TraceState` from a persisted trace log — for re-rendering a
+ * past session WITHOUT calling the LLM. We already stored the router `results`
+ * (graph_payload) and `trace_log` (execution_plan); the only thing missing is
+ * the sub-graph geometry, which we fetch from `/api/subgraph` (a pure graph
+ * read — no embedding, no intent LLM, no generation). The result runs through
+ * the exact same adapter as a live query, so the canvas is pixel-identical.
+ */
+export async function hydrateTraceFromLog(
+  log: TraceLogDto
+): Promise<TraceState> {
+  const trace: TraceResponse = {
+    query: log.query,
+    results: log.graph_payload ?? [],
+    trace_log: log.execution_plan,
+  };
+  const nodeIds = extractNodeIds(trace.trace_log);
+  const subgraph = nodeIds.length
+    ? await fetchSubgraph(nodeIds)
+    : { nodes: [], edges: [] };
+  return adaptToTraceState(log.query, trace, subgraph, 0);
 }
