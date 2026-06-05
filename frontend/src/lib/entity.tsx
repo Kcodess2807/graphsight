@@ -4,6 +4,7 @@ import {
   User,
   FileText,
   FolderGit2,
+  Library,
   Ticket,
   Users,
   Wrench,
@@ -67,6 +68,13 @@ export const ENTITY_STYLES: Record<EntityType, EntityStyle> = {
     iconColor: "text-violet-600",
     badge: "indigo",
     label: "Repository",
+  },
+  Library: {
+    icon: Library,
+    chip: "bg-rose-50 border-rose-100",
+    iconColor: "text-rose-600",
+    badge: "rose",
+    label: "Library",
   },
   Ticket: {
     icon: Ticket,

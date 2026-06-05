@@ -15,6 +15,7 @@ import {
   API_BASE,
   createSession,
   fetchSessionTraces,
+  generateAnswer,
   hydrateTraceFromLog,
   listSessions,
   runTraceQuery,
@@ -88,7 +89,24 @@ export function TraceDashboard() {
   const [query, setQuery] = useState(MOCK_TRACE.query);
   const [trace, setTrace] = useState<TraceState>(MOCK_TRACE);
   const [loading, setLoading] = useState(true);
+  const [answer, setAnswer] = useState<string | null>(null);
+  const [answering, setAnswering] = useState(false);
   const isDesktop = useMediaQuery("(min-width: 1024px)");
+
+  // Lazily generate the plain-language answer from a trace's context, AFTER
+  // the graph has rendered — so it never adds to the trace's latency.
+  const fetchAnswer = useCallback((state: TraceState) => {
+    const ctx = state.context?.trim();
+    if (!ctx) {
+      setAnswer(null);
+      return;
+    }
+    setAnswering(true);
+    generateAnswer(state.query, ctx)
+      .then((a) => setAnswer(a))
+      .catch(() => setAnswer(null))
+      .finally(() => setAnswering(false));
+  }, []);
 
   // --- Session / history state (only meaningful when signed in) ----------- //
   const { userId, email } = useSessionUser();
@@ -158,6 +176,8 @@ export function TraceDashboard() {
 
         const state = await runTraceQuery(q, sessionId ?? undefined);
         setTrace(state);
+        setAnswer(null);
+        fetchAnswer(state);
         const tracedNodes = state.graph.nodes.filter((n) => n.active).length;
         const tracedEdges = state.graph.edges.filter((e) => e.active).length;
         toast.success("Trace computed", {
@@ -175,7 +195,7 @@ export function TraceDashboard() {
         setLoading(false);
       }
     },
-    [activeSessionId, userId, email]
+    [activeSessionId, userId, email, fetchAnswer]
   );
 
   // New chat: drop the active session and blank the canvas.
@@ -183,6 +203,7 @@ export function TraceDashboard() {
     setActiveSessionId(null);
     setQuery("");
     setTrace(EMPTY_TRACE);
+    setAnswer(null);
     setLoading(false);
   }, []);
 
@@ -190,6 +211,7 @@ export function TraceDashboard() {
   // with NO LLM call (only a pure /api/subgraph graph read).
   const handleSelectSession = useCallback(async (sessionId: string) => {
     setActiveSessionId(sessionId);
+    setAnswer(null);
     setLoading(true);
     const toastId = toast.loading("Restoring session…");
     try {
@@ -254,6 +276,9 @@ export function TraceDashboard() {
                 loading={loading}
                 query={query}
                 onQueryChange={handleSearch}
+                onGraphSwitched={handleNewChat}
+                answer={answer}
+                answering={answering}
               />
             </ResizablePanel>
             <ResizableHandle withHandle />
@@ -270,6 +295,8 @@ export function TraceDashboard() {
           loading={loading}
           query={query}
           onQueryChange={handleSearch}
+          answer={answer}
+          answering={answering}
           historyEnabled={historyEnabled}
           sessions={sessionsList}
           sessionsLoading={sessionsLoading}
@@ -287,6 +314,8 @@ function MobileLayout({
   loading,
   query,
   onQueryChange,
+  answer,
+  answering,
   historyEnabled,
   sessions,
   sessionsLoading,
@@ -298,6 +327,8 @@ function MobileLayout({
   loading: boolean;
   query: string;
   onQueryChange: (q: string) => void;
+  answer: string | null;
+  answering: boolean;
   historyEnabled: boolean;
   sessions: ChatSessionDto[];
   sessionsLoading: boolean;
@@ -331,6 +362,9 @@ function MobileLayout({
           loading={loading}
           query={query}
           onQueryChange={onQueryChange}
+          onGraphSwitched={onNewChat}
+          answer={answer}
+          answering={answering}
         />
       </TabsContent>
       <TabsContent

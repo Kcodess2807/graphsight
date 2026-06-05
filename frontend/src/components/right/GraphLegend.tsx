@@ -5,7 +5,7 @@ const LEGEND_TYPES: EntityType[] = [
   "PR",
   "Service",
   "Person",
-  "Document",
+  "Library",
   "Ticket",
   "Tool",
 ];

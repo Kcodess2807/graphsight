@@ -9,6 +9,7 @@ Fuses with S = alpha * s_v + beta * s_g and emits a Cytoscape-ready trace_log.
 from __future__ import annotations
 
 import logging
+import time
 from dataclasses import dataclass, field
 
 from . import config
@@ -41,9 +42,22 @@ class TraceRouter:
     def __init__(self, db: TraceDB, embed_model: str = config.EMBED_MODEL) -> None:
         self.db = db
         self.embed_model = embed_model
-        self._embedder = None   # lazy
-        self._llm = None        # lazy (OpenRouter)
-        self._extractor = None  # lazy (query-side entity linking)
+        self._embedder = None    # lazy
+        self._llm = None         # lazy (OpenRouter — curation/deep-merge)
+        self._intent_llm = None  # lazy ((client, model) — Groq if available)
+        self._extractor = None   # lazy (query-side entity linking)
+
+    def warm(self) -> None:
+        """Eagerly load the embedder + spaCy extractor so the FIRST user query
+        doesn't eat the one-time model-load cost (~5s for spaCy alone). Called
+        from the API lifespan; safe to call repeatedly (loaders are idempotent).
+        The intent LLM is intentionally NOT warmed — it's a network call, only
+        fires on keyword-less queries, and defaults to semantic on timeout."""
+        self._get_embedder().encode("warmup", normalize_embeddings=True)
+        try:
+            self._get_extractor().extract("warmup")
+        except Exception as exc:  # noqa: BLE001 — never let warmup break boot
+            logger.debug("extractor warmup skipped (%s)", exc)
 
     # --- lazy clients -------------------------------------------------- #
     def _get_embedder(self):
@@ -58,7 +72,11 @@ class TraceRouter:
         if self._extractor is None:
             from .extract import EntityExtractor
 
-            self._extractor = EntityExtractor()
+            # Query-side linking needs only the deterministic spaCy EntityRuler
+            # (ticket/PR/service matches) — NOT the heavy GLiNER transformer,
+            # which would waste ~750MB per request and crash under concurrent
+            # queries (os error 1455). GLiNER stays at ingest time.
+            self._extractor = EntityExtractor(prefer_gliner=False)
         return self._extractor
 
     def _link_query_entities(self, query: str, meta: dict[str, dict]) -> list[str]:
@@ -88,6 +106,15 @@ class TraceRouter:
             self._llm = make_client()
         return self._llm
 
+    def _get_intent_llm(self) -> tuple[object, str]:
+        """Lazily build the intent (client, model) — Groq when available, else
+        OpenRouter. Cached so we don't rebuild the client per query."""
+        if self._intent_llm is None:
+            from .llm import make_intent_client
+
+            self._intent_llm = make_intent_client()
+        return self._intent_llm
+
     # --- 1. intent classification -------------------------------------- #
     def _classify_intent(self, query: str) -> tuple[float, float, str]:
         q = query.lower()
@@ -101,16 +128,23 @@ class TraceRouter:
 
     def _classify_intent_llm(self, query: str) -> tuple[float, float, str]:
         prompt = (
-            f"Is this query asking for a factual summary (reply SEMANTIC) or "
-            f"tracing a sequence of events/people (reply RELATIONAL)?\n\n{query}"
+            "Reply with ONE word — RELATIONAL if the query traces a sequence of "
+            "events/people/links, else SEMANTIC.\n\n" + query
         )
         try:
-            resp = self._get_llm().chat.completions.create(
-                model=config.OPENROUTER_MODEL,
+            # Tiny output + short timeout: we only need one token, and a slow
+            # router call must never dominate latency — fail fast to SEMANTIC.
+            # Groq (when configured) returns this in ~200-400ms vs ~4.5s on the
+            # OpenRouter free tier; the client/model are chosen in make_intent_client.
+            client, model = self._get_intent_llm()
+            resp = client.chat.completions.create(
+                model=model,
                 messages=[{"role": "user", "content": prompt}],
                 temperature=0,
+                max_tokens=4,
+                timeout=6,
             )
-            answer = resp.choices[0].message.content.strip().upper()
+            answer = (resp.choices[0].message.content or "").strip().upper()
         except Exception as exc:  # noqa: BLE001 — default to semantic on failure
             logger.warning("Intent LLM failed (%s); defaulting to semantic.", exc)
             answer = "SEMANTIC"
@@ -147,33 +181,35 @@ class TraceRouter:
         s_g: dict[str, float] = {seed: 1.0 for seed in seeds}
         hops: list[dict] = []
 
-        # Multiplicative BFS: PathScore = product of edge confidences.
-        frontier = [(seed, 1.0) for seed in seeds]
+        # Multiplicative BFS: PathScore = product of edge confidences. Each hop
+        # expands the ENTIRE frontier in ONE batched DB query (see
+        # db.expand_frontier) — the super-node degree check and per-node top-k
+        # are applied there, so a 2-hop walk costs at most 2 round-trips total
+        # rather than 2 per node.
+        frontier: dict[str, float] = {seed: 1.0 for seed in seeds}
         visited: set[str] = set(seeds)
         for _ in range(config.GRAPH_MAX_HOPS):
-            next_frontier: list[tuple[str, float]] = []
-            for node_id, acc in frontier:
-                # Super-node defense: don't traverse THROUGH a hub (degree >
-                # MAX_DEGREE). It still appears as a reached neighbour, but we
-                # won't fan out from it and flood the context.
-                if self.db.node_degree(node_id) > config.MAX_DEGREE:
-                    continue
-                for nb in self.db.neighbors(node_id, k=config.GRAPH_NEIGHBOR_K):
-                    to_id = nb.get("id")
-                    if to_id is None:
-                        continue
-                    conf = float(nb.get("confidence") or 1.0)
+            if not frontier:
+                break
+            expanded = self.db.expand_frontier(
+                list(frontier), config.GRAPH_NEIGHBOR_K, config.MAX_DEGREE
+            )
+            next_frontier: dict[str, float] = {}
+            for node_id, acc in frontier.items():
+                for nb in expanded.get(node_id, []):
+                    to_id = nb["id"]
+                    conf = nb["confidence"]
                     path_score = acc * conf
                     hops.append({"from_id": node_id, "to_id": to_id, "confidence": conf})
-                    meta.setdefault(to_id, {"label": nb.get("label"), "type": nb.get("type")})
+                    meta.setdefault(to_id, {"label": nb["label"], "type": nb["type"]})
                     if path_score > s_g.get(to_id, 0.0):
                         s_g[to_id] = path_score
                     if to_id not in visited:
                         visited.add(to_id)
-                        next_frontier.append((to_id, path_score))
+                        # keep the best path score for the next hop's frontier
+                        if path_score > next_frontier.get(to_id, 0.0):
+                            next_frontier[to_id] = path_score
             frontier = next_frontier
-            if not frontier:
-                break
         return s_g, hops
 
     def _attach_documents(self, results: list[RoutedNode]) -> None:
@@ -223,13 +259,17 @@ class TraceRouter:
 
     # --- 3. dynamic throttle + fuse + trace ---------------------------- #
     def route(self, query: str, top_k: int | None = None) -> RouterResponse:
+        # --- profiling: wall-clock per phase, logged at the end ----------- #
+        t0 = time.perf_counter()
         alpha, beta, intent = self._classify_intent(query)
+        t_intent = time.perf_counter()
         total_k = top_k if top_k is not None else config.TOP_K_VECTOR
         meta: dict[str, dict] = {}
 
         # A pool of vector hits provides fuzzy graph seeds and the candidate
         # pool we later throttle for fusion.
         pool = self._vector_hits(query, config.TOP_K_VECTOR, meta)
+        t_vector = time.perf_counter()
 
         # Seeds = deterministic query-side entity links FIRST (exact ticket/PR/
         # service matches), then fuzzy cosine seeds (sim >= GRAPH_SEED_MIN_SIM).
@@ -240,8 +280,19 @@ class TraceRouter:
         ][: config.GRAPH_SEED_TOP_N]
         seeds = list(dict.fromkeys(linked_seeds + fuzzy_seeds))  # dedupe, linked first
 
+        # Fallback: a relational query whose vector hits all fell below
+        # GRAPH_SEED_MIN_SIM (and named no exact entity) would otherwise leave
+        # the graph arm idle at 0 hops despite high beta. Anchor traversal on
+        # the strongest vector hits so the graph arm actually contributes.
+        if not seeds and pool:
+            seeds = [
+                nid for nid, _ in sorted(pool, key=lambda kv: -kv[1])
+            ][: config.GRAPH_SEED_TOP_N]
+        t_seeds = time.perf_counter()
+
         # Graph traversal — count the connected nodes it discovers.
         graph_scores, hops = self._graph_stream(seeds, meta)
+        t_graph = time.perf_counter()
         seed_set = set(seeds)
         graph_hits = sum(1 for nid in graph_scores if nid not in seed_set)
 
@@ -269,6 +320,16 @@ class TraceRouter:
         # Augmented Generation: fetch the raw chunk text mentioning the final
         # entities so the LangChain wrapper can pass real context to the LLM.
         self._attach_documents(results)
+        t_docs = time.perf_counter()
+
+        logger.info(
+            "route timings (ms): intent=%.0f vector=%.0f seeds=%.0f graph=%.0f "
+            "assemble=%.0f | TOTAL=%.0f  [intent=%s seeds=%d hops=%d]",
+            (t_intent - t0) * 1000, (t_vector - t_intent) * 1000,
+            (t_seeds - t_vector) * 1000, (t_graph - t_seeds) * 1000,
+            (t_docs - t_graph) * 1000, (t_docs - t0) * 1000,
+            intent, len(seeds), len(hops),
+        )
 
         trace_log = {
             "intent": {"alpha": alpha, "beta": beta, "type": intent},

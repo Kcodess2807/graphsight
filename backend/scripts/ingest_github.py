@@ -117,18 +117,71 @@ def fetch_merged_prs(repo: str, limit: int, token: str | None) -> list[dict]:
 # --------------------------------------------------------------------------- #
 # CLI
 # --------------------------------------------------------------------------- #
+def repo_db_path(repo: str, graphs_dir: Path) -> Path:
+    """Per-repo .lbug file, e.g. pallets/flask -> graphs/pallets__flask.lbug.
+    Keeping each org/repo in its own graph makes side-by-side testing clean."""
+    slug = re.sub(r"[^a-z0-9_]+", "-", repo.lower().replace("/", "__"))
+    return graphs_dir / f"{slug}.lbug"
+
+
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     p = argparse.ArgumentParser(description="Ingest closed GitHub PRs into TraceRAG.")
-    p.add_argument("--repo", required=True,
-                   help='Target repository, e.g. "owner/repo-name".')
+    p.add_argument("--repo", nargs="+", required=True,
+                   help='One or more repos, e.g. "pallets/flask psf/requests".')
     p.add_argument("--limit", type=int, default=50,
-                   help="Max PRs to ingest (protects API rate limits).")
-    p.add_argument("--db", type=Path, default=Path("backend/_live_test.lbug"),
-                   help="Target .lbug file (default keeps production safe).")
+                   help="Max MERGED PRs to ingest per repo (protects rate limits).")
+    p.add_argument("--db", type=Path, default=None,
+                   help="Override output file (single-repo only; otherwise one "
+                        "per-repo file is created under --graphs-dir).")
+    p.add_argument("--graphs-dir", type=Path, default=None,
+                   help="Directory for per-repo .lbug files (default backend/graphs).")
     p.add_argument("--reset", action="store_true",
-                   help="Delete the existing .lbug (+ sidecars) before ingesting.")
+                   help="Delete each target .lbug (+ sidecars) before ingesting.")
     p.add_argument("-v", "--verbose", action="store_true")
     return p.parse_args(argv)
+
+
+def ingest_repo(
+    repo: str, db_path: Path, limit: int, reset: bool,
+    token: str | None, extractor: EntityExtractor,
+) -> None:
+    """Fetch + ingest one repo's merged PRs into its own .lbug file."""
+    db_path.parent.mkdir(parents=True, exist_ok=True)
+    if reset:
+        for p in sorted(db_path.parent.glob(db_path.name + "*")):
+            logger.info("[%s] reset: removing %s", repo, p.name)
+            p.unlink()
+
+    logger.info("[%s] fetching up to %d merged PRs", repo, limit)
+    prs = fetch_merged_prs(repo, limit, token)
+    logger.info("[%s] fetched %d merged PRs -> %s", repo, len(prs), db_path.name)
+
+    db = TraceDB(db_path)
+    db.init_schema()
+    engine = CurationEngine(db)
+    totals, skipped = IngestStats(), 0
+    try:
+        for pr in tqdm(prs, total=len(prs), desc=f"{repo}", unit="pr"):
+            doc_id, text = assemble_text(pr)
+            if not text.strip():
+                skipped += 1
+                continue
+            # Store the PR's web URL so the UI can deep-link back to GitHub.
+            totals.merge(
+                ingest_text(engine, extractor, doc_id, text, source=pr.get("html_url"))
+            )
+        db.build_vector_index()
+        logger.info(
+            "[%s] done. %d PRs (%d skipped) | %d entities | "
+            "created=%d fast=%d deep_yes=%d deep_no=%d llm=%d | "
+            "rel=%d mentions=%d | nodes_in_db=%d",
+            repo, totals.docs, skipped, totals.entities, totals.created,
+            totals.fast_merged, totals.deep_merged_yes, totals.deep_merged_no,
+            totals.ollama_calls, totals.relates_edges, totals.mentions_edges,
+            db.count_nodes(),
+        )
+    finally:
+        db.close()
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -145,49 +198,27 @@ def main(argv: list[str] | None = None) -> int:
         logger.warning("GITHUB_TOKEN not set — unauthenticated requests are capped "
                        "at 60/hr. Add it to .env to raise the limit.")
 
-    # Anchor relative --db paths at the repo root (config.PROJECT_ROOT is the
-    # `backend/` dir, so its parent is the repo root). This makes the documented
-    # default "backend/_live_test.lbug" resolve correctly whether you run from
-    # the repo root or from inside backend/ — no more backend/backend/... .
     repo_root = config.PROJECT_ROOT.parent
-    db_path = args.db if args.db.is_absolute() else (repo_root / args.db)
-    db_path.parent.mkdir(parents=True, exist_ok=True)
+    graphs_dir = args.graphs_dir or (config.PROJECT_ROOT / "graphs")
+    if not graphs_dir.is_absolute():
+        graphs_dir = repo_root / graphs_dir
 
-    if args.reset:
-        for p in sorted(db_path.parent.glob(db_path.name + "*")):
-            logger.info("Reset: removing %s", p)
-            p.unlink()
+    if args.db and len(args.repo) > 1:
+        logger.warning("--db is ignored with multiple repos; using per-repo files.")
 
-    logger.info("Fetching up to %d MERGED PRs from %s", args.limit, args.repo)
-    prs = fetch_merged_prs(args.repo, args.limit, token)
-    logger.info("Fetched %d merged PRs", len(prs))
-
+    # Load GLiNER once and reuse it across every repo in the batch.
     extractor = EntityExtractor()
-    db = TraceDB(db_path)
-    db.init_schema()
-    engine = CurationEngine(db)
+    for repo in args.repo:
+        if args.db and len(args.repo) == 1:
+            db_path = args.db if args.db.is_absolute() else (repo_root / args.db)
+        else:
+            db_path = repo_db_path(repo, graphs_dir)
+        try:
+            ingest_repo(repo, db_path, args.limit, args.reset, token, extractor)
+        except Exception as exc:  # noqa: BLE001 — one bad repo shouldn't abort the batch
+            logger.error("[%s] FAILED: %s", repo, exc)
 
-    totals = IngestStats()
-    skipped = 0
-    try:
-        for pr in tqdm(prs, total=len(prs), desc="ingesting PRs", unit="pr"):
-            doc_id, text = assemble_text(pr)
-            if not text.strip():
-                skipped += 1
-                continue
-            totals.merge(ingest_text(engine, extractor, doc_id, text))
-
-        db.build_vector_index()
-        logger.info(
-            "Done. %d PRs ingested (%d skipped) | %d entities | "
-            "created=%d fast=%d deep_yes=%d deep_no=%d llm=%d | "
-            "rel=%d mentions=%d | nodes_in_db=%d",
-            totals.docs, skipped, totals.entities, totals.created, totals.fast_merged,
-            totals.deep_merged_yes, totals.deep_merged_no, totals.ollama_calls,
-            totals.relates_edges, totals.mentions_edges, db.count_nodes(),
-        )
-    finally:
-        db.close()
+    logger.info("Batch complete. Graphs in %s", graphs_dir)
     return 0
 
 

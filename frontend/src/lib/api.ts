@@ -39,12 +39,18 @@ export interface TraceResult {
   label?: string;
   type?: string;
   score_total?: number;
+  score_vector?: number;
+  score_graph?: number;
+  documents?: { doc_id?: string; content?: string; path?: string }[];
+  page_content?: string;
 }
 
 export interface TraceResponse {
   query: string;
   results: TraceResult[];
   trace_log: TraceLog;
+  /** Assembled grounded context (for /api/answer); present on live traces. */
+  context?: string;
 }
 
 export interface SubgraphNode {
@@ -159,6 +165,52 @@ export function fetchSessionTraces(sessionId: string): Promise<TraceLogDto[]> {
 }
 
 // --------------------------------------------------------------------------- //
+// Graph switching (hot-swap the active .lbug — per-repo graphs)
+// --------------------------------------------------------------------------- //
+export interface GraphInfo {
+  id: string; // file name, e.g. "pallets__flask.lbug"
+  label: string; // e.g. "pallets/flask"
+  active: boolean;
+}
+
+/** List selectable graphs (the default + everything under backend/graphs/). */
+export function listGraphs(): Promise<{
+  graphs: GraphInfo[];
+  active: string | null;
+}> {
+  return getJSON("/api/graphs");
+}
+
+/** Hot-swap the active graph; returns the new active id + node count. */
+export function switchGraph(
+  id: string
+): Promise<{ active: string; label: string; nodes: number }> {
+  return postJSON("/api/graphs/switch", { id });
+}
+
+// --------------------------------------------------------------------------- //
+// Plain-language answer (the "G" in GraphRAG) — grounded in the trace context
+// --------------------------------------------------------------------------- //
+const _answerCache = new Map<string, string>();
+
+/** Generate a 2-3 sentence answer grounded in the retrieved context. Cached. */
+export async function generateAnswer(
+  query: string,
+  context: string
+): Promise<string> {
+  const key = `${query}::${context.length}`;
+  const cached = _answerCache.get(key);
+  if (cached !== undefined) return cached;
+  const res = await postJSON<{ answer: string }>("/api/answer", {
+    query,
+    context,
+  });
+  const answer = res.answer ?? "";
+  if (answer) _answerCache.set(key, answer);
+  return answer;
+}
+
+// --------------------------------------------------------------------------- //
 // Helpers
 // --------------------------------------------------------------------------- //
 
@@ -173,12 +225,27 @@ export function extractNodeIds(log: TraceLog): string[] {
   return [...ids];
 }
 
+/**
+ * Every node id the canvas should fetch a sub-graph for: the execution-path ids
+ * PLUS the ranked answer `results`. This matters for vector-only queries (no
+ * graph seeds/hops) — their execution_path is empty, so without the result ids
+ * the /api/subgraph fetch comes back empty and the canvas degrades to typeless,
+ * edgeless "Document" stubs stacked in a column. Including results gives the
+ * real node types AND the edges between them, so dagre lays out a real graph.
+ */
+export function allTraceNodeIds(trace: TraceResponse): string[] {
+  const ids = new Set<string>(extractNodeIds(trace.trace_log));
+  for (const r of trace.results ?? []) if (r?.id) ids.add(r.id);
+  return [...ids];
+}
+
 const VALID_TYPES: EntityType[] = [
   "PR",
   "Service",
   "Person",
   "Document",
   "Repo",
+  "Library",
   "Ticket",
   "Team",
   "Tool",
@@ -189,6 +256,35 @@ function normalizeType(type: string | undefined): EntityType {
   if (!type) return "Document";
   const hit = VALID_TYPES.find((t) => t.toLowerCase() === type.toLowerCase());
   return hit ?? "Document";
+}
+
+/** Best short snippet to show on hover: first non-empty source chunk, capped. */
+function resultSnippet(r: TraceResult): string | undefined {
+  const doc = r.documents?.find((d) => (d.content ?? "").trim().length > 0);
+  const text = (doc?.content ?? r.page_content ?? "").trim();
+  if (!text) return undefined;
+  return text.length > 240 ? `${text.slice(0, 240)}…` : text;
+}
+
+/** A web source URL (e.g. a GitHub PR link) stored as the Document `path`. */
+function resultSourceUrl(r: TraceResult): string | undefined {
+  return r.documents?.find((d) => /^https?:\/\//.test(d.path ?? ""))?.path;
+}
+
+// --------------------------------------------------------------------------- //
+// On-demand LLM summary (lazy, called on node hover; server caches by key)
+// --------------------------------------------------------------------------- //
+const _summaryCache = new Map<string, string>();
+
+/** Fetch a one-sentence summary of a node's snippet. Cached client- and
+ *  server-side, so each node is summarized at most once. */
+export async function summarizeNode(key: string, text: string): Promise<string> {
+  const cached = _summaryCache.get(key);
+  if (cached !== undefined) return cached;
+  const res = await postJSON<{ summary: string }>("/api/summarize", { key, text });
+  const summary = res.summary ?? "";
+  if (summary) _summaryCache.set(key, summary);
+  return summary;
 }
 
 /**
@@ -272,6 +368,7 @@ export function adaptToTraceState(
   elapsedMs: number
 ): TraceState {
   const log = trace.trace_log;
+  const resultById = new Map((trace.results ?? []).map((r) => [r.id, r]));
 
   const activeNodeIds = new Set(extractNodeIds(log));
   // Fallback: if the router traversed no graph path (e.g. a query that matched
@@ -291,28 +388,48 @@ export function adaptToTraceState(
   );
 
   // --- nodes: start from the subgraph, then ensure every active id exists ---
+  // Answer nodes (those in `results`) carry the router scores + source snippet
+  // we surface on the node chip and hover card.
   const nodeById = new Map<string, TraceNode>();
   for (const n of subgraph.nodes) {
     const active = n.requested === true || activeNodeIds.has(n.id);
+    const r = resultById.get(n.id);
+    const type = normalizeType(n.type);
     nodeById.set(n.id, {
       id: n.id,
       label: n.label ?? n.id,
-      type: normalizeType(n.type),
+      type,
       active,
       position: { x: 0, y: 0 }, // filled by dagre below
-      meta: { subtitle: normalizeType(n.type) },
+      similarity: r?.score_vector ? r.score_vector : undefined,
+      score: r?.score_total,
+      meta: {
+        subtitle: type,
+        snippet: r ? resultSnippet(r) : undefined,
+        scoreGraph: r?.score_graph,
+        sourceUrl: r ? resultSourceUrl(r) : undefined,
+      },
     });
   }
-  // Active ids the subgraph forgot to return → synthesize stub nodes.
+  // Active ids the subgraph forgot to return → synthesize from the result row.
   for (const id of activeNodeIds) {
     if (!nodeById.has(id)) {
+      const r = resultById.get(id);
+      const type = r?.type ? normalizeType(r.type) : "Document";
       nodeById.set(id, {
         id,
-        label: id,
-        type: "Document",
+        label: r?.label ?? id,
+        type,
         active: true,
         position: { x: 0, y: 0 },
-        meta: { subtitle: "Inferred from trace" },
+        similarity: r?.score_vector ? r.score_vector : undefined,
+        score: r?.score_total,
+        meta: {
+          subtitle: r?.type ? type : "Inferred from trace",
+          snippet: r ? resultSnippet(r) : undefined,
+          scoreGraph: r?.score_graph,
+          sourceUrl: r ? resultSourceUrl(r) : undefined,
+        },
       });
     }
   }
@@ -355,6 +472,16 @@ export function adaptToTraceState(
     }
   });
 
+  // Connection count (degree) per node from the rendered edges → hover card.
+  const degree = new Map<string, number>();
+  for (const e of edges) {
+    degree.set(e.source, (degree.get(e.source) ?? 0) + 1);
+    degree.set(e.target, (degree.get(e.target) ?? 0) + 1);
+  }
+  for (const node of nodeById.values()) {
+    node.meta = { ...node.meta, connections: degree.get(node.id) ?? 0 };
+  }
+
   // --- layout (backend has no coordinates) ---
   const positioned = layoutGraph([...nodeById.values()], edges);
 
@@ -378,6 +505,7 @@ export function adaptToTraceState(
       nodesEvaluated: log.metrics.total_nodes_evaluated,
     },
     graph: { nodes: positioned, edges },
+    context: trace.context,
   };
 }
 
@@ -395,8 +523,10 @@ export async function runTraceQuery(
 ): Promise<TraceState> {
   const t0 = performance.now();
   const trace = await fetchTrace(query, sessionId);
-  const nodeIds = extractNodeIds(trace.trace_log);
-  const subgraph = await fetchSubgraph(nodeIds);
+  const nodeIds = allTraceNodeIds(trace);
+  const subgraph = nodeIds.length
+    ? await fetchSubgraph(nodeIds)
+    : { nodes: [], edges: [] };
   const elapsed = performance.now() - t0;
   return adaptToTraceState(query, trace, subgraph, elapsed);
 }
@@ -417,7 +547,7 @@ export async function hydrateTraceFromLog(
     results: log.graph_payload ?? [],
     trace_log: log.execution_plan,
   };
-  const nodeIds = extractNodeIds(trace.trace_log);
+  const nodeIds = allTraceNodeIds(trace);
   const subgraph = nodeIds.length
     ? await fetchSubgraph(nodeIds)
     : { nodes: [], edges: [] };

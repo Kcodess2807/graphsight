@@ -113,7 +113,13 @@ class CurationEngine:
         self._vecs.append(embedding)
 
     # --- public API ---------------------------------------------------- #
-    def ingest(self, doc_id: str, text: str, entities: list[ExtractedEntity]) -> IngestStats:
+    def ingest(
+        self,
+        doc_id: str,
+        text: str,
+        entities: list[ExtractedEntity],
+        source: str | None = None,
+    ) -> IngestStats:
         stats = IngestStats(docs=1, entities=len(entities))
         if not entities:
             return stats  # no entities -> no chunk worth storing for retrieval
@@ -124,7 +130,9 @@ class CurationEngine:
 
         # 2. Per sliding window: store the chunk text as a Document node, link
         #    MENTIONS to its entities, and RELATES_TO between co-occurring ones.
-        self._build_chunks_and_edges(doc_id, text, entities, resolved, stats)
+        #    `source` (e.g. a GitHub PR URL) is stored as the Document path so
+        #    the UI can deep-link back to the original; falls back to doc_id.
+        self._build_chunks_and_edges(doc_id, text, entities, resolved, stats, source)
         return stats
 
     # --- entity resolution (the two-tier decision) -------------------- #
@@ -207,6 +215,7 @@ class CurationEngine:
         entities: list[ExtractedEntity],
         resolved: list[str],
         stats: IngestStats,
+        source: str | None = None,
     ) -> None:
         seen_pairs: set[tuple[str, str]] = set()
         for idx, win in enumerate(sliding_window_words(text)):
@@ -220,9 +229,10 @@ class CurationEngine:
                 continue  # don't store chunks that surface no entities
 
             # The Document node represents this specific chunk; path keeps the
-            # source-file provenance so retrieval can cite where text came from.
+            # source provenance (a GitHub PR URL when given, else the doc id) so
+            # retrieval can cite — and the UI can deep-link to — where text came from.
             chunk_id = f"{doc_id}#w{idx}"
-            self.db.upsert_document(chunk_id, content=win.text, path=doc_id)
+            self.db.upsert_document(chunk_id, content=win.text, path=source or doc_id)
 
             for entity_id in members:
                 self.db.add_mention(chunk_id, entity_id)

@@ -209,6 +209,46 @@ class TraceDB:
         ))
         return int(rows[0]["d"]) if rows else 0
 
+    def expand_frontier(
+        self, node_ids: list[str], k: int, max_degree: int
+    ) -> dict[str, list[dict[str, Any]]]:
+        """Batched 1-hop expansion for a WHOLE frontier in a SINGLE query.
+
+        This is the N+1 fix: instead of one ``node_degree`` + one ``neighbors``
+        round-trip *per* frontier node (2N queries + 2N DataFrame builds per
+        hop), we fetch every neighbour of the entire frontier in one query, then
+        compute each node's degree and top-k neighbours in Python. Hub
+        super-nodes (distinct degree > ``max_degree``) are omitted from the
+        result — reached but not expanded, identical to the previous behaviour.
+
+        Returns ``{from_id: [{id, label, type, confidence}, ... <= k ...]}``.
+        """
+        if not node_ids:
+            return {}
+        rows = self._records(self.execute(
+            f"MATCH (a:{config.NODE_TABLE}) WHERE a.id IN $ids "
+            f"OPTIONAL MATCH (a)-[r:{config.REL_TABLE}]-(b:{config.NODE_TABLE}) "
+            f"RETURN a.id AS from_id, b.id AS to_id, b.label AS label, "
+            f"b.type AS type, r.confidence AS confidence;",
+            {"ids": list(node_ids)},
+        ))
+        grouped: dict[str, list[dict[str, Any]]] = {}
+        for r in rows:
+            if r["to_id"] is None:  # isolated node (OPTIONAL MATCH miss)
+                continue
+            grouped.setdefault(r["from_id"], []).append({
+                "id": r["to_id"], "label": r["label"], "type": r["type"],
+                "confidence": float(r["confidence"])
+                if r["confidence"] is not None else 1.0,
+            })
+        out: dict[str, list[dict[str, Any]]] = {}
+        for from_id, nbrs in grouped.items():
+            if len({n["id"] for n in nbrs}) > max_degree:
+                continue  # hub: reached but not traversed through
+            nbrs.sort(key=lambda n: (-n["confidence"], n["id"]))
+            out[from_id] = nbrs[:k]
+        return out
+
     def documents_for_entities(self, entity_ids: list[str]) -> dict[str, list[dict]]:
         """Fetch the chunk text of every Document that MENTIONS the given entities.
 

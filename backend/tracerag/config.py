@@ -55,6 +55,17 @@ OPENROUTER_SITE_URL = os.getenv("OPENROUTER_SITE_URL",
                                 "https://github.com/Kcodess2807/TraceRAG")
 OPENROUTER_APP_TITLE = os.getenv("OPENROUTER_APP_TITLE", "TraceRAG")
 
+# --------------------------------------------------------------------------- #
+# Groq (OpenAI-compatible) — used ONLY for the latency-critical router intent
+# classification. Groq's LPU returns a one-word answer in ~200-400ms vs the
+# ~4.5s OpenRouter free-tier round-trip. If GROQ_API_KEY is unset, intent
+# transparently falls back to the OpenRouter client/model above.
+# --------------------------------------------------------------------------- #
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+GROQ_BASE_URL = os.getenv("GROQ_BASE_URL", "https://api.groq.com/openai/v1")
+#: Small, fast Groq model — plenty for a one-word RELATIONAL/SEMANTIC label.
+GROQ_MODEL = os.getenv("GROQ_MODEL", "llama-3.1-8b-instant")
+
 
 # --------------------------------------------------------------------------- #
 # Two-tier curation thresholds (cosine similarity)

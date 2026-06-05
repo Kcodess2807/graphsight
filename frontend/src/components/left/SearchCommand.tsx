@@ -23,6 +23,7 @@ interface SearchCommandProps {
  */
 export function SearchCommand({ query, onQueryChange }: SearchCommandProps) {
   const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
 
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
@@ -36,9 +37,14 @@ export function SearchCommand({ query, onQueryChange }: SearchCommandProps) {
   }, []);
 
   const select = (value: string) => {
-    onQueryChange(value);
+    const q = value.trim();
+    if (!q) return;
+    onQueryChange(q);
     setOpen(false);
+    setSearch("");
   };
+
+  const typed = search.trim();
 
   return (
     <>
@@ -58,9 +64,28 @@ export function SearchCommand({ query, onQueryChange }: SearchCommandProps) {
       </button>
 
       <CommandDialog open={open} onOpenChange={setOpen}>
-        <CommandInput placeholder="Trace a query, recall history, or run a preset…" />
+        <CommandInput
+          value={search}
+          onValueChange={setSearch}
+          placeholder="Trace any query, recall history, or run a preset…"
+        />
         <CommandList>
-          <CommandEmpty>No matching queries.</CommandEmpty>
+          <CommandEmpty>Type a query and press Enter to trace it.</CommandEmpty>
+          {typed && (
+            <CommandGroup heading="Trace">
+              {/* value === the live input, so cmdk always ranks it top and
+                  Enter submits the free-text query. */}
+              <CommandItem value={typed} onSelect={() => select(typed)}>
+                <Search className="text-indigo-500" />
+                <span className="line-clamp-1 flex-1">
+                  Trace “{typed}”
+                </span>
+                <CommandShortcut>
+                  <CornerDownLeft className="h-3 w-3" />
+                </CommandShortcut>
+              </CommandItem>
+            </CommandGroup>
+          )}
           <CommandGroup heading="Recent">
             <CommandItem value={query} onSelect={() => select(query)}>
               <History className="text-zinc-400" />

@@ -19,6 +19,7 @@ export type EntityType =
   | "Person"
   | "Document"
   | "Repo"
+  | "Library"
   | "Ticket"
   | "Team"
   | "Tool";
@@ -37,6 +38,8 @@ export interface TraceNode {
   position: { x: number; y: number };
   /** Cosine similarity to the query, when this node came from the vector arm. */
   similarity?: number;
+  /** Fused router score S = α·vector + β·graph (the ranking score). */
+  score?: number;
   /** Optional metadata surfaced in the hover card. */
   meta?: {
     subtitle?: string;
@@ -44,6 +47,12 @@ export interface TraceNode {
     status?: string;
     timestamp?: string;
     snippet?: string;
+    /** Number of edges incident to this node in the rendered sub-graph. */
+    connections?: number;
+    /** Graph-arm path score (β term), for the hover score breakdown. */
+    scoreGraph?: number;
+    /** Web source URL (e.g. a GitHub PR link) to deep-link from the card. */
+    sourceUrl?: string;
   };
   /** True for disconnected nodes hidden behind the "Show Orphans" toggle. */
   orphan?: boolean;
@@ -132,4 +141,6 @@ export interface TraceState {
     nodes: TraceNode[];
     edges: TraceEdge[];
   };
+  /** Assembled grounded context, fed to /api/answer for the plain answer. */
+  context?: string;
 }

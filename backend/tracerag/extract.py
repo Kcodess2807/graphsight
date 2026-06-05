@@ -125,15 +125,24 @@ class EntityExtractor:
         self,
         labels: list[str] | None = None,
         threshold: float = config.GLINER_THRESHOLD,
+        prefer_gliner: bool = True,
     ) -> None:
         self.labels = labels or config.ENTITY_LABELS
         self.threshold = threshold
+        # Set False for query-time use (the router): query-side entity linking
+        # only needs the deterministic spaCy EntityRuler to spot ticket/PR/
+        # service mentions. Loading the ~750MB GLiNER transformer per request is
+        # pure waste and, under concurrent requests, exhausts the Windows commit
+        # limit (os error 1455). GLiNER belongs at ingest time, not query time.
+        self._prefer_gliner = prefer_gliner
         self._gliner = None
         self._spacy = None
         self._gliner_failed = False
 
     # --- lazy model loaders -------------------------------------------- #
     def _get_gliner(self):
+        if not self._prefer_gliner:
+            return None
         if self._gliner is None and not self._gliner_failed:
             try:
                 from gliner import GLiNER

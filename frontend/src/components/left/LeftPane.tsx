@@ -13,6 +13,8 @@ import {
 import { Wordmark } from "@/components/Wordmark";
 import { AuthControls } from "@/components/auth/AuthControls";
 import { SearchCommand } from "./SearchCommand";
+import { GraphSwitcher } from "./GraphSwitcher";
+import { AnswerCard } from "./AnswerCard";
 import { RouterCard } from "./RouterCard";
 import { ExecutionStepper } from "./ExecutionStepper";
 import { MetricsFooter } from "./MetricsFooter";
@@ -23,6 +25,11 @@ interface LeftPaneProps {
   loading: boolean;
   query: string;
   onQueryChange: (q: string) => void;
+  /** Called after the active graph is hot-swapped (parent resets the canvas). */
+  onGraphSwitched?: () => void;
+  /** Plain-language answer + its loading state (the "G" in GraphRAG). */
+  answer?: string | null;
+  answering?: boolean;
 }
 
 const fade = {
@@ -39,6 +46,9 @@ export function LeftPane({
   loading,
   query,
   onQueryChange,
+  onGraphSwitched,
+  answer,
+  answering,
 }: LeftPaneProps) {
   return (
     <div className="flex h-full flex-col bg-zinc-50/60">
@@ -70,6 +80,7 @@ export function LeftPane({
           </div>
         </div>
         <SearchCommand query={query} onQueryChange={onQueryChange} />
+        <GraphSwitcher onSwitched={onGraphSwitched} />
       </div>
 
       <ScrollArea className="flex-1">
@@ -78,6 +89,7 @@ export function LeftPane({
             <LeftPaneSkeleton />
           ) : (
             <>
+              <AnswerCard answer={answer ?? null} loading={Boolean(answering)} />
               <motion.div variants={fade} custom={0} initial="hidden" animate="show">
                 <RouterCard weights={trace.weights} confidence={trace.confidence} />
               </motion.div>

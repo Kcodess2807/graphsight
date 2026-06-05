@@ -111,16 +111,23 @@ def _flatten(obj: dict, prefix: str = "") -> dict:
 # Reusable single-document ingest (shared by main() and external loaders)
 # --------------------------------------------------------------------------- #
 def ingest_text(
-    engine: CurationEngine, extractor: EntityExtractor, doc_id: str, text: str
+    engine: CurationEngine,
+    extractor: EntityExtractor,
+    doc_id: str,
+    text: str,
+    source: str | None = None,
 ) -> IngestStats:
     """Run one text blob through the pipeline: spaCy/GLiNER extraction ->
     two-tier curation -> graph write. Returns the per-document IngestStats.
+
+    ``source`` (e.g. a GitHub PR URL) is stored as the Document path so the UI
+    can deep-link back to the origin.
 
     NOTE: callers must invoke ``db.build_vector_index()`` once after the final
     document (the HNSW index is static and can't be updated incrementally).
     """
     entities = extractor.extract(text)
-    return engine.ingest(doc_id, text, entities)
+    return engine.ingest(doc_id, text, entities, source=source)
 
 
 # --------------------------------------------------------------------------- #
