@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/resizable";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LeftPane } from "@/components/left/LeftPane";
-import { VisualTracer } from "@/components/right/VisualTracer";
+import { VisualTracer, type FocusRequest } from "@/components/right/VisualTracer";
 import { HistorySidebar } from "@/components/left/HistorySidebar";
 import { MOCK_TRACE, QUERY_PRESETS } from "@/data/mockTrace";
 import {
@@ -92,6 +92,31 @@ export function TraceDashboard() {
   const [answer, setAnswer] = useState<string | null>(null);
   const [answering, setAnswering] = useState(false);
   const isDesktop = useMediaQuery("(min-width: 1024px)");
+
+  // Full-graph focus: when on, the History sidebar and the Studio (left) column
+  // are collapsed so the canvas owns the full screen width. Purely a layout
+  // toggle — no trace/data is touched, so exiting restores the exact same view.
+  const [graphFocus, setGraphFocus] = useState(false);
+  const toggleGraphFocus = useCallback(() => setGraphFocus((v) => !v), []);
+
+  // Answer-citation focus: clicking an entity name in the Answer pans/highlights
+  // its node on the canvas. The nonce makes clicking the SAME citation twice
+  // re-trigger the pan (a bare id wouldn't change and the effect wouldn't fire).
+  const [focusNode, setFocusNode] = useState<FocusRequest | null>(null);
+  const focusNodeById = useCallback((id: string) => {
+    setFocusNode((prev) => ({ id, nonce: (prev?.nonce ?? 0) + 1 }));
+  }, []);
+
+  // Esc exits focus mode (standard fullscreen muscle-memory). The listener is
+  // only attached while focused, so it never swallows Esc elsewhere in the app.
+  useEffect(() => {
+    if (!graphFocus) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setGraphFocus(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [graphFocus]);
 
   // Lazily generate the plain-language answer from a trace's context, AFTER
   // the graph has rendered — so it never adds to the trace's latency.
@@ -255,39 +280,69 @@ export function TraceDashboard() {
     <div className="flex h-[100dvh] flex-col overflow-hidden bg-background">
       {isDesktop ? (
         <div className="flex min-h-0 flex-1">
-          {historyEnabled && (
-            <HistorySidebar
-              sessions={sessionsList}
-              activeSessionId={activeSessionId}
-              loading={sessionsLoading}
-              onSelect={handleSelectSession}
-              onNewChat={handleNewChat}
-            />
-          )}
-          <ResizablePanelGroup direction="horizontal" className="min-w-0 flex-1">
-            <ResizablePanel
-              defaultSize={35}
-              minSize={26}
-              maxSize={48}
-              className="min-w-[320px]"
-            >
-              <LeftPane
+          {graphFocus ? (
+            // FOCUS MODE — sidebar + Studio column are simply not rendered, so
+            // the canvas fills the whole row. VisualTracer still gets the toggle
+            // (now showing a "minimize" icon) plus graphFocus so it can flip the
+            // button label; Esc also exits (handler above).
+            <div className="h-full w-full bg-white">
+              <VisualTracer
                 trace={trace}
                 loading={loading}
-                query={query}
-                onQueryChange={handleSearch}
-                onGraphSwitched={handleNewChat}
-                answer={answer}
-                answering={answering}
+                graphFocus
+                onToggleFocus={toggleGraphFocus}
+                focusNode={focusNode}
               />
-            </ResizablePanel>
-            <ResizableHandle withHandle />
-            <ResizablePanel defaultSize={65} minSize={40}>
-              <div className="h-full bg-white">
-                <VisualTracer trace={trace} loading={loading} />
-              </div>
-            </ResizablePanel>
-          </ResizablePanelGroup>
+            </div>
+          ) : (
+            <>
+              {historyEnabled && (
+                <HistorySidebar
+                  sessions={sessionsList}
+                  activeSessionId={activeSessionId}
+                  loading={sessionsLoading}
+                  onSelect={handleSelectSession}
+                  onNewChat={handleNewChat}
+                />
+              )}
+              <ResizablePanelGroup
+                direction="horizontal"
+                className="min-w-0 flex-1"
+              >
+                <ResizablePanel
+                  defaultSize={35}
+                  minSize={26}
+                  maxSize={48}
+                  className="min-w-[320px]"
+                >
+                  <LeftPane
+                    trace={trace}
+                    loading={loading}
+                    query={query}
+                    onQueryChange={handleSearch}
+                    onGraphSwitched={handleNewChat}
+                    answer={answer}
+                    answering={answering}
+                    onCiteNode={focusNodeById}
+                  />
+                </ResizablePanel>
+                <ResizableHandle withHandle />
+                <ResizablePanel defaultSize={65} minSize={40}>
+                  <div className="h-full bg-white">
+                    {/* Pass the toggle here too so the user can ENTER focus mode
+                        from the normal 3-column view. */}
+                    <VisualTracer
+                      trace={trace}
+                      loading={loading}
+                      graphFocus={false}
+                      onToggleFocus={toggleGraphFocus}
+                      focusNode={focusNode}
+                    />
+                  </div>
+                </ResizablePanel>
+              </ResizablePanelGroup>
+            </>
+          )}
         </div>
       ) : (
         <MobileLayout
@@ -297,6 +352,8 @@ export function TraceDashboard() {
           onQueryChange={handleSearch}
           answer={answer}
           answering={answering}
+          onCiteNode={focusNodeById}
+          focusNode={focusNode}
           historyEnabled={historyEnabled}
           sessions={sessionsList}
           sessionsLoading={sessionsLoading}
@@ -316,6 +373,8 @@ function MobileLayout({
   onQueryChange,
   answer,
   answering,
+  onCiteNode,
+  focusNode,
   historyEnabled,
   sessions,
   sessionsLoading,
@@ -329,6 +388,8 @@ function MobileLayout({
   onQueryChange: (q: string) => void;
   answer: string | null;
   answering: boolean;
+  onCiteNode: (id: string) => void;
+  focusNode: FocusRequest | null;
   historyEnabled: boolean;
   sessions: ChatSessionDto[];
   sessionsLoading: boolean;
@@ -365,13 +426,14 @@ function MobileLayout({
           onGraphSwitched={onNewChat}
           answer={answer}
           answering={answering}
+          onCiteNode={onCiteNode}
         />
       </TabsContent>
       <TabsContent
         value="graph"
         className="min-h-0 flex-1 bg-white data-[state=inactive]:hidden"
       >
-        <VisualTracer trace={trace} loading={loading} />
+        <VisualTracer trace={trace} loading={loading} focusNode={focusNode} />
       </TabsContent>
       {historyEnabled && (
         <TabsContent

@@ -1,9 +1,16 @@
 import dagre from "dagre";
 import type { TraceEdge, TraceNode } from "@/types/trace";
 
-/** Approximate rendered size of an EntityNode card (px). */
-const NODE_W = 168;
-const NODE_H = 60;
+/**
+ * Approximate rendered size of an EntityNode card (px). dagre needs these up
+ * front to space ranks — React Flow does not auto-size for layout. These are
+ * COUPLED to the card's CSS in components/right/EntityNode.tsx: the card is
+ * `w-[220px]`, so NODE_W = 220 + border/shadow slack; NODE_H grew to fit a
+ * label that can now wrap to TWO lines (the line-clamp-2 change). Keep these in
+ * sync with that component or nodes will overlap (too small) or gap (too big).
+ */
+const NODE_W = 224;
+const NODE_H = 72;
 
 /**
  * The backend never sends X/Y coordinates, so we run a dagre layered layout to

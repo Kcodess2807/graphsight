@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import ReactFlow, {
   Background,
   BackgroundVariant,
@@ -25,13 +25,43 @@ import type { TraceState } from "@/types/trace";
 const nodeTypes = { entity: EntityNode };
 const edgeTypes = { traced: TracedEdge };
 
+/** A request to focus a specific node, carrying a monotonically-increasing
+ *  nonce so clicking the SAME citation twice still re-triggers the pan. */
+export interface FocusRequest {
+  id: string;
+  nonce: number;
+}
+
 interface VisualTracerProps {
   trace: TraceState;
   loading: boolean;
+  /** Full-graph focus mode state + toggle, owned by TraceDashboard (the only
+   *  component that can collapse the sibling columns). Optional → mobile omits. */
+  graphFocus?: boolean;
+  onToggleFocus?: () => void;
+  /** Pan/highlight this node (driven by answer-citation clicks). */
+  focusNode?: FocusRequest | null;
 }
 
-function TracerInner({ trace }: { trace: TraceState }) {
-  const { zoomIn, zoomOut, fitView } = useReactFlow();
+// Half the rendered EntityNode card (w-[220px] × ~72px) — react-flow's setCenter
+// targets a point, but node positions are top-left, so we offset to the centre.
+const NODE_HALF_W = 110;
+const NODE_HALF_H = 36;
+// How long a citation-focused node stays highlighted before fading back.
+const FOCUS_HIGHLIGHT_MS = 1800;
+
+function TracerInner({
+  trace,
+  graphFocus,
+  onToggleFocus,
+  focusNode,
+}: {
+  trace: TraceState;
+  graphFocus?: boolean;
+  onToggleFocus?: () => void;
+  focusNode?: FocusRequest | null;
+}) {
+  const { zoomIn, zoomOut, fitView, setCenter } = useReactFlow();
   // Default OFF: the canvas shows ONLY the traced execution path. Toggling this
   // on reveals the surrounding sub-graph (background context) for power users.
   const [showContext, setShowContext] = useState(false);
@@ -87,9 +117,14 @@ function TracerInner({ trace }: { trace: TraceState }) {
       zIndex: e.active ? 10 : 1,
       markerEnd: {
         type: MarkerType.ArrowClosed,
-        width: 16,
-        height: 16,
-        color: e.active ? "#6366f1" : "#d4d4d8",
+        // GRAPH-LEGIBILITY PASS — the arrowhead is a separate SVG marker, so it
+        // must be dimmed in lockstep with the edge stroke (TracedEdge.tsx) or
+        // non-active edges would fade but keep dark, prominent arrow tips. Active
+        // stays indigo; non-active drops to a near-background grey + smaller head
+        // so context arrows recede and the traced path's arrows lead the eye.
+        width: e.active ? 16 : 11,
+        height: e.active ? 16 : 11,
+        color: e.active ? "#6366f1" : "#e4e4e7",
       },
     }));
     return { builtNodes, builtEdges };
@@ -105,6 +140,68 @@ function TracerInner({ trace }: { trace: TraceState }) {
     const t = setTimeout(() => fitView({ padding: 0.2, duration: 600 }), 140);
     return () => clearTimeout(t);
   }, [computed, setNodes, setEdges, fitView]);
+
+  // --- Answer-citation focus ----------------------------------------------- //
+  // Always read the LATEST nodes via a ref so focusById can stay referentially
+  // stable (otherwise the focus effect would re-fire on every drag and yank the
+  // viewport). `pendingFocus` defers a focus until a hidden node is revealed.
+  const nodesRef = useRef(nodes);
+  nodesRef.current = nodes;
+  const pendingFocus = useRef<string | null>(null);
+  const lastFocusNonce = useRef(-1);
+  const highlightTimer = useRef<number | null>(null);
+
+  const focusById = useRef((id: string): boolean => {
+    const target = nodesRef.current.find((n) => n.id === id);
+    if (!target) return false; // not currently rendered → caller handles reveal
+    setCenter(
+      target.position.x + NODE_HALF_W,
+      target.position.y + NODE_HALF_H,
+      { zoom: 1.3, duration: 600 }
+    );
+    // Mark it selected so EntityNode draws the focus ring; clear after a beat.
+    setNodes((ns) => ns.map((n) => ({ ...n, selected: n.id === id })));
+    if (highlightTimer.current) window.clearTimeout(highlightTimer.current);
+    highlightTimer.current = window.setTimeout(() => {
+      setNodes((ns) =>
+        ns.some((n) => n.selected)
+          ? ns.map((n) => (n.selected ? { ...n, selected: false } : n))
+          : ns
+      );
+    }, FOCUS_HIGHLIGHT_MS);
+    return true;
+  }).current;
+
+  // A new focus request (citation click): pan to it if rendered; otherwise
+  // reveal context and queue it for the retry effect below. Nonce-gated so an
+  // unrelated re-render (e.g. a fresh query) never re-focuses a stale citation.
+  useEffect(() => {
+    if (!focusNode || focusNode.nonce === lastFocusNonce.current) return;
+    lastFocusNonce.current = focusNode.nonce;
+    if (focusById(focusNode.id)) {
+      pendingFocus.current = null;
+      return;
+    }
+    if (trace.graph.nodes.some((n) => n.id === focusNode.id)) {
+      pendingFocus.current = focusNode.id; // it exists but is hidden → reveal
+      setShowContext(true);
+    }
+  }, [focusNode, focusById, trace.graph.nodes]);
+
+  // Once the (possibly expanded) node set mounts, satisfy any queued focus.
+  useEffect(() => {
+    if (pendingFocus.current && focusById(pendingFocus.current)) {
+      pendingFocus.current = null;
+    }
+  }, [nodes, focusById]);
+
+  // Tidy the highlight timer on unmount.
+  useEffect(
+    () => () => {
+      if (highlightTimer.current) window.clearTimeout(highlightTimer.current);
+    },
+    []
+  );
 
   const tracedPath = trace.graph.nodes.filter((n) => n.active);
 
@@ -161,6 +258,8 @@ function TracerInner({ trace }: { trace: TraceState }) {
           onRecenter={() => fitView({ padding: 0.2, duration: 500 })}
           showContext={showContext}
           hiddenCount={hiddenCount}
+          graphFocus={graphFocus}
+          onToggleFocus={onToggleFocus}
           onToggleContext={(v) => {
             setShowContext(v);
             toast(v ? "Showing surrounding context" : "Traced path only", {
@@ -235,11 +334,22 @@ function TracerSkeleton() {
   );
 }
 
-export function VisualTracer({ trace, loading }: VisualTracerProps) {
+export function VisualTracer({
+  trace,
+  loading,
+  graphFocus,
+  onToggleFocus,
+  focusNode,
+}: VisualTracerProps) {
   if (loading) return <TracerSkeleton />;
   return (
     <ReactFlowProvider>
-      <TracerInner trace={trace} />
+      <TracerInner
+        trace={trace}
+        graphFocus={graphFocus}
+        onToggleFocus={onToggleFocus}
+        focusNode={focusNode}
+      />
     </ReactFlowProvider>
   );
 }

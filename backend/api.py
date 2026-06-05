@@ -244,6 +244,68 @@ def switch_graph(req: SwitchGraphRequest) -> dict:
     }
 
 
+# Per-entity-type question templates. Keeping these server-side means the
+# suggestions stay meaningful as new entity types are added to config, and the
+# frontend just renders whatever questions it gets back.
+_SUGGESTION_TEMPLATES: dict[str, str] = {
+    "Person": "What did {label} work on?",
+    "Team": "What does {label} own?",
+    "Service": "What depends on {label}?",
+    "Library": "What changed in {label}?",
+    "Tool": "What is {label} used for?",
+    "PR": "What is related to {label}?",
+    "Ticket": "What is linked to {label}?",
+}
+_SUGGESTION_DEFAULT = "What is related to {label}?"
+
+
+@app.get("/api/suggestions")
+def suggestions(limit: int = 5) -> dict:
+    """Graph-aware example questions, built from the active graph's hub entities.
+
+    Fixes the "ask the wrong thing" problem: instead of generic ShopFlow demo
+    prompts, the UI offers questions that THIS graph can actually answer. We pull
+    the most-connected entities and template one question each, diversifying by
+    type so the list isn't five near-identical Person questions.
+    """
+    db: TraceDB = _state["db"]
+    try:
+        hubs = db.top_entities(limit=limit * 4)  # over-fetch, then diversify
+    except Exception as exc:  # noqa: BLE001 — suggestions are best-effort
+        logger.warning("top_entities failed: %s", exc)
+        return {"suggestions": []}
+
+    out: list[dict] = []
+    seen_types: dict[str, int] = {}
+    # First pass: at most one question per type, in degree order, for variety.
+    for ent in hubs:
+        etype = ent.get("type") or ""
+        label = (ent.get("label") or "").strip()
+        if not label or seen_types.get(etype, 0) >= 1:
+            continue
+        tmpl = _SUGGESTION_TEMPLATES.get(etype, _SUGGESTION_DEFAULT)
+        out.append({"query": tmpl.format(label=label), "entity": label, "type": etype})
+        seen_types[etype] = seen_types.get(etype, 0) + 1
+        if len(out) >= limit:
+            break
+    # Second pass: if we still have room (few distinct types), backfill by degree.
+    if len(out) < limit:
+        used = {s["query"] for s in out}
+        for ent in hubs:
+            label = (ent.get("label") or "").strip()
+            if not label:
+                continue
+            tmpl = _SUGGESTION_TEMPLATES.get(ent.get("type") or "", _SUGGESTION_DEFAULT)
+            q = tmpl.format(label=label)
+            if q in used:
+                continue
+            out.append({"query": q, "entity": label, "type": ent.get("type") or ""})
+            used.add(q)
+            if len(out) >= limit:
+                break
+    return {"suggestions": out}
+
+
 class AnswerRequest(BaseModel):
     query: str
     context: str

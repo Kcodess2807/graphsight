@@ -189,6 +189,30 @@ export function switchGraph(
 }
 
 // --------------------------------------------------------------------------- //
+// Graph-aware suggested queries (built from the active graph's hub entities)
+// --------------------------------------------------------------------------- //
+export interface Suggestion {
+  /** A ready-to-run question, e.g. "What did kdeldycke work on?". */
+  query: string;
+  /** The entity the question is about, e.g. "kdeldycke". */
+  entity: string;
+  /** That entity's type, e.g. "Person" — drives the chip icon/colour. */
+  type: string;
+}
+
+/** Example questions THIS graph can actually answer. Empty list on any error. */
+export async function fetchSuggestions(limit = 5): Promise<Suggestion[]> {
+  try {
+    const res = await getJSON<{ suggestions: Suggestion[] }>(
+      `/api/suggestions?limit=${limit}`
+    );
+    return res.suggestions ?? [];
+  } catch {
+    return []; // suggestions are a nicety — never surface an error for them
+  }
+}
+
+// --------------------------------------------------------------------------- //
 // Plain-language answer (the "G" in GraphRAG) — grounded in the trace context
 // --------------------------------------------------------------------------- //
 const _answerCache = new Map<string, string>();

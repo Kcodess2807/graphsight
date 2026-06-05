@@ -1,6 +1,7 @@
+import { useCallback, useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
-import { HelpCircle } from "lucide-react";
+import { HelpCircle, Lightbulb, Compass } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card } from "@/components/ui/card";
@@ -15,10 +16,22 @@ import { AuthControls } from "@/components/auth/AuthControls";
 import { SearchCommand } from "./SearchCommand";
 import { GraphSwitcher } from "./GraphSwitcher";
 import { AnswerCard } from "./AnswerCard";
+import { SuggestionChips } from "./SuggestionChips";
 import { RouterCard } from "./RouterCard";
 import { ExecutionStepper } from "./ExecutionStepper";
 import { MetricsFooter } from "./MetricsFooter";
+import { fetchSuggestions, type Suggestion } from "@/lib/api";
 import type { TraceState } from "@/types/trace";
+
+/**
+ * Heuristic for "the answer didn't actually answer" — the LLM commonly hedges
+ * with these phrases when the retrieved context doesn't cover the question. When
+ * matched, we offer graph-aware suggestions instead of leaving the user staring
+ * at a polite apology. (A server-side `grounded` flag will supersede this once
+ * the answer endpoint is streamed.)
+ */
+const LOW_GROUNDING_RE =
+  /\b(not contained|does not (mention|contain|include)|no (information|mention|details?)|cannot (find|answer)|isn'?t (mentioned|contained|available)|not (mentioned|present|available|found) in the)\b/i;
 
 interface LeftPaneProps {
   trace: TraceState;
@@ -30,6 +43,8 @@ interface LeftPaneProps {
   /** Plain-language answer + its loading state (the "G" in GraphRAG). */
   answer?: string | null;
   answering?: boolean;
+  /** Focus a node on the canvas when an answer citation is clicked. */
+  onCiteNode?: (id: string) => void;
 }
 
 const fade = {
@@ -49,7 +64,31 @@ export function LeftPane({
   onGraphSwitched,
   answer,
   answering,
+  onCiteNode,
 }: LeftPaneProps) {
+  // Graph-aware suggestions for the ACTIVE graph. Loaded on mount and refreshed
+  // whenever the graph is hot-swapped (different graph → different hub entities).
+  const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
+  const loadSuggestions = useCallback(() => {
+    fetchSuggestions(5).then(setSuggestions).catch(() => setSuggestions([]));
+  }, []);
+  useEffect(() => {
+    loadSuggestions();
+  }, [loadSuggestions]);
+
+  // Refresh suggestions on graph switch, then let the parent reset the canvas.
+  const handleGraphSwitched = useCallback(() => {
+    loadSuggestions();
+    onGraphSwitched?.();
+  }, [loadSuggestions, onGraphSwitched]);
+
+  // Empty canvas = a fresh "New chat" (no nodes yet). Show suggestions front and
+  // centre so the user's first question is one this graph can answer.
+  const isEmpty = !loading && trace.graph.nodes.length === 0;
+  // The answer is present but reads like a non-answer → offer better questions.
+  const lowGrounded =
+    !loading && !answering && !!answer && LOW_GROUNDING_RE.test(answer);
+
   return (
     <div className="flex h-full flex-col bg-zinc-50/60">
       {/* Header */}
@@ -80,16 +119,34 @@ export function LeftPane({
           </div>
         </div>
         <SearchCommand query={query} onQueryChange={onQueryChange} />
-        <GraphSwitcher onSwitched={onGraphSwitched} />
+        <GraphSwitcher onSwitched={handleGraphSwitched} />
       </div>
 
       <ScrollArea className="flex-1">
         <div className="space-y-4 p-5">
           {loading ? (
             <LeftPaneSkeleton />
+          ) : isEmpty ? (
+            // New chat / blank canvas — lead with answerable questions.
+            <EmptyState
+              suggestions={suggestions}
+              onPick={onQueryChange}
+            />
           ) : (
             <>
-              <AnswerCard answer={answer ?? null} loading={Boolean(answering)} />
+              <AnswerCard
+                answer={answer ?? null}
+                loading={Boolean(answering)}
+                nodes={trace.graph.nodes}
+                onCite={onCiteNode}
+              />
+              {/* The answer hedged → surface questions that fit this graph. */}
+              {lowGrounded && suggestions.length > 0 && (
+                <LowGroundingHint
+                  suggestions={suggestions}
+                  onPick={onQueryChange}
+                />
+              )}
               <motion.div variants={fade} custom={0} initial="hidden" animate="show">
                 <RouterCard weights={trace.weights} confidence={trace.confidence} />
               </motion.div>
@@ -104,6 +161,63 @@ export function LeftPane({
         </div>
       </ScrollArea>
     </div>
+  );
+}
+
+/** Blank-canvas state: a friendly prompt + graph-aware suggested questions. */
+function EmptyState({
+  suggestions,
+  onPick,
+}: {
+  suggestions: Suggestion[];
+  onPick: (q: string) => void;
+}) {
+  return (
+    <motion.div variants={fade} custom={0} initial="hidden" animate="show">
+      <Card className="space-y-4 border-indigo-100 bg-indigo-50/30 p-5">
+        <div className="flex items-center gap-2">
+          <Compass className="h-4 w-4 text-indigo-500" />
+          <h2 className="text-sm font-semibold tracking-tight text-zinc-800">
+            Start exploring this graph
+          </h2>
+        </div>
+        {suggestions.length > 0 ? (
+          <>
+            <p className="text-[13px] leading-relaxed text-zinc-600">
+              Pick a question this graph can answer, or type your own above.
+            </p>
+            <SuggestionChips suggestions={suggestions} onPick={onPick} />
+          </>
+        ) : (
+          // No suggestions (empty graph or backend offline) — still guide them.
+          <p className="text-[13px] leading-relaxed text-zinc-600">
+            Type a question in the search box above to trace it through the
+            graph.
+          </p>
+        )}
+      </Card>
+    </motion.div>
+  );
+}
+
+/** Inline nudge shown under a hedged answer: better-fitting questions. */
+function LowGroundingHint({
+  suggestions,
+  onPick,
+}: {
+  suggestions: Suggestion[];
+  onPick: (q: string) => void;
+}) {
+  return (
+    <Card className="space-y-3 border-amber-100 bg-amber-50/40 p-4">
+      <div className="flex items-center gap-2">
+        <Lightbulb className="h-4 w-4 text-amber-500" />
+        <p className="text-[13px] font-medium text-zinc-700">
+          This graph may not cover that. Try one of these:
+        </p>
+      </div>
+      <SuggestionChips suggestions={suggestions} onPick={onPick} />
+    </Card>
   );
 }
 

@@ -324,6 +324,27 @@ class TraceDB:
             f"MATCH (e:{config.NODE_TABLE}) RETURN count(e) AS n;"))
         return int(rows[0]["n"]) if rows else 0
 
+    def top_entities(self, limit: int = 12) -> list[dict[str, Any]]:
+        """Most-connected entities (highest distinct degree), with type.
+
+        These are the graph's hubs — the entities most worth asking about — so
+        the UI can offer graph-aware suggested queries before any search runs.
+        Ordered by degree DESC so a small `limit` still surfaces the centre of
+        the graph rather than arbitrary leaf nodes.
+        """
+        # NOTE: aggregate first via WITH, THEN project/order. Ordering by a raw
+        # node property (a.label) in the same clause as the aggregate fails in
+        # Kùzu ("Variable a is not in scope") — the WITH keeps `a` bound so the
+        # label tie-break is legal and the ordering stays deterministic.
+        return self._records(self.execute(
+            f"MATCH (a:{config.NODE_TABLE})-[r:{config.REL_TABLE}]-(b:{config.NODE_TABLE}) "
+            f"WITH a, count(DISTINCT b) AS degree "
+            f"RETURN a.id AS id, a.label AS label, a.type AS type, degree "
+            f"ORDER BY degree DESC, a.label ASC "
+            f"LIMIT $limit;",
+            {"limit": int(limit)},
+        ))
+
     # --- helpers ------------------------------------------------------- #
     @staticmethod
     def _check_dim(embedding: Sequence[float]) -> None:

@@ -55,8 +55,15 @@ function TracedEdgeComponent({
         markerEnd={markerEnd}
         className={cn("react-flow__edge-path", active && "animate-dash-flow")}
         style={{
-          stroke: active ? "url(#trace-gradient)" : "hsl(240 6% 82%)",
-          strokeWidth: active ? 2.5 : 1.25,
+          // GRAPH-LEGIBILITY PASS — only the context-mode (non-active) branch
+          // changed; the active path is untouched so the default view is the
+          // same. Non-active edges are pushed further into the background so the
+          // bright animated path "pops": lighter grey, thinner hairline (1.25 ->
+          // 1), and strokeOpacity 0.25 so they read as faint scaffolding. Active
+          // edges keep zIndex:10 (set in VisualTracer) so they render on top.
+          stroke: active ? "url(#trace-gradient)" : "hsl(240 5% 88%)",
+          strokeWidth: active ? 2.5 : 1,
+          strokeOpacity: active ? 1 : 0.25,
           strokeDasharray: active ? "6 10" : undefined,
           strokeLinecap: "round",
         }}

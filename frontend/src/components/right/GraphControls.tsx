@@ -1,4 +1,12 @@
-import { ZoomIn, ZoomOut, Locate, EyeOff, Eye } from "lucide-react";
+import {
+  ZoomIn,
+  ZoomOut,
+  Locate,
+  EyeOff,
+  Eye,
+  Maximize2,
+  Minimize2,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Toggle } from "@/components/ui/toggle";
 import { Separator } from "@/components/ui/separator";
@@ -17,6 +25,14 @@ interface GraphControlsProps {
   onToggleContext: (v: boolean) => void;
   /** How many background nodes are hidden in the default (path-only) view. */
   hiddenCount: number;
+  /**
+   * Full-graph focus mode: when true the left columns are collapsed and the
+   * canvas owns the whole screen. Optional because the mobile layout (which
+   * already shows the graph on its own full-width tab) never passes it — when
+   * `onToggleFocus` is undefined the button simply isn't rendered.
+   */
+  graphFocus?: boolean;
+  onToggleFocus?: () => void;
 }
 
 export function GraphControls({
@@ -26,6 +42,8 @@ export function GraphControls({
   showContext,
   onToggleContext,
   hiddenCount,
+  graphFocus,
+  onToggleFocus,
 }: GraphControlsProps) {
   return (
     <div className="glass flex items-center gap-0.5 rounded-full border border-white/60 p-1 shadow-lifted ring-1 ring-black/[0.03]">
@@ -69,6 +87,21 @@ export function GraphControls({
             : "Show the surrounding sub-graph"}
         </TooltipContent>
       </Tooltip>
+
+      {/* Full-graph focus toggle — only rendered when the parent supplies a
+          handler (desktop). Collapses/restores the left columns so the canvas
+          gets the whole screen. Icon flips to "minimize" while focused. */}
+      {onToggleFocus && (
+        <>
+          <Separator orientation="vertical" className="mx-0.5 h-5" />
+          <ControlButton
+            label={graphFocus ? "Exit full graph (Esc)" : "Full graph"}
+            onClick={onToggleFocus}
+          >
+            {graphFocus ? <Minimize2 /> : <Maximize2 />}
+          </ControlButton>
+        </>
+      )}
     </div>
   );
 }
