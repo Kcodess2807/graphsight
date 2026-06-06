@@ -15,7 +15,7 @@ import {
   API_BASE,
   createSession,
   fetchSessionTraces,
-  generateAnswer,
+  streamAnswer,
   hydrateTraceFromLog,
   listSessions,
   runTraceQuery,
@@ -127,8 +127,10 @@ export function TraceDashboard() {
       return;
     }
     setAnswering(true);
-    generateAnswer(state.query, ctx)
-      .then((a) => setAnswer(a))
+    setAnswer(""); // start empty so the card streams in instead of popping whole
+    // Stream tokens straight into state — the AnswerCard renders the growing
+    // text with a typing cursor while `answering` stays true.
+    streamAnswer(state.query, ctx, (partial) => setAnswer(partial))
       .catch(() => setAnswer(null))
       .finally(() => setAnswering(false));
   }, []);

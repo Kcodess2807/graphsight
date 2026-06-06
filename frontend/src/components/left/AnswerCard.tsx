@@ -94,7 +94,14 @@ export function AnswerCard({
 }) {
   if (!loading && !answer) return null;
 
-  // Memoised so we don't re-scan the answer on every parent re-render.
+  const hasText = !!answer;
+  // Streaming = we're loading AND tokens have already started arriving. In that
+  // window we show the growing text with a cursor, NOT the skeleton (the
+  // skeleton is only for the brief gap before the first token lands).
+  const streaming = loading && hasText;
+
+  // Memoised so we don't re-scan the answer on every parent re-render. While
+  // streaming this re-runs per token, but the answer is short so it's cheap.
   const body = useMemo(() => {
     if (!answer) return null;
     if (!nodes || !onCite) return answer;
@@ -109,14 +116,20 @@ export function AnswerCard({
           Answer
         </h2>
       </div>
-      {loading ? (
+      {loading && !hasText ? (
         <div className="space-y-2">
           <Skeleton className="h-3 w-full" />
           <Skeleton className="h-3 w-11/12" />
           <Skeleton className="h-3 w-4/5" />
         </div>
       ) : (
-        <p className={cn("text-[13px] leading-relaxed text-zinc-700")}>{body}</p>
+        <p className={cn("text-[13px] leading-relaxed text-zinc-700")}>
+          {body}
+          {/* Blinking caret while tokens are still streaming in. */}
+          {streaming && (
+            <span className="ml-0.5 inline-block h-3.5 w-[2px] -translate-y-px animate-pulse bg-indigo-400 align-middle" />
+          )}
+        </p>
       )}
       <p className="text-[11px] text-zinc-400">
         Generated from the retrieved context — the graph below is the evidence.

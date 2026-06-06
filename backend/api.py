@@ -17,6 +17,7 @@ from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 from tracerag import config
@@ -314,12 +315,40 @@ class AnswerRequest(BaseModel):
 _ANSWER_CACHE: dict[str, str] = {}
 
 
+def _answer_key(query: str, context: str) -> str:
+    return f"{query}\n#{hash(context)}"
+
+
+def _answer_prompt(query: str, context: str) -> str:
+    """The single grounded-answer prompt, shared by the blocking and streaming
+    endpoints so they can never drift apart."""
+    return (
+        "You are answering a teammate's question about an engineering "
+        "knowledge graph. Use ONLY the context below. Answer in 2-3 "
+        "plain sentences a non-expert can follow, naming the specific "
+        "PRs / people / components involved. If the context does not "
+        "contain the answer, say so plainly rather than guessing.\n\n"
+        f"Question: {query}\n\nContext:\n{context}"
+    )
+
+
+def _answer_client():
+    """Lazily build + cache the OpenRouter client used for answers/summaries."""
+    client = _state.get("llm")
+    if client is None:
+        from tracerag.llm import make_client
+
+        client = make_client()
+        _state["llm"] = client
+    return client
+
+
 @app.post("/api/answer")
 def answer(req: AnswerRequest) -> dict:
     """Plain-language answer to the query, grounded ONLY in the retrieved
     context. Called lazily after the graph renders, so it never blocks the
     trace. Cached per (query, context)."""
-    key = f"{req.query}\n#{hash(req.context)}"
+    key = _answer_key(req.query, req.context)
     if key in _ANSWER_CACHE:
         return {"answer": _ANSWER_CACHE[key], "cached": True}
     context = (req.context or "").strip()
@@ -327,25 +356,9 @@ def answer(req: AnswerRequest) -> dict:
         return {"answer": "No supporting context was retrieved for this query.",
                 "cached": False}
     try:
-        client = _state.get("llm")
-        if client is None:
-            from tracerag.llm import make_client
-
-            client = make_client()
-            _state["llm"] = client
-        resp = client.chat.completions.create(
+        resp = _answer_client().chat.completions.create(
             model=config.OPENROUTER_MODEL,
-            messages=[{
-                "role": "user",
-                "content": (
-                    "You are answering a teammate's question about an engineering "
-                    "knowledge graph. Use ONLY the context below. Answer in 2-3 "
-                    "plain sentences a non-expert can follow, naming the specific "
-                    "PRs / people / components involved. If the context does not "
-                    "contain the answer, say so plainly rather than guessing.\n\n"
-                    f"Question: {req.query}\n\nContext:\n{context}"
-                ),
-            }],
+            messages=[{"role": "user", "content": _answer_prompt(req.query, context)}],
             temperature=0,
         )
         text = (resp.choices[0].message.content or "").strip()
@@ -354,6 +367,59 @@ def answer(req: AnswerRequest) -> dict:
         return {"answer": "", "cached": False, "error": str(exc)}
     _ANSWER_CACHE[key] = text
     return {"answer": text, "cached": False}
+
+
+@app.post("/api/answer/stream")
+def answer_stream(req: AnswerRequest) -> StreamingResponse:
+    """Same grounded answer as /api/answer, but streamed token-by-token so the
+    UI can render it as it's generated (perceived latency drops sharply). Plain
+    UTF-8 text chunks — the frontend just appends them. A fully-cached answer is
+    replayed in one chunk so the consumer code path is identical."""
+
+    def gen():
+        key = _answer_key(req.query, req.context)
+        cached = _ANSWER_CACHE.get(key)
+        if cached is not None:
+            yield cached
+            return
+        context = (req.context or "").strip()
+        if not context:
+            yield "No supporting context was retrieved for this query."
+            return
+        parts: list[str] = []
+        try:
+            stream = _answer_client().chat.completions.create(
+                model=config.OPENROUTER_MODEL,
+                messages=[{"role": "user", "content": _answer_prompt(req.query, context)}],
+                temperature=0,
+                stream=True,
+            )
+            for chunk in stream:
+                # OpenAI-compatible deltas; guard every level (providers differ).
+                delta = ""
+                try:
+                    delta = chunk.choices[0].delta.content or ""
+                except (AttributeError, IndexError):
+                    delta = ""
+                if delta:
+                    parts.append(delta)
+                    yield delta
+        except Exception as exc:  # noqa: BLE001 — best-effort; surface nothing fatal
+            logger.warning("answer stream failed: %s", exc)
+            if not parts:
+                yield "Sorry — the answer could not be generated right now."
+            return
+        # Cache the assembled text so re-asks (and /api/answer) are instant.
+        full = "".join(parts).strip()
+        if full:
+            _ANSWER_CACHE[key] = full
+
+    # no-store + disable proxy buffering so chunks flush immediately.
+    return StreamingResponse(
+        gen(),
+        media_type="text/plain; charset=utf-8",
+        headers={"Cache-Control": "no-store", "X-Accel-Buffering": "no"},
+    )
 
 
 @app.get("/api/health")

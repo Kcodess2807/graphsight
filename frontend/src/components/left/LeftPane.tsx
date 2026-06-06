@@ -16,6 +16,7 @@ import { AuthControls } from "@/components/auth/AuthControls";
 import { SearchCommand } from "./SearchCommand";
 import { GraphSwitcher } from "./GraphSwitcher";
 import { AnswerCard } from "./AnswerCard";
+import { LiveProgress } from "./LiveProgress";
 import { SuggestionChips } from "./SuggestionChips";
 import { RouterCard } from "./RouterCard";
 import { ExecutionStepper } from "./ExecutionStepper";
@@ -125,7 +126,9 @@ export function LeftPane({
       <ScrollArea className="flex-1">
         <div className="space-y-4 p-5">
           {loading ? (
-            <LeftPaneSkeleton />
+            // Live pipeline ticker instead of a static skeleton — honest motion
+            // mapped to the real router phases while the query runs.
+            <LiveProgress />
           ) : isEmpty ? (
             // New chat / blank canvas — lead with answerable questions.
             <EmptyState

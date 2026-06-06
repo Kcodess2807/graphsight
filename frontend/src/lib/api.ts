@@ -234,6 +234,54 @@ export async function generateAnswer(
   return answer;
 }
 
+/**
+ * Streaming variant: POSTs to /api/answer/stream and invokes `onToken` with the
+ * cumulative text after each chunk, so the UI can render the answer as it's
+ * generated. Resolves to the full answer (also cached). Falls back to the
+ * blocking endpoint if the browser/response can't stream, so callers always get
+ * a complete answer either way.
+ */
+export async function streamAnswer(
+  query: string,
+  context: string,
+  onToken: (partial: string) => void
+): Promise<string> {
+  const key = `${query}::${context.length}`;
+  const cached = _answerCache.get(key);
+  if (cached !== undefined) {
+    onToken(cached); // replay instantly so the card fills in one paint
+    return cached;
+  }
+
+  const res = await fetch(`${API_BASE}/api/answer/stream`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ query, context }),
+  });
+  // No streamable body (older browser / proxy buffered the whole thing) →
+  // degrade gracefully to a single read.
+  if (!res.ok || !res.body) {
+    const fallback = await generateAnswer(query, context);
+    onToken(fallback);
+    return fallback;
+  }
+
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let acc = "";
+  // eslint-disable-next-line no-constant-condition
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    acc += decoder.decode(value, { stream: true });
+    onToken(acc);
+  }
+  acc += decoder.decode(); // flush any multi-byte remainder
+  const answer = acc.trim();
+  if (answer) _answerCache.set(key, answer);
+  return answer;
+}
+
 // --------------------------------------------------------------------------- //
 // Helpers
 // --------------------------------------------------------------------------- //
