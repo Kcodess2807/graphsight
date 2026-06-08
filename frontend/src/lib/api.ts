@@ -7,11 +7,22 @@ import type {
   TraceState,
 } from "@/types/trace";
 import { layoutGraph } from "@/lib/layout";
+import { getAuthToken } from "@/lib/authToken";
 
 // override with VITE_API_BASE
 export const API_BASE =
   (import.meta.env.VITE_API_BASE as string | undefined) ??
   "http://localhost:8000";
+
+// merge a Bearer token into request headers when the user is signed in.
+// Returns the base headers unchanged when there's no token (unauthenticated /
+// Clerk disabled), which the backend's dev-bypass mode still accepts locally.
+async function authHeaders(
+  base: Record<string, string> = {}
+): Promise<Record<string, string>> {
+  const token = await getAuthToken();
+  return token ? { ...base, Authorization: `Bearer ${token}` } : base;
+}
 
 export interface TraceGraphHop {
   from_id: string;
@@ -86,7 +97,7 @@ export interface TraceLogDto {
 async function postJSON<T>(path: string, body: unknown): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: await authHeaders({ "Content-Type": "application/json" }),
     body: JSON.stringify(body),
   });
   if (!res.ok) {
@@ -96,7 +107,9 @@ async function postJSON<T>(path: string, body: unknown): Promise<T> {
 }
 
 async function getJSON<T>(path: string): Promise<T> {
-  const res = await fetch(`${API_BASE}${path}`);
+  const res = await fetch(`${API_BASE}${path}`, {
+    headers: await authHeaders(),
+  });
   if (!res.ok) {
     throw new Error(`${path} → HTTP ${res.status} ${res.statusText}`);
   }
@@ -217,7 +230,7 @@ export async function streamAnswer(
 
   const res = await fetch(`${API_BASE}/api/answer/stream`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: await authHeaders({ "Content-Type": "application/json" }),
     body: JSON.stringify({ query, context }),
   });
   // no streamable body (older browser / buffering proxy) - fall back to a single read

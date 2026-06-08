@@ -37,6 +37,29 @@ GROQ_BASE_URL = os.getenv("GROQ_BASE_URL", "https://api.groq.com/openai/v1")
 GROQ_MODEL = os.getenv("GROQ_MODEL", "llama-3.1-8b-instant")
 
 
+# --- Clerk auth (backend token verification) ---
+# CLERK_ISSUER is your Clerk instance URL, e.g. https://your-app.clerk.accounts.dev
+# (production: your custom Clerk domain). Leave it UNSET for local dev and the API
+# runs in dev-bypass mode — no token required. Set it and auth is enforced.
+CLERK_ISSUER = os.getenv("CLERK_ISSUER")
+# JWKS = Clerk's published public keys. Defaults to the standard well-known path
+# under the issuer; override only if you proxy it somewhere else.
+CLERK_JWKS_URL = os.getenv("CLERK_JWKS_URL") or (
+    f"{CLERK_ISSUER.rstrip('/')}/.well-known/jwks.json" if CLERK_ISSUER else None
+)
+# Optional allow-list of authorized parties (the `azp` claim = the frontend
+# origin a token was minted for). Comma-separated, e.g. "http://localhost:5173".
+CLERK_AUTHORIZED_PARTIES = tuple(
+    p.strip()
+    for p in os.getenv("CLERK_AUTHORIZED_PARTIES", "").split(",")
+    if p.strip()
+)
+# Auth is enforced only when an issuer is configured.
+CLERK_ENABLED = bool(CLERK_ISSUER)
+# The user id every request runs as in dev-bypass mode (Clerk unconfigured).
+DEV_USER_ID = os.getenv("TRACERAG_DEV_USER_ID", "dev-user")
+
+
 # two-tier curation thresholds (cosine sim): >=fast auto-merge, >=deep ask llm, else new node
 FAST_MERGE_THRESHOLD = float(os.getenv("TRACERAG_FAST_MERGE", "0.92"))
 DEEP_MERGE_THRESHOLD = float(os.getenv("TRACERAG_DEEP_MERGE", "0.85"))

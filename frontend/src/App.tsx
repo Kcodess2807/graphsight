@@ -1,5 +1,6 @@
+import { useEffect } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { ClerkProvider } from "@clerk/clerk-react";
+import { ClerkProvider, useAuth } from "@clerk/clerk-react";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "sonner";
 import { TraceDashboard } from "@/components/TraceDashboard";
@@ -11,6 +12,22 @@ import {
   clerkEnabled,
   clerkAppearance,
 } from "@/lib/clerk";
+import { setTokenGetter } from "@/lib/authToken";
+
+/**
+ * Registers Clerk's getToken() with the API layer so plain-function fetches in
+ * api.ts can attach a Bearer token. Renders nothing; must live INSIDE
+ * <ClerkProvider> because it relies on the useAuth() hook.
+ */
+function AuthTokenBridge() {
+  const { getToken } = useAuth();
+  useEffect(() => {
+    // Clerk's getToken() returns the current session JWT (auto-refreshed).
+    setTokenGetter(() => getToken());
+    return () => setTokenGetter(null); // clear on unmount to avoid a stale getter
+  }, [getToken]);
+  return null;
+}
 
 function AppRoutes() {
   return (
@@ -44,6 +61,7 @@ export default function App() {
           appearance={clerkAppearance}
           afterSignOutUrl="/"
         >
+          <AuthTokenBridge />
           {routed}
         </ClerkProvider>
       ) : (
