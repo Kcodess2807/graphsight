@@ -1,12 +1,4 @@
-"""SQLModel engine + session dependency for the external Neon Postgres store.
-
-This Postgres database is SEPARATE from the `.lbug` RAG store: it holds user
-sessions, chat history and TraceRAG execution logs (relational metadata), not
-vectors or the entity graph. No dual-store-sync concern — the two never overlap.
-
-Reads the connection string from APP_DATABASE_URL (kept distinct from the
-LadybugDB path so the two stores are never confused).
-"""
+"""SQLModel engine and session dependency for the Postgres history store."""
 
 from __future__ import annotations
 
@@ -19,8 +11,7 @@ from sqlmodel import Session, SQLModel, create_engine
 
 logger = logging.getLogger("tracerag.database")
 
-# Load .env so APP_DATABASE_URL is available even when this module is imported
-# before tracerag.config (which also calls load_dotenv). No-op if absent.
+# load .env so APP_DATABASE_URL is available; no-op if absent
 try:
     from dotenv import load_dotenv
 
@@ -28,15 +19,11 @@ try:
 except ImportError:  # pragma: no cover
     pass
 
-_engine = None  # lazily created so importing this module never needs the URL
+_engine = None  # lazily created
 
 
 def get_engine():
-    """Return the process-wide SQLModel engine, creating it on first use.
-
-    ``pool_pre_ping`` is important for serverless Neon: it drops idle
-    connections, and pre-ping transparently reconnects instead of erroring.
-    """
+    """Return the process-wide SQLModel engine, creating it on first use."""
     global _engine
     if _engine is None:
         url = os.getenv("APP_DATABASE_URL")
@@ -51,18 +38,17 @@ def get_engine():
 
 def init_db() -> None:
     """Create the history tables if they don't exist (idempotent)."""
-    # Import models so their tables register on SQLModel.metadata before create.
+    # import models so their tables register before create
     from models import ChatSession, TraceLog, User  # noqa: F401
     from sqlalchemy.orm import configure_mappers
 
-    # Validate relationships NOW (at startup) instead of on the first query, so
-    # a mapper misconfig fails loudly here rather than as a confusing 500 later.
+    # validate relationships at startup, not on first query
     configure_mappers()
     SQLModel.metadata.create_all(get_engine())
     logger.info("Postgres history schema ready.")
 
 
 def get_session() -> Iterator[Session]:
-    """FastAPI dependency: yield a transactional session, closed afterwards."""
+    """FastAPI dependency yielding a session, closed afterwards."""
     with Session(get_engine()) as session:
         yield session

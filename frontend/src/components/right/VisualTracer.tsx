@@ -25,8 +25,7 @@ import type { TraceState } from "@/types/trace";
 const nodeTypes = { entity: EntityNode };
 const edgeTypes = { traced: TracedEdge };
 
-/** A request to focus a specific node, carrying a monotonically-increasing
- *  nonce so clicking the SAME citation twice still re-triggers the pan. */
+// nonce lets clicking the same citation twice re-trigger the pan
 export interface FocusRequest {
   id: string;
   nonce: number;
@@ -35,19 +34,15 @@ export interface FocusRequest {
 interface VisualTracerProps {
   trace: TraceState;
   loading: boolean;
-  /** Full-graph focus mode state + toggle, owned by TraceDashboard (the only
-   *  component that can collapse the sibling columns). Optional → mobile omits. */
+  // full-graph focus, owned by TraceDashboard; optional so mobile can omit it
   graphFocus?: boolean;
   onToggleFocus?: () => void;
-  /** Pan/highlight this node (driven by answer-citation clicks). */
   focusNode?: FocusRequest | null;
 }
 
-// Half the rendered EntityNode card (w-[220px] × ~72px) — react-flow's setCenter
-// targets a point, but node positions are top-left, so we offset to the centre.
+// node positions are top-left; offset by half the card to center setCenter
 const NODE_HALF_W = 110;
 const NODE_HALF_H = 36;
-// How long a citation-focused node stays highlighted before fading back.
 const FOCUS_HIGHLIGHT_MS = 1800;
 
 function TracerInner({
@@ -62,29 +57,19 @@ function TracerInner({
   focusNode?: FocusRequest | null;
 }) {
   const { zoomIn, zoomOut, fitView, setCenter } = useReactFlow();
-  // Default OFF: the canvas shows ONLY the traced execution path. Toggling this
-  // on reveals the surrounding sub-graph (background context) for power users.
+  // off by default: show only the traced path, toggle reveals the sub-graph
   const [showContext, setShowContext] = useState(false);
 
-  // React Flow holds the live, draggable node/edge state. We seed it from the
-  // dagre layout (see effect below) but never re-feed positions on every
-  // render, so user drags stick. onNodesChange runs applyNodeChanges for us.
+  // seeded once from the dagre layout (effect below) so user drags stick
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
 
-  // How many nodes are background-only (not on the traced path) — surfaced on
-  // the Context toggle so the user knows how much is being hidden.
   const hiddenCount = useMemo(
     () => trace.graph.nodes.filter((n) => !n.active).length,
     [trace]
   );
 
-  // Build the rendered nodes/edges. By default we filter STRICTLY to the
-  // execution path (`active`) so there's zero background noise — only the exact
-  // nodes/edges the backend traversed for this query. The visible set is then
-  // re-laid-out with dagre so its bounds are recalculated and it sits compact
-  // and centered (instead of inheriting gaps from the full-graph layout).
-  // Memoised on [trace, showContext], so it can't fight user drags on re-render.
+  // build visible nodes/edges, re-laid-out with dagre for tight centered bounds
   const computed = useMemo(() => {
     const visibleNodes = showContext
       ? trace.graph.nodes
@@ -98,7 +83,6 @@ function TracerInner({
         visibleIds.has(e.target)
     );
 
-    // Recompute layout for ONLY the visible subgraph → tight, centered bounds.
     const laidOut = layoutGraph(visibleNodes, visibleEdges);
 
     const builtNodes: Node[] = laidOut.map((n) => ({
@@ -117,11 +101,7 @@ function TracerInner({
       zIndex: e.active ? 10 : 1,
       markerEnd: {
         type: MarkerType.ArrowClosed,
-        // GRAPH-LEGIBILITY PASS — the arrowhead is a separate SVG marker, so it
-        // must be dimmed in lockstep with the edge stroke (TracedEdge.tsx) or
-        // non-active edges would fade but keep dark, prominent arrow tips. Active
-        // stays indigo; non-active drops to a near-background grey + smaller head
-        // so context arrows recede and the traced path's arrows lead the eye.
+        // dim the arrowhead in lockstep with the edge stroke in TracedEdge.tsx
         width: e.active ? 16 : 11,
         height: e.active ? 16 : 11,
         color: e.active ? "#6366f1" : "#e4e4e7",
@@ -130,10 +110,7 @@ function TracerInner({
     return { builtNodes, builtEdges };
   }, [trace, showContext]);
 
-  // Seed positions from the dagre layout ONCE per graph load — i.e. on initial
-  // mount, a new search (trace identity changes), or a context toggle. Because
-  // `computed` is referentially stable between those events, this effect does
-  // not re-run on ordinary re-renders, so dragged nodes are never snapped back.
+  // seed positions once per graph load so dragged nodes aren't snapped back
   useEffect(() => {
     setNodes(computed.builtNodes);
     setEdges(computed.builtEdges);
@@ -141,10 +118,7 @@ function TracerInner({
     return () => clearTimeout(t);
   }, [computed, setNodes, setEdges, fitView]);
 
-  // --- Answer-citation focus ----------------------------------------------- //
-  // Always read the LATEST nodes via a ref so focusById can stay referentially
-  // stable (otherwise the focus effect would re-fire on every drag and yank the
-  // viewport). `pendingFocus` defers a focus until a hidden node is revealed.
+  // read latest nodes via a ref so focusById stays stable and doesn't refire on drag
   const nodesRef = useRef(nodes);
   nodesRef.current = nodes;
   const pendingFocus = useRef<string | null>(null);
@@ -153,13 +127,13 @@ function TracerInner({
 
   const focusById = useRef((id: string): boolean => {
     const target = nodesRef.current.find((n) => n.id === id);
-    if (!target) return false; // not currently rendered → caller handles reveal
+    if (!target) return false; // not rendered, caller handles reveal
     setCenter(
       target.position.x + NODE_HALF_W,
       target.position.y + NODE_HALF_H,
       { zoom: 1.3, duration: 600 }
     );
-    // Mark it selected so EntityNode draws the focus ring; clear after a beat.
+    // mark selected so EntityNode draws the focus ring, cleared after a beat
     setNodes((ns) => ns.map((n) => ({ ...n, selected: n.id === id })));
     if (highlightTimer.current) window.clearTimeout(highlightTimer.current);
     highlightTimer.current = window.setTimeout(() => {
@@ -172,9 +146,7 @@ function TracerInner({
     return true;
   }).current;
 
-  // A new focus request (citation click): pan to it if rendered; otherwise
-  // reveal context and queue it for the retry effect below. Nonce-gated so an
-  // unrelated re-render (e.g. a fresh query) never re-focuses a stale citation.
+  // pan to a clicked citation if rendered, else reveal context and queue it
   useEffect(() => {
     if (!focusNode || focusNode.nonce === lastFocusNonce.current) return;
     lastFocusNonce.current = focusNode.nonce;
@@ -183,19 +155,19 @@ function TracerInner({
       return;
     }
     if (trace.graph.nodes.some((n) => n.id === focusNode.id)) {
-      pendingFocus.current = focusNode.id; // it exists but is hidden → reveal
+      pendingFocus.current = focusNode.id; // exists but hidden, reveal it
       setShowContext(true);
     }
   }, [focusNode, focusById, trace.graph.nodes]);
 
-  // Once the (possibly expanded) node set mounts, satisfy any queued focus.
+  // satisfy any queued focus once the expanded node set mounts
   useEffect(() => {
     if (pendingFocus.current && focusById(pendingFocus.current)) {
       pendingFocus.current = null;
     }
   }, [nodes, focusById]);
 
-  // Tidy the highlight timer on unmount.
+  // clear the highlight timer on unmount
   useEffect(
     () => () => {
       if (highlightTimer.current) window.clearTimeout(highlightTimer.current);
@@ -207,7 +179,7 @@ function TracerInner({
 
   return (
     <div className="relative h-full w-full">
-      {/* Gradient + marker defs for the animated trace stroke */}
+      {/* gradient defs for the animated trace stroke */}
       <svg className="pointer-events-none absolute h-0 w-0">
         <defs>
           <linearGradient id="trace-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
@@ -217,7 +189,6 @@ function TracerInner({
         </defs>
       </svg>
 
-      {/* Trace summary strip */}
       <div className="pointer-events-none absolute left-4 top-4 z-20 max-w-[min(60%,520px)]">
         <motion.div
           initial={{ opacity: 0, y: -8 }}
@@ -250,7 +221,6 @@ function TracerInner({
         </motion.div>
       </div>
 
-      {/* Floating control pill */}
       <div className="absolute right-4 top-4 z-20">
         <GraphControls
           onZoomIn={() => zoomIn({ duration: 250 })}
@@ -271,7 +241,6 @@ function TracerInner({
         />
       </div>
 
-      {/* Legend */}
       <div className="absolute bottom-4 left-4 z-20">
         <GraphLegend />
       </div>

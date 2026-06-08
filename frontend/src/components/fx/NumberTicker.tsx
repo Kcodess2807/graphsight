@@ -3,20 +3,15 @@ import { animate } from "framer-motion";
 
 interface NumberTickerProps {
   value: number;
-  /** Decimal places to render. */
   decimals?: number;
   durationMs?: number;
   prefix?: string;
   suffix?: string;
   className?: string;
-  /** Insert thousands separators. */
   group?: boolean;
 }
 
-/**
- * Magic-UI-style animated number ticker. Counts up to `value` once it scrolls
- * into view, using a framer-motion tween for a smooth, premium feel.
- */
+// animated number ticker that counts up to `value` once it scrolls into view
 export function NumberTicker({
   value,
   decimals = 0,

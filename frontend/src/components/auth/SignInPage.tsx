@@ -4,7 +4,6 @@ import { ArrowLeft } from "lucide-react";
 import { Wordmark } from "@/components/Wordmark";
 import { clerkAppearance } from "@/lib/clerk";
 
-/** Dedicated /sign-in route — themed to the TraceRAG light/indigo system. */
 export function SignInPage() {
   return (
     <div className="flex min-h-[100dvh] flex-col bg-zinc-50">

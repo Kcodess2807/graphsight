@@ -4,15 +4,6 @@ import { cn } from "@/lib/utils";
 import type { EntityType } from "@/types/trace";
 import type { Suggestion } from "@/lib/api";
 
-/**
- * Clickable graph-aware question chips. Each suggestion was built by the backend
- * from a hub entity of the CURRENTLY LOADED graph, so clicking one always runs a
- * question this graph can actually answer — the fix for "the answer is not
- * contained in the given information" when users guess at off-topic queries.
- *
- * The chip borrows the entity's type icon/colour from ENTITY_STYLES so the
- * suggestion visually matches how that entity renders on the canvas + legend.
- */
 export function SuggestionChips({
   suggestions,
   onPick,
@@ -25,8 +16,7 @@ export function SuggestionChips({
   return (
     <div className="flex flex-col gap-1.5">
       {suggestions.map((s) => {
-        // The backend type is a free string; fall back gracefully if it's not a
-        // known EntityType (e.g. a future type the frontend hasn't styled yet).
+        // backend type is a free string, fall back if it's not a known EntityType
         const style = ENTITY_STYLES[s.type as EntityType];
         const Icon = style?.icon;
         return (

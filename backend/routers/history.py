@@ -1,12 +1,4 @@
-"""Chat-history endpoints backed by Postgres (Neon) via SQLModel.
-
-    POST /api/sessions                      create or rename a chat session
-    GET  /api/sessions?user_id=...          list a user's sessions (newest first)
-    GET  /api/sessions/{session_id}/traces  replay a session's trace history
-
-The `/api/trace` endpoint (in api.py) calls ``persist_trace`` to save each
-execution; that helper is resilient — a Postgres outage never breaks retrieval.
-"""
+"""Chat-history endpoints backed by Postgres via SQLModel."""
 
 from __future__ import annotations
 
@@ -25,12 +17,9 @@ logger = logging.getLogger("tracerag.history")
 router = APIRouter(prefix="/api", tags=["history"])
 
 
-# --------------------------------------------------------------------------- #
-# Request / response schemas
-# --------------------------------------------------------------------------- #
 class SessionUpsert(BaseModel):
     user_id: str                       # Clerk user id from the frontend
-    email: str | None = None           # required only the first time we see a user
+    email: str | None = None           # required only on first sight of a user
     title: str = "New Chat"
     session_id: str | None = None      # set -> rename that session instead of creating
 
@@ -51,9 +40,6 @@ class TraceRead(BaseModel):
     created_at: datetime
 
 
-# --------------------------------------------------------------------------- #
-# Helpers
-# --------------------------------------------------------------------------- #
 def _ensure_user(db: Session, user_id: str, email: str | None) -> User:
     """Get the user by Clerk id, creating the row on first sight."""
     user = db.get(User, user_id)
@@ -65,7 +51,7 @@ def _ensure_user(db: Session, user_id: str, email: str | None) -> User:
             )
         user = User(id=user_id, email=email)
         db.add(user)
-        db.flush()  # surface unique-email violations before we commit a session
+        db.flush()  # surface unique-email violations before committing
     return user
 
 
@@ -75,9 +61,7 @@ def persist_trace(
     execution_plan: dict,
     graph_payload: dict | list,
 ) -> str | None:
-    """Save one execution to Postgres. Returns the new trace id, or None on any
-    failure (missing APP_DATABASE_URL, unknown session_id, DB down) — callers
-    treat persistence as best-effort so retrieval is never blocked."""
+    """Save one execution to Postgres; returns the new trace id or None on failure."""
     try:
         with Session(get_engine()) as db:
             log = TraceLog(
@@ -90,14 +74,11 @@ def persist_trace(
             db.commit()
             db.refresh(log)
             return log.id
-    except Exception as exc:  # noqa: BLE001 — never break /api/trace on a write
+    except Exception as exc:  # noqa: BLE001
         logger.warning("persist_trace failed for session %s: %s", session_id, exc)
         return None
 
 
-# --------------------------------------------------------------------------- #
-# Endpoints
-# --------------------------------------------------------------------------- #
 @router.post("/sessions", response_model=SessionRead)
 def create_or_rename_session(
     body: SessionUpsert, db: Session = Depends(get_session)

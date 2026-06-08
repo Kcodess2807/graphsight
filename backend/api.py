@@ -1,12 +1,4 @@
-"""FastAPI backend for the TraceRAG STUDIO dashboard.
-
-    uvicorn api:app --reload
-
-Endpoints:
-    POST /api/trace      {"query": str}            -> RouterResponse (results + trace_log)
-    POST /api/subgraph   {"node_ids": [str]}       -> {nodes, edges} (1-hop bounded)
-    GET  /api/health                                -> {status, nodes}
-"""
+"""FastAPI backend for the dashboard."""
 
 from __future__ import annotations
 
@@ -31,7 +23,6 @@ from routers import history
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("tracerag.api")
 
-# Singletons populated on startup (one DB connection + router for the process).
 _state: dict = {}
 
 
@@ -42,14 +33,12 @@ async def lifespan(app: FastAPI):
     _state["db"] = db
     _state["db_path"] = str(config.DB_PATH)
     _state["router"] = TraceRouter(db)
-    # Pre-load embedder + spaCy now so the first real query is ~70ms, not ~5s
-    # (one-time model loads otherwise land inside the first request's seeds phase).
+    # warm models so the first query isn't slow
     try:
         _state["router"].warm()
-    except Exception as exc:  # noqa: BLE001 — never let warmup block boot
+    except Exception as exc:  # noqa: BLE001
         logger.warning("Router warmup skipped (%s).", exc)
-    # Postgres history is optional: if APP_DATABASE_URL is unset or unreachable,
-    # the API still boots for pure retrieval — only history endpoints fail.
+    # history is optional; api still boots without it
     try:
         init_db()
     except Exception as exc:  # noqa: BLE001
@@ -64,7 +53,6 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="TraceRAG STUDIO API", version="0.1.0", lifespan=lifespan)
 app.include_router(history.router)
 
-# Allow the React dev server to call us.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -76,7 +64,7 @@ app.add_middleware(
 class TraceRequest(BaseModel):
     query: str
     top_k: int | None = None
-    session_id: str | None = None  # set -> persist this execution to Postgres
+    session_id: str | None = None  # set -> persist this execution
 
 
 class SubgraphRequest(BaseModel):
@@ -85,18 +73,14 @@ class SubgraphRequest(BaseModel):
 
 @app.post("/api/trace")
 def trace(req: TraceRequest) -> dict:
-    """Run the hybrid router and return the full trace for visualization."""
+    """Run the router and return the full trace for visualization."""
     router: TraceRouter = _state["router"]
     response = router.route(req.query, top_k=req.top_k or config.TOP_K_VECTOR)
     payload = asdict(response)
-    # Attach the rendered LLM-facing context (entity line + chunk snippets) so
-    # the UI can show exactly what the generation model would receive.
+    # rendered context the generation model would receive
     for node, result in zip(response.results, payload["results"]):
         result["page_content"] = format_page_content(node)
-    # Assembled grounded context (cheap, no LLM) — the frontend feeds this to
-    # /api/answer to generate the plain-language answer shown above the graph.
     payload["context"] = router.build_context(response.results)
-    # Persist to Postgres history when a session is attached (best-effort).
     if req.session_id:
         payload["trace_id"] = history.persist_trace(
             session_id=req.session_id,
@@ -109,27 +93,22 @@ def trace(req: TraceRequest) -> dict:
 
 @app.post("/api/subgraph")
 def subgraph(req: SubgraphRequest) -> dict:
-    """Bounded subgraph: requested nodes + 1-hop neighbors + their edges."""
+    """Requested nodes plus their 1-hop neighbors and edges."""
     db: TraceDB = _state["db"]
     return db.subgraph(req.node_ids)
 
 
 class SummarizeRequest(BaseModel):
-    key: str           # cache key (doc id / node id) — dedupes repeat hovers
+    key: str           # cache key (doc id / node id)
     text: str
 
 
-# Process-lifetime cache: each snippet is summarized by the LLM exactly once.
 _SUMMARY_CACHE: dict[str, str] = {}
 
 
 @app.post("/api/summarize")
 def summarize(req: SummarizeRequest) -> dict:
-    """One-sentence LLM summary of a node's source snippet, cached by key.
-
-    Called lazily on hover, so it never adds latency to /api/trace. The first
-    hover per node pays one LLM round-trip; subsequent hovers are free.
-    """
+    """One-sentence LLM summary of a node's snippet, cached by key."""
     key = req.key or req.text[:64]
     if key in _SUMMARY_CACHE:
         return {"summary": _SUMMARY_CACHE[key], "cached": True}
@@ -156,17 +135,14 @@ def summarize(req: SummarizeRequest) -> dict:
             temperature=0,
         )
         summary = (resp.choices[0].message.content or "").strip()
-    except Exception as exc:  # noqa: BLE001 — summary is best-effort
+    except Exception as exc:  # noqa: BLE001
         logger.warning("summarize failed for %s: %s", key, exc)
         return {"summary": "", "cached": False, "error": str(exc)}
     _SUMMARY_CACHE[key] = summary
     return {"summary": summary, "cached": False}
 
 
-# --------------------------------------------------------------------------- #
-# Graph switching — flip the active .lbug without restarting the server.
-# Only the DB connection is swapped; the router's loaded models stay warm.
-# --------------------------------------------------------------------------- #
+# swap the active .lbug without restarting; router models stay warm
 def _graphs_dir() -> Path:
     return config.PROJECT_ROOT / "graphs"
 
@@ -179,7 +155,7 @@ def _graph_label(path: Path) -> str:
 
 
 def discover_graphs() -> list[Path]:
-    """Whitelist of selectable .lbug files: the configured default + graphs/*."""
+    """Selectable .lbug files: the configured default plus graphs/*."""
     paths: list[Path] = []
     if config.DB_PATH.exists():
         paths.append(config.DB_PATH)
@@ -197,7 +173,7 @@ def discover_graphs() -> list[Path]:
 
 
 class SwitchGraphRequest(BaseModel):
-    id: str  # the graph's file name, e.g. "pallets__flask.lbug"
+    id: str  # the graph's file name
 
 
 @app.get("/api/graphs")
@@ -217,8 +193,7 @@ def list_graphs() -> dict:
 
 @app.post("/api/graphs/switch")
 def switch_graph(req: SwitchGraphRequest) -> dict:
-    """Hot-swap the active graph. The id must be one of the discovered files
-    (whitelist — no arbitrary filesystem paths)."""
+    """Hot-swap the active graph; id must be one of the discovered files."""
     target = next((p for p in discover_graphs() if p.name == req.id), None)
     if target is None:
         raise HTTPException(status_code=404, detail=f"unknown graph: {req.id}")
@@ -226,7 +201,7 @@ def switch_graph(req: SwitchGraphRequest) -> dict:
     old = _state.get("db")
     new_db = TraceDB(target)
     new_db.init_schema()
-    # Re-point the router at the new connection; keep its warm models.
+    # re-point router at the new connection, keep warm models
     _state["db"] = new_db
     _state["db_path"] = str(target)
     _state["router"].db = new_db
@@ -245,9 +220,7 @@ def switch_graph(req: SwitchGraphRequest) -> dict:
     }
 
 
-# Per-entity-type question templates. Keeping these server-side means the
-# suggestions stay meaningful as new entity types are added to config, and the
-# frontend just renders whatever questions it gets back.
+# per-entity-type question templates
 _SUGGESTION_TEMPLATES: dict[str, str] = {
     "Person": "What did {label} work on?",
     "Team": "What does {label} own?",
@@ -262,23 +235,17 @@ _SUGGESTION_DEFAULT = "What is related to {label}?"
 
 @app.get("/api/suggestions")
 def suggestions(limit: int = 5) -> dict:
-    """Graph-aware example questions, built from the active graph's hub entities.
-
-    Fixes the "ask the wrong thing" problem: instead of generic ShopFlow demo
-    prompts, the UI offers questions that THIS graph can actually answer. We pull
-    the most-connected entities and template one question each, diversifying by
-    type so the list isn't five near-identical Person questions.
-    """
+    """Example questions built from the active graph's hub entities."""
     db: TraceDB = _state["db"]
     try:
         hubs = db.top_entities(limit=limit * 4)  # over-fetch, then diversify
-    except Exception as exc:  # noqa: BLE001 — suggestions are best-effort
+    except Exception as exc:  # noqa: BLE001
         logger.warning("top_entities failed: %s", exc)
         return {"suggestions": []}
 
     out: list[dict] = []
     seen_types: dict[str, int] = {}
-    # First pass: at most one question per type, in degree order, for variety.
+    # one question per type, in degree order
     for ent in hubs:
         etype = ent.get("type") or ""
         label = (ent.get("label") or "").strip()
@@ -289,7 +256,7 @@ def suggestions(limit: int = 5) -> dict:
         seen_types[etype] = seen_types.get(etype, 0) + 1
         if len(out) >= limit:
             break
-    # Second pass: if we still have room (few distinct types), backfill by degree.
+    # backfill by degree if we still have room
     if len(out) < limit:
         used = {s["query"] for s in out}
         for ent in hubs:
@@ -320,8 +287,7 @@ def _answer_key(query: str, context: str) -> str:
 
 
 def _answer_prompt(query: str, context: str) -> str:
-    """The single grounded-answer prompt, shared by the blocking and streaming
-    endpoints so they can never drift apart."""
+    """Grounded-answer prompt shared by the blocking and streaming endpoints."""
     return (
         "You are answering a teammate's question about an engineering "
         "knowledge graph. Use ONLY the context below. Answer in 2-3 "
@@ -333,7 +299,7 @@ def _answer_prompt(query: str, context: str) -> str:
 
 
 def _answer_client():
-    """Lazily build + cache the OpenRouter client used for answers/summaries."""
+    """Lazily build and cache the OpenRouter client."""
     client = _state.get("llm")
     if client is None:
         from tracerag.llm import make_client
@@ -345,9 +311,7 @@ def _answer_client():
 
 @app.post("/api/answer")
 def answer(req: AnswerRequest) -> dict:
-    """Plain-language answer to the query, grounded ONLY in the retrieved
-    context. Called lazily after the graph renders, so it never blocks the
-    trace. Cached per (query, context)."""
+    """Plain-language answer grounded in the retrieved context, cached per (query, context)."""
     key = _answer_key(req.query, req.context)
     if key in _ANSWER_CACHE:
         return {"answer": _ANSWER_CACHE[key], "cached": True}
@@ -362,7 +326,7 @@ def answer(req: AnswerRequest) -> dict:
             temperature=0,
         )
         text = (resp.choices[0].message.content or "").strip()
-    except Exception as exc:  # noqa: BLE001 — answer is best-effort
+    except Exception as exc:  # noqa: BLE001
         logger.warning("answer failed: %s", exc)
         return {"answer": "", "cached": False, "error": str(exc)}
     _ANSWER_CACHE[key] = text
@@ -371,10 +335,7 @@ def answer(req: AnswerRequest) -> dict:
 
 @app.post("/api/answer/stream")
 def answer_stream(req: AnswerRequest) -> StreamingResponse:
-    """Same grounded answer as /api/answer, but streamed token-by-token so the
-    UI can render it as it's generated (perceived latency drops sharply). Plain
-    UTF-8 text chunks — the frontend just appends them. A fully-cached answer is
-    replayed in one chunk so the consumer code path is identical."""
+    """Same answer as /api/answer, streamed token-by-token as plain UTF-8 chunks."""
 
     def gen():
         key = _answer_key(req.query, req.context)
@@ -395,7 +356,7 @@ def answer_stream(req: AnswerRequest) -> StreamingResponse:
                 stream=True,
             )
             for chunk in stream:
-                # OpenAI-compatible deltas; guard every level (providers differ).
+                # guard every level; providers differ
                 delta = ""
                 try:
                     delta = chunk.choices[0].delta.content or ""
@@ -404,17 +365,16 @@ def answer_stream(req: AnswerRequest) -> StreamingResponse:
                 if delta:
                     parts.append(delta)
                     yield delta
-        except Exception as exc:  # noqa: BLE001 — best-effort; surface nothing fatal
+        except Exception as exc:  # noqa: BLE001
             logger.warning("answer stream failed: %s", exc)
             if not parts:
                 yield "Sorry — the answer could not be generated right now."
             return
-        # Cache the assembled text so re-asks (and /api/answer) are instant.
         full = "".join(parts).strip()
         if full:
             _ANSWER_CACHE[key] = full
 
-    # no-store + disable proxy buffering so chunks flush immediately.
+    # no-store + disable proxy buffering so chunks flush immediately
     return StreamingResponse(
         gen(),
         media_type="text/plain; charset=utf-8",

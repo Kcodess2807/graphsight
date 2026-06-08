@@ -63,8 +63,7 @@ export function MetricsFooter({ metrics }: { metrics: TraceMetrics }) {
   const hasRam = metrics.peakRamGb != null && metrics.peakRamGb > 0;
   const hasNodes = metrics.nodesEvaluated != null;
 
-  // Secondary cards (everything that isn't the hero). A lone secondary spans
-  // the full width so we never leave a ragged half-card.
+  // a lone secondary card spans full width to avoid a ragged half-card
   const secondary: React.ReactNode[] = [];
   if (hasTokens && hasNodes) {
     secondary.push(
@@ -159,7 +158,7 @@ export function MetricsFooter({ metrics }: { metrics: TraceMetrics }) {
           </div>
         </StatCard>
       ) : (
-        // Live data without token telemetry → nodes evaluated becomes the hero.
+        // no token telemetry, so nodes evaluated becomes the hero
         <StatCard
           icon={Boxes}
           label="Nodes Evaluated"

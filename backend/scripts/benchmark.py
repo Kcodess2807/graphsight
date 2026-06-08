@@ -1,9 +1,5 @@
 """LLM-as-a-judge benchmark for the TraceRAG pipeline.
 
-Runs a fixed set of semantic + relational queries through the TraceRouter,
-asks an LLM (via OpenRouter) whether the retrieved context is sufficient to answer
-each query, and reports token usage + accuracy split by intent category.
-
     python -m scripts.benchmark --db memory.lbug --out results.csv
 """
 
@@ -27,10 +23,6 @@ from tracerag.llm import make_client                          # noqa: E402
 
 logger = logging.getLogger("tracerag.benchmark")
 
-# --- Judge context budget + pacing ----------------------------------------- #
-# On OpenRouter (high-context models, no Groq 6k-TPM cap) truncation is the
-# "executioner" we are removing: default 100k chars passes the full deduped
-# payload. A small inter-request sleep is enough; both are env-overridable.
 JUDGE_CONTEXT_CHARS = int(os.getenv("TRACERAG_JUDGE_CHARS", "100000"))
 JUDGE_SLEEP_SEC = float(os.getenv("TRACERAG_JUDGE_SLEEP", "1"))
 
@@ -38,18 +30,17 @@ JUDGE_SLEEP_SEC = float(os.getenv("TRACERAG_JUDGE_SLEEP", "1"))
 @dataclass(frozen=True)
 class TestQuery:
     query: str
-    category: str  # "semantic" | "relational"
+    category: str
 
 
 TEST_SET: list[TestQuery] = [
-    # --- Semantic / conceptual (on-domain: the ShopFlow e-commerce corpus) ---
+    # semantic / conceptual
     TestQuery("Explain the ShopFlow commerce platform architecture.", "semantic"),
     TestQuery("What is the responsibility of the PaymentService?", "semantic"),
     TestQuery("How does the AuthLayer handle login and JWT issuance?", "semantic"),
     TestQuery("What is the role of the InventoryService?", "semantic"),
     TestQuery("Summarize the ShopFlow microservices and what each one does.", "semantic"),
-    # --- Relational / multi-hop (reference REAL entities so query-side linking
-    #     fires: tickets, PRs, and hyphenated service aliases) ---
+    # relational / multi-hop
     TestQuery("What was incident INC-4471 about?", "relational"),
     TestQuery("Which component was affected in incident INC-4480?", "relational"),
     TestQuery("Who is the tech lead and owning team for PaymentService?", "relational"),
@@ -64,8 +55,7 @@ def approx_tokens(text: str) -> int:
 
 
 def baseline_context(db: TraceDB, node_ids: list[str]) -> str:
-    """Pure-vector control: concatenate the unique chunk texts mentioning the
-    top-k vector hits (no graph focusing, no per-node snippet cap)."""
+    """Pure-vector control: concatenate the unique chunk texts of the top-k hits."""
     docs_by_entity = db.documents_for_entities(node_ids)
     seen, parts = set(), []
     for nid in node_ids:
@@ -80,17 +70,13 @@ def baseline_context(db: TraceDB, node_ids: list[str]) -> str:
 def _safe_vector_search(db: TraceDB, embedding: list[float], k: int) -> list[dict]:
     try:
         return db.vector_search(embedding, k=k)
-    except Exception as exc:  # noqa: BLE001 — empty index, etc.
+    except Exception as exc:  # noqa: BLE001
         logger.debug("baseline vector_search returned nothing (%s)", exc)
         return []
 
 
 def judge_sufficient(client, query: str, context: str) -> tuple[int, str]:
-    """LLM-as-judge: is the context relevant to answering the query? -> (1/0, raw).
-
-    Grades factual RELEVANCE, not pedantic prose restatement, and is told how to
-    read our context format (SYSTEM TRACES + DOCUMENT CHUNKS).
-    """
+    """LLM-as-judge: is the context relevant to answering the query? -> (1/0, raw)."""
     prompt = (
         f"Does the provided context contain facts relevant to answering the query? "
         f"Reply YES if it includes information that helps answer it (even partially, "
@@ -120,18 +106,18 @@ def run(db_path: Path, out_path: Path, k: int) -> list[dict]:
     db = TraceDB(db_path)
     db.init_schema()
     router = TraceRouter(db)
-    client = make_client()  # OpenRouter (OpenAI-compatible)
+    client = make_client()
 
     rows: list[dict] = []
     try:
         for tq in TEST_SET:
-            # Hybrid (router) arm — globally deduped context (by chunk id).
+            # hybrid (router) arm
             resp = router.route(tq.query, top_k=k)
             context = router.build_context(resp.results)
             intent = resp.trace_log.get("intent", {})
             tokens = approx_tokens(context)
 
-            # Pure-vector baseline (control) arm.
+            # pure-vector baseline arm
             embedding = router.embed_query(tq.query)
             baseline_ids = [h["id"] for h in _safe_vector_search(db, embedding, k)
                             if h.get("id")]
@@ -140,12 +126,10 @@ def run(db_path: Path, out_path: Path, k: int) -> list[dict]:
                 (1 - tokens / baseline_tokens) * 100 if baseline_tokens else 0.0
             )
 
-            # JUDGE_CONTEXT_CHARS defaults to 100k (effectively no truncation on
-            # OpenRouter); still env-overridable for truncation experiments.
             verdict, raw = judge_sufficient(
                 client, tq.query, context[:JUDGE_CONTEXT_CHARS]
             )
-            time.sleep(JUDGE_SLEEP_SEC)  # light inter-request pacing
+            time.sleep(JUDGE_SLEEP_SEC)
 
             rows.append({
                 "query": tq.query,

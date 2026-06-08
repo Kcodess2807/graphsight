@@ -17,10 +17,6 @@ interface SearchCommandProps {
   onQueryChange: (q: string) => void;
 }
 
-/**
- * The always-visible search input (styled cmdk) that opens a ⌘K command
- * palette overlay for query history and presets.
- */
 export function SearchCommand({ query, onQueryChange }: SearchCommandProps) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
@@ -73,8 +69,7 @@ export function SearchCommand({ query, onQueryChange }: SearchCommandProps) {
           <CommandEmpty>Type a query and press Enter to trace it.</CommandEmpty>
           {typed && (
             <CommandGroup heading="Trace">
-              {/* value === the live input, so cmdk always ranks it top and
-                  Enter submits the free-text query. */}
+              {/* value is the live input so cmdk ranks it top and Enter submits it */}
               <CommandItem value={typed} onSelect={() => select(typed)}>
                 <Search className="text-indigo-500" />
                 <span className="line-clamp-1 flex-1">

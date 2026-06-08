@@ -1,13 +1,11 @@
 import { Waypoints } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-/** TraceRAG wordmark — indigo glyph, with a coral LadybugDB attribution dot. */
 export function Wordmark({ className }: { className?: string }) {
   return (
     <div className={cn("flex items-center gap-2.5", className)}>
       <div className="relative flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 text-white shadow-node">
         <Waypoints className="h-4.5 w-4.5" strokeWidth={2.25} />
-        {/* LadybugDB coral accent dot */}
         <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-white bg-rose-500" />
       </div>
       <div className="leading-none">

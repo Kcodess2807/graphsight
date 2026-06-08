@@ -22,7 +22,7 @@ function EntityNodeComponent({ data, selected }: NodeProps<EntityNodeData>) {
   const active = data.active;
   const snippet = data.meta?.snippet;
 
-  // Lazy LLM summary: fetched only when the hover card opens (server-cached).
+  // fetched lazily when the hover card opens (server-cached)
   const [summary, setSummary] = useState<string | null>(null);
   const [summarizing, setSummarizing] = useState(false);
   const handleOpenChange = useCallback(
@@ -42,29 +42,20 @@ function EntityNodeComponent({ data, selected }: NodeProps<EntityNodeData>) {
       <HoverCardTrigger asChild>
         <motion.div
           initial={{ opacity: 0, scale: 0.92 }}
-          // When focused via an answer citation, force full opacity + a slight
-          // pop even if the node is an inactive/background one, so it can't hide.
+          // citation focus forces full opacity even for inactive nodes
           animate={{ opacity: active || selected ? 1 : 0.4, scale: selected ? 1.06 : 1 }}
           whileHover={{ scale: 1.04, opacity: 1 }}
           transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
           className={cn(
-            // GRAPH-LEGIBILITY PASS — card widened 164px -> 220px so full entity
-            // labels (e.g. "oliver-newhouse-jones") fit instead of clipping to
-            // "oli...". CRITICAL: this width is COUPLED to NODE_W in lib/layout.ts
-            // (dagre needs the width up front to space ranks). If you change the
-            // px here, change NODE_W there too, or nodes will overlap / gap.
+            // w-[220px] is coupled to NODE_W in lib/layout.ts — keep them in sync
             "group relative flex w-[220px] items-center gap-2.5 rounded-xl border px-3 py-2.5 transition-shadow",
             active
-              ? // Active / traced — pops forward off the canvas (indigo system)
-                "border-transparent bg-white shadow-node ring-2 ring-indigo-500"
-              : // Dimmed background context — quiet grey, recedes
-                "border-zinc-200 bg-white/80 shadow-soft grayscale-[0.35]",
-            // Citation focus ring (amber) — overrides the dimmed look so a
-            // clicked citation is unmistakable, layered above the active ring.
+              ? "border-transparent bg-white shadow-node ring-2 ring-indigo-500"
+              : "border-zinc-200 bg-white/80 shadow-soft grayscale-[0.35]",
+            // amber citation focus ring, overrides the dimmed look
             selected && "z-10 grayscale-0 ring-2 ring-amber-400 ring-offset-2"
           )}
         >
-          {/* invisible handles so edges anchor cleanly */}
           <Handle type="target" position={Position.Left} />
           <Handle type="source" position={Position.Right} />
 
@@ -79,11 +70,6 @@ function EntityNodeComponent({ data, selected }: NodeProps<EntityNodeData>) {
           <div className="min-w-0 flex-1">
             <p
               className={cn(
-                // Was `truncate` (1 line + ellipsis) — the source of "oli...".
-                // Now `line-clamp-2` lets the label wrap to TWO lines and only
-                // ellipsizes if it overflows even that, so normal names show in
-                // full. `break-words` lets long unbroken tokens (slugs, urls)
-                // wrap mid-word instead of forcing the card wider than NODE_W.
                 "line-clamp-2 break-words text-[13px] font-semibold leading-tight",
                 active ? "text-zinc-900" : "text-zinc-500"
               )}

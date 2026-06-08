@@ -24,13 +24,7 @@ import { MetricsFooter } from "./MetricsFooter";
 import { fetchSuggestions, type Suggestion } from "@/lib/api";
 import type { TraceState } from "@/types/trace";
 
-/**
- * Heuristic for "the answer didn't actually answer" — the LLM commonly hedges
- * with these phrases when the retrieved context doesn't cover the question. When
- * matched, we offer graph-aware suggestions instead of leaving the user staring
- * at a polite apology. (A server-side `grounded` flag will supersede this once
- * the answer endpoint is streamed.)
- */
+// matches hedging phrases the LLM uses when context doesn't cover the question
 const LOW_GROUNDING_RE =
   /\b(not contained|does not (mention|contain|include)|no (information|mention|details?)|cannot (find|answer)|isn'?t (mentioned|contained|available)|not (mentioned|present|available|found) in the)\b/i;
 
@@ -39,12 +33,9 @@ interface LeftPaneProps {
   loading: boolean;
   query: string;
   onQueryChange: (q: string) => void;
-  /** Called after the active graph is hot-swapped (parent resets the canvas). */
   onGraphSwitched?: () => void;
-  /** Plain-language answer + its loading state (the "G" in GraphRAG). */
   answer?: string | null;
   answering?: boolean;
-  /** Focus a node on the canvas when an answer citation is clicked. */
   onCiteNode?: (id: string) => void;
 }
 
@@ -67,8 +58,7 @@ export function LeftPane({
   answering,
   onCiteNode,
 }: LeftPaneProps) {
-  // Graph-aware suggestions for the ACTIVE graph. Loaded on mount and refreshed
-  // whenever the graph is hot-swapped (different graph → different hub entities).
+  // suggestions for the active graph, refreshed on hot-swap
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const loadSuggestions = useCallback(() => {
     fetchSuggestions(5).then(setSuggestions).catch(() => setSuggestions([]));
@@ -77,16 +67,13 @@ export function LeftPane({
     loadSuggestions();
   }, [loadSuggestions]);
 
-  // Refresh suggestions on graph switch, then let the parent reset the canvas.
   const handleGraphSwitched = useCallback(() => {
     loadSuggestions();
     onGraphSwitched?.();
   }, [loadSuggestions, onGraphSwitched]);
 
-  // Empty canvas = a fresh "New chat" (no nodes yet). Show suggestions front and
-  // centre so the user's first question is one this graph can answer.
   const isEmpty = !loading && trace.graph.nodes.length === 0;
-  // The answer is present but reads like a non-answer → offer better questions.
+  // answer is present but reads like a non-answer
   const lowGrounded =
     !loading && !answering && !!answer && LOW_GROUNDING_RE.test(answer);
 
@@ -126,11 +113,8 @@ export function LeftPane({
       <ScrollArea className="flex-1">
         <div className="space-y-4 p-5">
           {loading ? (
-            // Live pipeline ticker instead of a static skeleton — honest motion
-            // mapped to the real router phases while the query runs.
             <LiveProgress />
           ) : isEmpty ? (
-            // New chat / blank canvas — lead with answerable questions.
             <EmptyState
               suggestions={suggestions}
               onPick={onQueryChange}
@@ -143,7 +127,6 @@ export function LeftPane({
                 nodes={trace.graph.nodes}
                 onCite={onCiteNode}
               />
-              {/* The answer hedged → surface questions that fit this graph. */}
               {lowGrounded && suggestions.length > 0 && (
                 <LowGroundingHint
                   suggestions={suggestions}
@@ -167,7 +150,6 @@ export function LeftPane({
   );
 }
 
-/** Blank-canvas state: a friendly prompt + graph-aware suggested questions. */
 function EmptyState({
   suggestions,
   onPick,
@@ -192,7 +174,6 @@ function EmptyState({
             <SuggestionChips suggestions={suggestions} onPick={onPick} />
           </>
         ) : (
-          // No suggestions (empty graph or backend offline) — still guide them.
           <p className="text-[13px] leading-relaxed text-zinc-600">
             Type a question in the search box above to trace it through the
             graph.
@@ -203,7 +184,6 @@ function EmptyState({
   );
 }
 
-/** Inline nudge shown under a hedged answer: better-fitting questions. */
 function LowGroundingHint({
   suggestions,
   onPick,

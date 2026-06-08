@@ -4,7 +4,6 @@ import { ArrowLeft } from "lucide-react";
 import { Wordmark } from "@/components/Wordmark";
 import { clerkAppearance } from "@/lib/clerk";
 
-/** Dedicated /sign-up route — themed to match the sign-in page. */
 export function SignUpPage() {
   return (
     <div className="flex min-h-[100dvh] flex-col bg-zinc-50">

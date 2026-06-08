@@ -1,9 +1,4 @@
-"""Batch-ingest a real-world Jira CSV export (e.g. Kaggle Atlassian dumps) into
-the TraceRAG LadybugDB graph.
-
-Reuses the existing pipeline: each row is cleaned + assembled into a compact
-text blob, then run through ``ingest_text`` (spaCy/GLiNER extraction -> two-tier
-curation -> graph write). The HNSW index is rebuilt once at the end.
+"""Batch-ingest a Jira CSV export into the TraceRAG graph.
 
     python scripts/ingest_kaggle_jira.py --file datasets/GFG_FINAL.csv --limit 100
     python scripts/ingest_kaggle_jira.py --file datasets/GFG_FINAL.csv --reset
@@ -20,7 +15,6 @@ from pathlib import Path
 import pandas as pd
 from tqdm import tqdm
 
-# Make both `tracerag` (../) and the sibling `ingest` module importable.
 _SCRIPTS = Path(__file__).resolve().parent
 sys.path.insert(0, str(_SCRIPTS.parent))
 sys.path.insert(0, str(_SCRIPTS))
@@ -29,18 +23,15 @@ from tracerag import config                       # noqa: E402
 from tracerag.db import TraceDB                    # noqa: E402
 from tracerag.extract import EntityExtractor       # noqa: E402
 from tracerag.curation import CurationEngine, IngestStats  # noqa: E402
-from ingest import ingest_text                     # noqa: E402  (reuse the pipeline)
+from ingest import ingest_text                     # noqa: E402
 
 logger = logging.getLogger("tracerag.kaggle")
 
-# Columns whose repeated variants pandas suffixes with .1/.2/... in wide exports.
+# pandas suffixes repeated columns with .1/.2/... in wide exports
 _COMPONENT_COLS = ["Component/s", "Component/s.1", "Component/s.2", "Component/s.3"]
 _LABEL_COLS = ["Labels"] + [f"Labels.{i}" for i in range(1, 7)]
 
 
-# --------------------------------------------------------------------------- #
-# Cleaning — real Jira descriptions are full of markup that confuses spaCy
-# --------------------------------------------------------------------------- #
 _CODE_BLOCK = re.compile(r"\{code(:[^}]*)?\}.*?\{code\}", re.DOTALL | re.IGNORECASE)
 _NOFORMAT = re.compile(r"\{noformat\}.*?\{noformat\}", re.DOTALL | re.IGNORECASE)
 _HTML_TAG = re.compile(r"<[^>]+>")

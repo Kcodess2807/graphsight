@@ -1,16 +1,6 @@
 import type { TraceState } from "@/types/trace";
 
-/**
- * Hardcoded trace for the sample query:
- *   "Which PR merged by engineer X caused the payments outage?"
- *
- * The router classifies this as RELATIONAL (markers: "which pr", "caused"),
- * so it leans graph-heavy (β = 0.85). The highlighted answer path is:
- *   INC-238 (incident doc) → PR #402 → payments-service
- * authored by Priya Raman, traversing the RELATES_TO / CAUSED edges.
- *
- * Node coordinates are hand-laid for a clean left-to-right reasoning flow.
- */
+// hardcoded sample trace for the payments-outage query
 export const MOCK_TRACE: TraceState = {
   id: "trace_8f21c9",
   query: "Which PR caused the payments outage?",
@@ -64,7 +54,7 @@ export const MOCK_TRACE: TraceState = {
   },
   graph: {
     nodes: [
-      // ---- Active traced path (Document → PR → Service) ----
+      // active traced path: Document -> PR -> Service
       {
         id: "doc-inc-238",
         label: "INC-238 Postmortem",
@@ -110,7 +100,7 @@ export const MOCK_TRACE: TraceState = {
             "Owns checkout, refunds, and payout reconciliation. SLO: 99.95% availability.",
         },
       },
-      // ---- Supporting active context ----
+      // supporting active context
       {
         id: "person-priya",
         label: "Priya Raman",
@@ -123,7 +113,7 @@ export const MOCK_TRACE: TraceState = {
           timestamp: "Joined 2023",
         },
       },
-      // ---- Quiet / inactive neighbourhood ----
+      // quiet / inactive neighbourhood
       {
         id: "repo-payments",
         label: "payments-monorepo",
@@ -209,7 +199,7 @@ export const MOCK_TRACE: TraceState = {
         position: { x: 150, y: 540 },
         meta: { subtitle: "Add idempotency regression test" },
       },
-      // ---- Orphans (hidden until toggled) ----
+      // orphans (hidden until toggled)
       {
         id: "doc-orphan-1",
         label: "Q1 Capacity Plan",
@@ -230,7 +220,7 @@ export const MOCK_TRACE: TraceState = {
       },
     ],
     edges: [
-      // ---- Active traced path ----
+      // active traced path
       {
         id: "e-doc-pr",
         source: "doc-inc-238",
@@ -255,7 +245,7 @@ export const MOCK_TRACE: TraceState = {
         active: true,
         relation: "AUTHORED",
       },
-      // ---- Quiet supporting edges ----
+      // quiet supporting edges
       {
         id: "e-pr-repo",
         source: "pr-402",
@@ -340,7 +330,7 @@ export const MOCK_TRACE: TraceState = {
   },
 };
 
-/** Recent / preset queries for the ⌘K command palette. */
+// preset queries for the command palette
 export const QUERY_PRESETS: { label: string; intent: "relational" | "conceptual" }[] =
   [
     {

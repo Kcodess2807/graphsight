@@ -53,10 +53,6 @@ function Section({
   );
 }
 
-/* -------------------------------------------------------------------------- */
-/*  Section 4 — Worked example                                                 */
-/* -------------------------------------------------------------------------- */
-
 function ChainStep({
   icon: Icon,
   label,
@@ -79,7 +75,7 @@ function ChainStep({
 function WorkedExample() {
   return (
     <Card className="not-prose overflow-hidden p-0">
-      {/* Question */}
+      {/* question */}
       <div className="flex items-center gap-3 border-b border-border bg-zinc-50/70 px-6 py-4">
         <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white text-zinc-500 shadow-soft ring-1 ring-border">
           <HelpCircle className="h-4.5 w-4.5" />
@@ -95,7 +91,7 @@ function WorkedExample() {
       </div>
 
       <div className="space-y-6 p-6">
-        {/* Skimmer */}
+        {/* skimmer */}
         <div className="flex gap-3">
           <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 ring-1 ring-indigo-100">
             <ScanSearch className="h-4 w-4" />
@@ -115,7 +111,7 @@ function WorkedExample() {
           </div>
         </div>
 
-        {/* String Board chain */}
+        {/* string board chain */}
         <div className="flex gap-3">
           <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-cyan-50 text-cyan-600 ring-1 ring-cyan-100">
             <Spline className="h-4 w-4" />
@@ -148,7 +144,7 @@ function WorkedExample() {
           </div>
         </div>
 
-        {/* Answer */}
+        {/* answer */}
         <div className="flex items-center gap-3 rounded-xl border border-emerald-100 bg-emerald-50/60 p-4 ring-4 ring-emerald-500/5">
           <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white text-emerald-600 shadow-soft ring-1 ring-emerald-100">
             <ShieldCheck className="h-5 w-5" />
@@ -167,10 +163,6 @@ function WorkedExample() {
     </Card>
   );
 }
-
-/* -------------------------------------------------------------------------- */
-/*  Reusable explanatory concept card (Section 3 intro)                        */
-/* -------------------------------------------------------------------------- */
 
 interface ConceptCardProps {
   icon: LucideIcon;
@@ -248,14 +240,10 @@ function ConceptCard({
   );
 }
 
-/* -------------------------------------------------------------------------- */
-/*  Page                                                                       */
-/* -------------------------------------------------------------------------- */
-
 export default function TraceRAGConceptsDoc() {
   return (
     <div className="min-h-[100dvh] bg-zinc-50">
-      {/* Top bar */}
+      {/* top bar */}
       <header className="sticky top-0 z-30 border-b border-border bg-white/70 backdrop-blur">
         <div className="mx-auto flex max-w-4xl items-center justify-between px-6 py-3">
           <Button
@@ -273,7 +261,7 @@ export default function TraceRAGConceptsDoc() {
         </div>
       </header>
 
-      {/* Hero */}
+      {/* hero */}
       <div className="relative overflow-hidden border-b border-border">
         <div
           aria-hidden
@@ -311,7 +299,7 @@ export default function TraceRAGConceptsDoc() {
         </div>
       </div>
 
-      {/* Body */}
+      {/* body */}
       <main className="mx-auto max-w-4xl px-6 py-14">
         <article className="prose prose-zinc max-w-none prose-headings:scroll-mt-24 prose-headings:font-semibold prose-headings:tracking-tight prose-h2:mb-3 prose-h2:text-2xl prose-p:leading-relaxed prose-p:text-zinc-600 prose-strong:text-zinc-900 prose-em:text-zinc-700">
           <Section index={0}>
@@ -374,7 +362,7 @@ export default function TraceRAGConceptsDoc() {
           </Section>
         </article>
 
-        {/* Explanatory cards */}
+        {/* concept cards */}
         <Section index={3} className="mt-6 grid gap-5 md:grid-cols-2">
           <ConceptCard
             icon={ScanSearch}
@@ -405,7 +393,7 @@ export default function TraceRAGConceptsDoc() {
           </ConceptCard>
         </Section>
 
-        {/* Animated architecture walkthrough */}
+        {/* architecture walkthrough */}
         <Section index={4} className="mt-12">
           <div className="prose prose-zinc mb-7 max-w-none prose-h2:mb-3 prose-h2:text-2xl prose-p:text-zinc-600">
             <h2>The Lifecycle of a Query</h2>
@@ -420,7 +408,7 @@ export default function TraceRAGConceptsDoc() {
 
         <Separator />
 
-        {/* Section 4 — Worked example */}
+        {/* worked example */}
         <Section index={5}>
           <div className="prose prose-zinc mb-6 max-w-none prose-h2:mb-3 prose-h2:text-2xl prose-p:text-zinc-600">
             <h2>TraceRAG in Action</h2>
@@ -433,7 +421,7 @@ export default function TraceRAGConceptsDoc() {
           <WorkedExample />
         </Section>
 
-        {/* Closing */}
+        {/* closing */}
         <Section index={6} className="mt-12">
           <Card className="flex items-start gap-4 border-emerald-100 bg-emerald-50/50 p-6 ring-4 ring-emerald-500/5">
             <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white text-emerald-600 shadow-soft ring-1 ring-emerald-100">
@@ -466,7 +454,6 @@ export default function TraceRAGConceptsDoc() {
   );
 }
 
-/** Local separator with breathing room. */
 function Separator() {
   return <hr className="my-10 border-border" />;
 }

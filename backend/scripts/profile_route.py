@@ -1,15 +1,9 @@
 """Profile TraceRouter.route() latency phase-by-phase.
 
-Runs the SAME route() the /api/trace endpoint uses, but in a controlled loop
-with the embedder pre-warmed, so the per-phase timings reflect steady state.
-The router logs a "route timings (ms): ..." line per query.
-
     python scripts/profile_route.py --db graphs/pallets__flask.lbug
     python scripts/profile_route.py --db graphs/pydantic__pydantic.lbug -q "what changed in validation"
 
-NOTE: LadybugDB is single-writer. If the uvicorn server is currently serving the
-SAME .lbug file, this will fail to open it — point --db at a different graph, or
-stop the server.
+LadybugDB is single-writer, so point --db at a graph the running server isn't serving.
 """
 
 from __future__ import annotations
@@ -25,9 +19,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from tracerag.db import TraceDB           # noqa: E402
 from tracerag.router import TraceRouter   # noqa: E402
 
-# A mix on purpose: "who…" short-circuits to relational (no intent LLM), while
-# the keyword-less ones exercise the OpenRouter intent call — so you can see
-# both the LLM-bearing and LLM-free phase costs.
+# mix of marker and keyword-less queries to exercise both LLM and LLM-free phases
 DEFAULT_QUERIES = [
     "who reviewed the async changes",        # relational marker -> no intent LLM
     "what did the maintainers work on",      # keyword-less -> intent LLM fires

@@ -8,11 +8,7 @@ import {
 import { clerkEnabled, clerkAppearance } from "@/lib/clerk";
 import { Button } from "@/components/ui/button";
 
-/**
- * Header auth controls. Renders Sign in / Sign up when signed out, and the
- * UserButton (account menu + sign out) when signed in. Returns null when Clerk
- * isn't configured, so the header stays clean before a key is set.
- */
+// header auth controls; null when clerk isn't configured
 export function AuthControls() {
   if (!clerkEnabled) return null;
 

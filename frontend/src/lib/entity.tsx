@@ -14,11 +14,8 @@ import type { EntityType } from "@/types/trace";
 
 export interface EntityStyle {
   icon: LucideIcon;
-  /** Tailwind classes for the soft node chip (inactive resting state). */
   chip: string;
-  /** Icon color. */
   iconColor: string;
-  /** Badge variant key for shadcn Badge. */
   badge:
     | "indigo"
     | "slate"
@@ -29,10 +26,6 @@ export interface EntityStyle {
   label: string;
 }
 
-/**
- * Maps each entity type to a lucide icon + tasteful soft-color chip:
- *   PRs indigo-tinted · Services slate · People amber · Docs zinc.
- */
 export const ENTITY_STYLES: Record<EntityType, EntityStyle> = {
   PR: {
     icon: GitPullRequest,

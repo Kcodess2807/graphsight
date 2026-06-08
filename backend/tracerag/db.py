@@ -1,8 +1,4 @@
-"""LadybugDB connection and schema management.
-
-LadybugDB is a Kùzu fork — identical Python API. Vectors (FLOAT[384]) and the
-graph live in a single .lbug file.
-"""
+"""LadybugDB connection and schema management. LadybugDB is a Kuzu fork, same API."""
 
 from __future__ import annotations
 
@@ -31,12 +27,7 @@ class TraceDB:
         return self._conn.execute(query, params or {})
 
     def _load_vector_extension(self) -> None:
-        """Load the official VECTOR extension (needed for QUERY_VECTOR_INDEX).
-
-        LOAD must run per session; INSTALL is a one-time download (needs net
-        the first time). Best-effort: vector_search degrades gracefully if the
-        extension is unavailable (e.g. offline cloud box before first install).
-        """
+        """Load the VECTOR extension; LOAD per session, INSTALL once (needs net)."""
         try:
             self.execute("LOAD VECTOR;")
         except Exception:  # noqa: BLE001 — not installed yet on this machine
@@ -46,7 +37,6 @@ class TraceDB:
             except Exception as exc:  # noqa: BLE001
                 logger.warning("VECTOR extension unavailable: %s", exc)
 
-    # --- schema (idempotent) ------------------------------------------- #
     def init_schema(self) -> None:
         self.execute(
             f"CREATE NODE TABLE IF NOT EXISTS {config.NODE_TABLE} ("
@@ -65,19 +55,12 @@ class TraceDB:
             f"CREATE REL TABLE IF NOT EXISTS {config.MENTIONS_TABLE} ("
             f"FROM {config.DOC_TABLE} TO {config.NODE_TABLE});"
         )
-        # NOTE: the HNSW index is deliberately NOT created here. This build's
-        # vector index is static — once it exists the embedding property can no
-        # longer be SET, which blocks ingestion writes. The index is (re)built
-        # once after ingestion via build_vector_index() for query-time search.
+        # HNSW index built later via build_vector_index(); a live index blocks embedding writes
         logger.info("Schema ready (node=%s, rel=%s)",
                     config.NODE_TABLE, config.REL_TABLE)
 
     def build_vector_index(self) -> None:
-        """(Re)build the HNSW index over current Entity embeddings.
-
-        Call AFTER all ingestion writes are done. Drops any existing index
-        first so re-ingested data is included (the index does not auto-update).
-        """
+        """(Re)build the HNSW index over current embeddings; call after ingestion."""
         self._load_vector_extension()
         try:
             self.execute(
@@ -92,7 +75,6 @@ class TraceDB:
         )
         logger.info("Built vector index %s", config.VECTOR_INDEX)
 
-    # --- writes -------------------------------------------------------- #
     def upsert_node(
         self,
         node_id: str,
@@ -100,8 +82,7 @@ class TraceDB:
         node_type: str,
         embedding: Sequence[float],
     ) -> None:
-        # No ON MATCH SET: a canonical node's label/embedding must never be
-        # clobbered by a later, noisier surface form. Existing id => no-op.
+        # no ON MATCH SET: never clobber a canonical node with a noisier surface form
         self._check_dim(embedding)
         self.execute(
             f"MERGE (e:{config.NODE_TABLE} {{id: $id}}) "
@@ -121,8 +102,7 @@ class TraceDB:
     def upsert_document(
         self, doc_id: str, content: str | None = None, path: str | None = None
     ) -> None:
-        # Documents are raw source material, not canonical entities: refresh
-        # content on re-ingestion so edited files/tickets reflect immediately.
+        # documents are raw source, not canonical: refresh content on re-ingestion
         self.execute(
             f"MERGE (d:{config.DOC_TABLE} {{id: $id}}) "
             f"ON CREATE SET d.path = $path, d.content = $content "
@@ -139,11 +119,7 @@ class TraceDB:
         )
 
     def find_nodes_by_label(self, label: str) -> list[dict[str, Any]]:
-        """Exact, case-insensitive match of entities by their label.
-
-        Used for deterministic query-side entity linking (e.g. a query
-        mentioning 'OPS-142' lands directly on that ticket node).
-        """
+        """Exact, case-insensitive match of entities by their label."""
         return self._records(self.execute(
             f"MATCH (e:{config.NODE_TABLE}) WHERE lower(e.label) = lower($label) "
             f"RETURN e.id AS id, e.label AS label, e.type AS type;",
@@ -157,18 +133,12 @@ class TraceDB:
         ))
         return len(rows) > 0
 
-    # --- reads / search ------------------------------------------------ #
     def vector_search(
         self,
         query_embedding: Sequence[float],
         k: int = config.CURATION_TOP_K,
     ) -> list[dict[str, Any]]:
-        """Top-k cosine neighbours; rows carry similarity = 1 - distance.
-
-        Uses the native HNSW index, which must have been built first via
-        build_vector_index(). Raises if the index/extension is absent — callers
-        that run mid-ingest should not rely on this (curation dedups in-memory).
-        """
+        """Top-k cosine neighbours via the HNSW index; similarity = 1 - distance."""
         self._check_dim(query_embedding)
         result = self.execute(
             f"CALL QUERY_VECTOR_INDEX('{config.NODE_TABLE}', "
@@ -212,17 +182,7 @@ class TraceDB:
     def expand_frontier(
         self, node_ids: list[str], k: int, max_degree: int
     ) -> dict[str, list[dict[str, Any]]]:
-        """Batched 1-hop expansion for a WHOLE frontier in a SINGLE query.
-
-        This is the N+1 fix: instead of one ``node_degree`` + one ``neighbors``
-        round-trip *per* frontier node (2N queries + 2N DataFrame builds per
-        hop), we fetch every neighbour of the entire frontier in one query, then
-        compute each node's degree and top-k neighbours in Python. Hub
-        super-nodes (distinct degree > ``max_degree``) are omitted from the
-        result — reached but not expanded, identical to the previous behaviour.
-
-        Returns ``{from_id: [{id, label, type, confidence}, ... <= k ...]}``.
-        """
+        """Batched 1-hop expansion of a whole frontier in one query (avoids N+1)."""
         if not node_ids:
             return {}
         rows = self._records(self.execute(
@@ -234,7 +194,7 @@ class TraceDB:
         ))
         grouped: dict[str, list[dict[str, Any]]] = {}
         for r in rows:
-            if r["to_id"] is None:  # isolated node (OPTIONAL MATCH miss)
+            if r["to_id"] is None:  # isolated node
                 continue
             grouped.setdefault(r["from_id"], []).append({
                 "id": r["to_id"], "label": r["label"], "type": r["type"],
@@ -250,10 +210,7 @@ class TraceDB:
         return out
 
     def documents_for_entities(self, entity_ids: list[str]) -> dict[str, list[dict]]:
-        """Fetch the chunk text of every Document that MENTIONS the given entities.
-
-        Returns {entity_id: [{doc_id, path, content}, ...]}.
-        """
+        """Chunk text of every Document mentioning the given entities, keyed by entity id."""
         if not entity_ids:
             return {}
         rows = self._records(self.execute(
@@ -272,17 +229,11 @@ class TraceDB:
         return grouped
 
     def subgraph(self, node_ids: list[str]) -> dict:
-        """Requested nodes + their 1-hop neighbors + edges among that set.
-
-        Bounds the payload so the UI never renders the whole graph. Each node
-        carries a ``requested`` flag so the frontend can dim the neighbor
-        (background) context around the active trace.
-        Returns {"nodes": [{id,label,type,requested}], "edges": [{source,target,confidence}]}.
-        """
+        """Requested nodes plus their 1-hop neighbors and the edges among that set."""
         if not node_ids:
             return {"nodes": [], "edges": []}
 
-        # 1-hop expansion (OPTIONAL so isolated requested nodes still appear).
+        # optional match so isolated requested nodes still appear
         rows = self._records(self.execute(
             f"MATCH (a:{config.NODE_TABLE}) WHERE a.id IN $ids "
             f"OPTIONAL MATCH (a)-[:{config.REL_TABLE}]-(b:{config.NODE_TABLE}) "
@@ -303,7 +254,7 @@ class TraceDB:
             _add(r["a_id"], r["a_label"], r["a_type"])
             _add(r["b_id"], r["b_label"], r["b_type"])
 
-        # Edges strictly between visible nodes.
+        # edges strictly between visible nodes
         all_ids = list(nodes)
         edge_rows = self._records(self.execute(
             f"MATCH (a:{config.NODE_TABLE})-[r:{config.REL_TABLE}]->"
@@ -325,17 +276,9 @@ class TraceDB:
         return int(rows[0]["n"]) if rows else 0
 
     def top_entities(self, limit: int = 12) -> list[dict[str, Any]]:
-        """Most-connected entities (highest distinct degree), with type.
-
-        These are the graph's hubs — the entities most worth asking about — so
-        the UI can offer graph-aware suggested queries before any search runs.
-        Ordered by degree DESC so a small `limit` still surfaces the centre of
-        the graph rather than arbitrary leaf nodes.
-        """
-        # NOTE: aggregate first via WITH, THEN project/order. Ordering by a raw
-        # node property (a.label) in the same clause as the aggregate fails in
-        # Kùzu ("Variable a is not in scope") — the WITH keeps `a` bound so the
-        # label tie-break is legal and the ordering stays deterministic.
+        """Most-connected entities (highest distinct degree), with type."""
+        # aggregate via WITH before ordering; ordering by a.label alongside the aggregate
+        # fails in Kuzu ("Variable a is not in scope")
         return self._records(self.execute(
             f"MATCH (a:{config.NODE_TABLE})-[r:{config.REL_TABLE}]-(b:{config.NODE_TABLE}) "
             f"WITH a, count(DISTINCT b) AS degree "
@@ -345,7 +288,6 @@ class TraceDB:
             {"limit": int(limit)},
         ))
 
-    # --- helpers ------------------------------------------------------- #
     @staticmethod
     def _check_dim(embedding: Sequence[float]) -> None:
         if len(embedding) != config.EMBED_DIM:
@@ -357,7 +299,6 @@ class TraceDB:
     def _records(result) -> list[dict[str, Any]]:
         return result.get_as_df().to_dict(orient="records")
 
-    # --- lifecycle ----------------------------------------------------- #
     def close(self) -> None:
         for handle in (self._conn, self._db):
             try:

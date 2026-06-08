@@ -1,1 +1,1 @@
-"""Framework integrations (LangChain BaseRetriever, etc.)."""
+"""Framework integrations."""

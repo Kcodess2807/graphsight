@@ -1,8 +1,4 @@
-"""Drop-in LangChain BaseRetriever backed by the TraceRouter.
-
-    retriever = TraceRAGRetriever.from_db(db)
-    docs = retriever.invoke("which PR caused the payment outage?")
-"""
+"""LangChain BaseRetriever backed by the TraceRouter."""
 
 from __future__ import annotations
 
@@ -16,12 +12,7 @@ from ..router import RoutedNode, TraceRouter
 
 
 def format_page_content(node: RoutedNode, seen_chunk_ids: set[str] | None = None) -> str:
-    """Entity line + its chunk text, globally deduped by chunk id.
-
-    ``seen_chunk_ids`` is shared across the retriever's document list so a chunk
-    surfaced by several entities (vector + graph) is included once; later
-    references become a 1-line trace marker instead of repeated text.
-    """
+    """Entity line + its chunk text, globally deduped by chunk id."""
     seen = seen_chunk_ids if seen_chunk_ids is not None else set()
     label, ntype = node.label or node.id, node.type or "Unknown"
     content = f"Entity: {label} ({ntype})"
@@ -42,7 +33,7 @@ def format_page_content(node: RoutedNode, seen_chunk_ids: set[str] | None = None
 
 
 class TraceRAGRetriever(BaseRetriever):
-    """Wraps TraceRouter so any LangChain chain can retrieve from the .lbug graph."""
+    """Retriever that wraps TraceRouter over the .lbug graph."""
 
     model_config = {"arbitrary_types_allowed": True}
 
@@ -58,7 +49,7 @@ class TraceRAGRetriever(BaseRetriever):
     ) -> list[Document]:
         response = self.router.route(query, top_k=self.k)
         docs: list[Document] = []
-        seen_chunk_ids: set[str] = set()  # global dedup across the document list
+        seen_chunk_ids: set[str] = set()
         for node in response.results:
             docs.append(Document(
                 page_content=format_page_content(node, seen_chunk_ids),

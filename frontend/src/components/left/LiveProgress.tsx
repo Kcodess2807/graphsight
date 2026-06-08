@@ -4,15 +4,7 @@ import { Check, Loader2, Boxes, Network, Layers, Compass, Sparkles } from "lucid
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
-/**
- * Live pipeline ticker shown WHILE a query runs (replaces the dead skeleton).
- *
- * /api/trace is a single blocking request, so we can't get true per-phase
- * callbacks — but the phases below ARE the real router pipeline, advanced on a
- * timer roughly calibrated to typical latency. The point is honest motion that
- * maps to what the backend is doing, so the wait feels like progress instead of
- * a spinner. The last phase ("Generating answer") holds until loading ends.
- */
+// /api/trace is one blocking request, so phases advance on a timer; last one holds
 const PHASES = [
   { label: "Classifying intent", icon: Compass },
   { label: "Searching vectors", icon: Boxes },
@@ -21,8 +13,7 @@ const PHASES = [
   { label: "Generating answer", icon: Sparkles },
 ] as const;
 
-// How long (ms) to dwell on each phase before advancing. The final phase is
-// sticky (we never auto-complete it — only the real response does).
+// ms to dwell on each phase before advancing
 const PHASE_MS = 650;
 
 export function LiveProgress() {
@@ -30,7 +21,7 @@ export function LiveProgress() {
 
   useEffect(() => {
     const t = setInterval(() => {
-      // Advance up to — but not past — the final phase; it holds until unmount.
+      // advance up to but not past the final phase
       setCurrent((c) => Math.min(c + 1, PHASES.length - 1));
     }, PHASE_MS);
     return () => clearInterval(t);

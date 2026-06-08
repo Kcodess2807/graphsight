@@ -13,12 +13,7 @@ interface HistorySidebarProps {
   className?: string;
 }
 
-/** Short, locale-aware timestamp for a session row.
- *
- * `created_at` is stored as UTC, but the backend serializes it without a
- * timezone marker (e.g. "2026-06-04T20:59:00"). The browser would otherwise
- * parse that as LOCAL time — so we append "Z" to force UTC interpretation,
- * then let toLocaleString render it in the user's actual local timezone. */
+// backend sends UTC without a tz marker, so append "Z" before parsing
 function formatWhen(iso: string): string {
   if (!iso) return "";
   const hasTz = /[zZ]|[+-]\d{2}:?\d{2}$/.test(iso);
@@ -32,11 +27,6 @@ function formatWhen(iso: string): string {
   });
 }
 
-/**
- * Left rail listing a signed-in user's past chat sessions. Clicking a row
- * re-hydrates the canvas from stored traces (no LLM); "New chat" clears the
- * active session and empties the canvas.
- */
 export function HistorySidebar({
   sessions,
   activeSessionId,

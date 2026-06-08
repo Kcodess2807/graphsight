@@ -20,17 +20,10 @@ interface GraphControlsProps {
   onZoomIn: () => void;
   onZoomOut: () => void;
   onRecenter: () => void;
-  /** When on, the surrounding sub-graph is shown; off = traced path only. */
   showContext: boolean;
   onToggleContext: (v: boolean) => void;
-  /** How many background nodes are hidden in the default (path-only) view. */
   hiddenCount: number;
-  /**
-   * Full-graph focus mode: when true the left columns are collapsed and the
-   * canvas owns the whole screen. Optional because the mobile layout (which
-   * already shows the graph on its own full-width tab) never passes it — when
-   * `onToggleFocus` is undefined the button simply isn't rendered.
-   */
+  // optional: when omitted (mobile) the full-graph focus button isn't rendered
   graphFocus?: boolean;
   onToggleFocus?: () => void;
 }
@@ -88,9 +81,6 @@ export function GraphControls({
         </TooltipContent>
       </Tooltip>
 
-      {/* Full-graph focus toggle — only rendered when the parent supplies a
-          handler (desktop). Collapses/restores the left columns so the canvas
-          gets the whole screen. Icon flips to "minimize" while focused. */}
       {onToggleFocus && (
         <>
           <Separator orientation="vertical" className="mx-0.5 h-5" />

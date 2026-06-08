@@ -1,25 +1,11 @@
 import dagre from "dagre";
 import type { TraceEdge, TraceNode } from "@/types/trace";
 
-/**
- * Approximate rendered size of an EntityNode card (px). dagre needs these up
- * front to space ranks — React Flow does not auto-size for layout. These are
- * COUPLED to the card's CSS in components/right/EntityNode.tsx: the card is
- * `w-[220px]`, so NODE_W = 220 + border/shadow slack; NODE_H grew to fit a
- * label that can now wrap to TWO lines (the line-clamp-2 change). Keep these in
- * sync with that component or nodes will overlap (too small) or gap (too big).
- */
+// approximate rendered EntityNode card size; keep in sync with EntityNode.tsx
 const NODE_W = 224;
 const NODE_H = 72;
 
-/**
- * The backend never sends X/Y coordinates, so we run a dagre layered layout to
- * arrange the sub-graph. Direction is left→right to mirror the reasoning flow
- * (seeds on the left, the answer service on the right). Active/traced nodes are
- * nudged onto the top ranks so the highlighted path reads cleanly.
- *
- * Returns a NEW array of nodes with `position` filled in; edges are untouched.
- */
+// dagre layered layout, left-to-right; returns a new array with position filled in
 export function layoutGraph(
   nodes: TraceNode[],
   edges: TraceEdge[]
@@ -29,9 +15,7 @@ export function layoutGraph(
     (e) => nodeIds.has(e.source) && nodeIds.has(e.target)
   );
 
-  // Split connected nodes (laid out by dagre) from orphans (no incident edge).
-  // dagre puts edgeless nodes in one rank, which in LR mode renders as a single
-  // tall column — so we grid the orphans separately instead.
+  // split connected nodes from orphans; we grid orphans separately
   const connected = new Set<string>();
   for (const e of validEdges) {
     connected.add(e.source);
@@ -58,7 +42,7 @@ export function layoutGraph(
       if (connected.has(n.id)) g.setNode(n.id, { width: NODE_W, height: NODE_H });
     }
     for (const e of validEdges) {
-      // Weight active edges so the traced path stays on a straight, short rank.
+      // weight active edges so the traced path stays on a short, straight rank
       g.setEdge(e.source, e.target, { weight: e.active ? 8 : 1 });
     }
 
@@ -75,8 +59,7 @@ export function layoutGraph(
     }
   }
 
-  // Grid the orphans into a roughly-square block below the connected component
-  // (or from the top-left if the whole result set is edgeless).
+  // grid the orphans into a roughly-square block below the connected component
   if (orphans.length > 0) {
     const cols = Math.max(1, Math.ceil(Math.sqrt(orphans.length)));
     const gapX = NODE_W + 48;

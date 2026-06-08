@@ -1,15 +1,9 @@
-"""Live ingestion connector: pull closed GitHub PRs into the TraceRAG graph.
-
-Queries the GitHub REST API, cleans each PR's markdown, assembles a compact
-text blob, and runs it through the shared ``ingest_text`` pipeline (spaCy/GLiNER
-extraction -> two-tier curation -> .lbug write). The HNSW index is rebuilt once
-at the end.
+"""Pull closed GitHub PRs into the TraceRAG graph.
 
     python scripts/ingest_github.py --repo langchain-ai/langchain
     python scripts/ingest_github.py --repo owner/repo --limit 100 --reset
 
-Auth: set GITHUB_TOKEN in .env. Unauthenticated requests are capped at 60/hr by
-GitHub; an authenticated token raises that to 5000/hr.
+Set GITHUB_TOKEN in .env to raise the rate limit from 60/hr to 5000/hr.
 """
 
 from __future__ import annotations
@@ -24,16 +18,15 @@ from pathlib import Path
 import requests
 from tqdm import tqdm
 
-# Make both `tracerag` (../) and the sibling `ingest` module importable.
 _SCRIPTS = Path(__file__).resolve().parent
 sys.path.insert(0, str(_SCRIPTS.parent))
 sys.path.insert(0, str(_SCRIPTS))
 
-from tracerag import config                       # noqa: E402  (also loads .env)
+from tracerag import config                       # noqa: E402
 from tracerag.db import TraceDB                    # noqa: E402
 from tracerag.extract import EntityExtractor       # noqa: E402
 from tracerag.curation import CurationEngine, IngestStats  # noqa: E402
-from ingest import ingest_text                     # noqa: E402  (reuse the pipeline)
+from ingest import ingest_text                     # noqa: E402
 
 logger = logging.getLogger("tracerag.github")
 
@@ -41,19 +34,13 @@ GITHUB_API = "https://api.github.com"
 _PER_PAGE = 100  # GitHub's max page size
 
 
-# --------------------------------------------------------------------------- #
-# Cleaning — GitHub PR bodies are full of markup that confuses spaCy
-# --------------------------------------------------------------------------- #
-_MD_IMAGE = re.compile(r"!\[[^\]]*\]\([^)]*\)")   # ![alt](url)
-_HTML_COMMENT = re.compile(r"<!--.*?-->", re.DOTALL)  # <!-- hidden -->
+_MD_IMAGE = re.compile(r"!\[[^\]]*\]\([^)]*\)")
+_HTML_COMMENT = re.compile(r"<!--.*?-->", re.DOTALL)
 _WS = re.compile(r"\s+")
 
 
 def clean_pr_body(body: str | None) -> str:
-    """Strip markdown images and HTML comments; collapse whitespace.
-
-    Handles ``None`` bodies (GitHub returns null for empty descriptions).
-    """
+    """Strip markdown images and HTML comments; collapse whitespace."""
     if not body:
         return ""
     t = _MD_IMAGE.sub(" ", body)
@@ -66,26 +53,14 @@ def assemble_text(pr: dict) -> tuple[str, str]:
     number = pr.get("number")
     title = (pr.get("title") or "").strip()
     author = (pr.get("user") or {}).get("login") or "unknown"
-    # rstrip trailing periods/spaces so we don't emit "...client.." — keeps the
-    # ingested text pristine even when the PR body already ends in a period.
+    # rstrip trailing periods/spaces so we don't emit "...client.."
     body = clean_pr_body(pr.get("body")).rstrip(". ")
     text = f"PR #{number} merged by {author}. Title: {title}. Description: {body}."
     return f"pr-{number}", text
 
 
-# --------------------------------------------------------------------------- #
-# GitHub API
-# --------------------------------------------------------------------------- #
 def fetch_merged_prs(repo: str, limit: int, token: str | None) -> list[dict]:
-    """Page through closed PRs, keeping only MERGED ones, until ``limit`` is hit.
-
-    GitHub has no "merged" filter — ``state=closed`` returns both merged and
-    rejected/abandoned PRs. We must drop the rejected ones (``merged_at`` is
-    null): ingesting them as "merged" would poison the graph with edges to code
-    that never reached main, so an incident trace could blame the wrong author.
-    Filtering BEFORE the limit ensures we return ``limit`` *merged* PRs, not
-    ``limit`` closed PRs of which only some merged.
-    """
+    """Page through closed PRs, keeping only merged ones (merged_at != null), until limit."""
     headers = {
         "Accept": "application/vnd.github+json",
         "X-GitHub-Api-Version": "2022-11-28",
@@ -108,18 +83,14 @@ def fetch_merged_prs(repo: str, limit: int, token: str | None) -> list[dict]:
             )
         batch = resp.json()
         if not batch:
-            break  # no more pages
+            break
         merged.extend(pr for pr in batch if pr.get("merged_at"))
         page += 1
     return merged[:limit]
 
 
-# --------------------------------------------------------------------------- #
-# CLI
-# --------------------------------------------------------------------------- #
 def repo_db_path(repo: str, graphs_dir: Path) -> Path:
-    """Per-repo .lbug file, e.g. pallets/flask -> graphs/pallets__flask.lbug.
-    Keeping each org/repo in its own graph makes side-by-side testing clean."""
+    """Per-repo .lbug file, e.g. pallets/flask -> graphs/pallets__flask.lbug."""
     slug = re.sub(r"[^a-z0-9_]+", "-", repo.lower().replace("/", "__"))
     return graphs_dir / f"{slug}.lbug"
 
@@ -166,7 +137,6 @@ def ingest_repo(
             if not text.strip():
                 skipped += 1
                 continue
-            # Store the PR's web URL so the UI can deep-link back to GitHub.
             totals.merge(
                 ingest_text(engine, extractor, doc_id, text, source=pr.get("html_url"))
             )
@@ -206,7 +176,6 @@ def main(argv: list[str] | None = None) -> int:
     if args.db and len(args.repo) > 1:
         logger.warning("--db is ignored with multiple repos; using per-repo files.")
 
-    # Load GLiNER once and reuse it across every repo in the batch.
     extractor = EntityExtractor()
     for repo in args.repo:
         if args.db and len(args.repo) == 1:
@@ -215,7 +184,7 @@ def main(argv: list[str] | None = None) -> int:
             db_path = repo_db_path(repo, graphs_dir)
         try:
             ingest_repo(repo, db_path, args.limit, args.reset, token, extractor)
-        except Exception as exc:  # noqa: BLE001 — one bad repo shouldn't abort the batch
+        except Exception as exc:  # noqa: BLE001
             logger.error("[%s] FAILED: %s", repo, exc)
 
     logger.info("Batch complete. Graphs in %s", graphs_dir)

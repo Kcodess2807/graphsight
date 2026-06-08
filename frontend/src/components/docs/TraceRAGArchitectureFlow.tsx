@@ -15,21 +15,15 @@ import {
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-/* -------------------------------------------------------------------------- */
-/*  Architecture model — the lifecycle of a single query                       */
-/* -------------------------------------------------------------------------- */
-
 type Accent = "indigo" | "cyan" | "violet" | "purple" | "emerald" | "slate";
 
 interface FlowNodeDef {
   id: string;
-  /** The walkthrough step at which this node lights up. */
   step: number;
   title: string;
   subtitle: string;
   icon: LucideIcon;
   accent: Accent;
-  /** Center position as a percentage of the canvas. */
   x: number;
   y: number;
 }
@@ -47,7 +41,6 @@ const NODES: FlowNodeDef[] = [
 interface FlowEdge {
   from: string;
   to: string;
-  /** Step at which data flows across this edge. */
   step: number;
   accent: Accent;
 }
@@ -70,7 +63,7 @@ const STEP_NAMES = [
   "Groq API (Llama 3)",
   "Final Trace & Answer",
 ];
-const TOTAL = STEP_NAMES.length; // 6 steps: 0 → 5
+const TOTAL = STEP_NAMES.length;
 
 const ACCENT: Record<
   Accent,
@@ -84,17 +77,12 @@ const ACCENT: Record<
   slate: { stroke: "#64748b", border: "border-slate-300", glow: "shadow-[0_0_22px_rgba(100,116,139,0.28)]", chip: "bg-slate-100", icon: "text-slate-600" },
 };
 
-/* -------------------------------------------------------------------------- */
-/*  Component                                                                  */
-/* -------------------------------------------------------------------------- */
-
 export function TraceRAGArchitectureFlow() {
   const [activeStep, setActiveStep] = useState(0);
   const canvasRef = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ w: 0, h: 0 });
 
-  // Measure the canvas so SVG lines + the data-flow dot use crisp pixel
-  // coordinates (keeps the dot perfectly circular and lines aligned on resize).
+  // measure the canvas so svg lines + the data-flow dot use crisp pixel coords
   useLayoutEffect(() => {
     const el = canvasRef.current;
     if (!el) return;
@@ -115,7 +103,7 @@ export function TraceRAGArchitectureFlow() {
 
   return (
     <div className="not-prose">
-      {/* Progress dots + current-step label */}
+      {/* progress dots */}
       <div className="mb-5 flex flex-col items-center gap-3">
         <div className="flex items-center gap-1.5">
           {STEP_NAMES.map((name, i) => (
@@ -153,7 +141,7 @@ export function TraceRAGArchitectureFlow() {
       >
         <div className="dotted-grid pointer-events-none absolute inset-0 opacity-70" />
 
-        {/* Connecting lines + data-flow dot */}
+        {/* connecting lines + data-flow dot */}
         <svg className="pointer-events-none absolute inset-0 h-full w-full">
           {size.w > 0 &&
             EDGES.map((e) => {
@@ -187,7 +175,7 @@ export function TraceRAGArchitectureFlow() {
                   />
                   {flowing && (
                     <>
-                      {/* soft halo */}
+                      {/* halo */}
                       <motion.circle
                         r={11}
                         fill={color}
@@ -196,7 +184,7 @@ export function TraceRAGArchitectureFlow() {
                         animate={travel}
                         transition={travelTransition}
                       />
-                      {/* travelling packet */}
+                      {/* packet */}
                       <motion.circle
                         r={5}
                         fill={color}
@@ -211,7 +199,7 @@ export function TraceRAGArchitectureFlow() {
             })}
         </svg>
 
-        {/* Nodes */}
+        {/* nodes */}
         {NODES.map((n) => {
           const active = n.step === activeStep;
           const ac = ACCENT[n.accent];
@@ -256,7 +244,7 @@ export function TraceRAGArchitectureFlow() {
           );
         })}
 
-        {/* "The Split" hint label between the two brains */}
+        {/* "the split" hint label */}
         <div
           className="pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-1/2"
           style={{ left: "50%", top: "47%" }}
@@ -271,7 +259,7 @@ export function TraceRAGArchitectureFlow() {
         </div>
       </div>
 
-      {/* Controls */}
+      {/* controls */}
       <div className="mt-6 flex items-center justify-center gap-3">
         <Button onClick={advance} size="lg">
           <Play className="h-4 w-4" />

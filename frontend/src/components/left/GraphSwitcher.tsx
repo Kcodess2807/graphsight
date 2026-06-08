@@ -3,12 +3,7 @@ import { Database } from "lucide-react";
 import { toast } from "sonner";
 import { listGraphs, switchGraph, type GraphInfo } from "@/lib/api";
 
-/**
- * Dropdown to hot-swap the active graph (per-repo .lbug files) without a
- * server restart. Hidden when there's nothing to switch between. After a
- * switch the on-screen trace is stale, so `onSwitched` lets the parent reset
- * the canvas.
- */
+// dropdown to hot-swap the active graph without a server restart
 export function GraphSwitcher({ onSwitched }: { onSwitched?: () => void }) {
   const [graphs, setGraphs] = useState<GraphInfo[]>([]);
   const [active, setActive] = useState<string | null>(null);

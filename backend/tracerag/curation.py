@@ -1,13 +1,4 @@
-"""Two-tier curation engine.
-
-For each extracted entity:
-    sim >= FAST_MERGE_THRESHOLD (0.92)              -> Fast Mode: reuse existing id
-    DEEP_MERGE_THRESHOLD (0.85) <= sim < 0.92       -> ask the LLM YES/NO
-    sim <  DEEP_MERGE_THRESHOLD                      -> mint a new slug id
-
-Edges: Document -[MENTIONS]-> every entity; Entity -[RELATES_TO]-> Entity only
-for entities co-occurring inside the same sliding window.
-"""
+"""Two-tier curation: fast-merge by similarity, deep-merge via LLM, else mint new id."""
 
 from __future__ import annotations
 
@@ -46,8 +37,7 @@ def field_names() -> list[str]:
 
 
 def slugify(text: str) -> str:
-    """canonical, terminal/UI-readable id, e.g. 'PaymentService' + 'Service'
-    -> 'paymentservice-service'."""
+    """Canonical readable id, e.g. 'PaymentService Service' -> 'paymentservice-service'."""
     slug = re.sub(r"[^a-z0-9]+", "-", text.lower()).strip("-")
     return slug or "entity"
 
@@ -58,19 +48,15 @@ class CurationEngine:
     def __init__(self, db: TraceDB, embed_model: str = config.EMBED_MODEL) -> None:
         self.db = db
         self.embed_model = embed_model
-        self._embedder = None        # lazy
-        self._llm = None             # lazy (OpenRouter)
-        # In-memory dedup index. The DB's HNSW index is static (can't be queried
-        # mid-ingest while embeddings are still being written), so curation does
-        # its own cosine search over normalized embeddings here. Pre-loaded with
-        # existing nodes so re-ingests dedup against prior data too.
+        self._embedder = None
+        self._llm = None
+        # in-memory dedup index: the DB's HNSW index can't be queried mid-ingest
         self._ids: list[str] = []
         self._labels: list[str] = []
         self._types: list[str] = []
         self._vecs: list[list[float]] = []
         self._index_loaded = False
 
-    # --- lazy clients -------------------------------------------------- #
     def _get_embedder(self):
         if self._embedder is None:
             from sentence_transformers import SentenceTransformer
@@ -90,7 +76,6 @@ class CurationEngine:
             self._llm = make_client()
         return self._llm
 
-    # --- in-memory dedup index ----------------------------------------- #
     def _ensure_index_loaded(self) -> None:
         if self._index_loaded:
             return
@@ -112,7 +97,6 @@ class CurationEngine:
         self._types.append(ntype)
         self._vecs.append(embedding)
 
-    # --- public API ---------------------------------------------------- #
     def ingest(
         self,
         doc_id: str,
@@ -122,20 +106,13 @@ class CurationEngine:
     ) -> IngestStats:
         stats = IngestStats(docs=1, entities=len(entities))
         if not entities:
-            return stats  # no entities -> no chunk worth storing for retrieval
+            return stats  # no entities -> nothing worth storing for retrieval
         self._ensure_index_loaded()
 
-        # 1. Resolve each entity to a canonical node id (committing new nodes).
         resolved = [self._resolve(ent, stats) for ent in entities]
-
-        # 2. Per sliding window: store the chunk text as a Document node, link
-        #    MENTIONS to its entities, and RELATES_TO between co-occurring ones.
-        #    `source` (e.g. a GitHub PR URL) is stored as the Document path so
-        #    the UI can deep-link back to the original; falls back to doc_id.
         self._build_chunks_and_edges(doc_id, text, entities, resolved, stats, source)
         return stats
 
-    # --- entity resolution (the two-tier decision) -------------------- #
     def _resolve(self, ent: ExtractedEntity, stats: IngestStats) -> str:
         embedding = self._embed(ent.text)
         hits = self._search(embedding)
@@ -152,7 +129,6 @@ class CurationEngine:
                 return top["id"]
             stats.deep_merged_no += 1
 
-        # New node.
         node_id = self._mint_id(ent)
         self.db.upsert_node(node_id, ent.text, ent.type, embedding)
         self._add_to_index(node_id, ent.text, ent.type, embedding)
@@ -160,8 +136,7 @@ class CurationEngine:
         return node_id
 
     def _search(self, embedding: list[float]) -> list[dict]:
-        """Cosine search over the in-memory index (embeddings are normalized,
-        so cosine == dot product). Returns hits sorted most-similar first."""
+        """Cosine search over the in-memory index (normalized, so cosine == dot)."""
         if not self._vecs:
             return []
         import numpy as np
@@ -197,8 +172,7 @@ class CurationEngine:
         base = slugify(f"{ent.text} {ent.type}")
         if not self.db.node_exists(base):
             return base
-        # Slug collision between genuinely distinct entities: disambiguate
-        # deterministically with a short hash of the surface text.
+        # slug collision between distinct entities: disambiguate with a short text hash
         suffix = hashlib.sha1(ent.text.encode()).hexdigest()[:6]
         candidate = f"{base}-{suffix}"
         n = 2
@@ -207,7 +181,6 @@ class CurationEngine:
             n += 1
         return candidate
 
-    # --- chunk documents + edges -------------------------------------- #
     def _build_chunks_and_edges(
         self,
         doc_id: str,
@@ -228,9 +201,7 @@ class CurationEngine:
             if not members:
                 continue  # don't store chunks that surface no entities
 
-            # The Document node represents this specific chunk; path keeps the
-            # source provenance (a GitHub PR URL when given, else the doc id) so
-            # retrieval can cite — and the UI can deep-link to — where text came from.
+            # path keeps source provenance (PR url when given, else doc id) for citation
             chunk_id = f"{doc_id}#w{idx}"
             self.db.upsert_document(chunk_id, content=win.text, path=source or doc_id)
 

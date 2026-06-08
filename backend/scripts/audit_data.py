@@ -1,19 +1,6 @@
-"""Data-integrity linter for the TraceRAG graph (LadybugDB).
-
-Scans the .lbug store for silent data decay and prints a report:
-
-    * Orphaned nodes  — entities with zero RELATES_TO edges (graph-isolated).
-    * Conflicting edges — a Service/Repo/Ticket linked to >1 Person/Team
-      (heuristic: the schema has no typed "owns" edge, so this flags ambiguous
-      ownership rather than a hard contradiction — see NOTE below).
-    * Alias drift     — separate nodes whose embeddings are near-duplicates
-      (cosine >= --alias-threshold), i.e. merges the curation engine missed.
+"""Data-integrity linter for the TraceRAG graph.
 
     python scripts/audit_data.py [--db memory.lbug] [--alias-threshold 0.85] [--json report.json]
-
-NOTE: the graph uses a generic RELATES_TO co-occurrence edge (no typed
-ownership). "Conflicting edges" is therefore a best-effort heuristic, not a
-guaranteed contradiction.
 """
 
 from __future__ import annotations
@@ -34,7 +21,6 @@ from tracerag.db import TraceDB                   # noqa: E402
 
 logger = logging.getLogger("tracerag.audit")
 
-#: Node types that should resolve to a single owner/lead (heuristic targets).
 _OWNABLE_TYPES = ("Service", "Repo", "Ticket", "PR", "Tool")
 _OWNER_TYPES = ("Person", "Team")
 
@@ -81,7 +67,7 @@ def find_alias_drift(db: TraceDB, threshold: float) -> list[dict]:
     rows = [r for r in rows if r.get("emb") is not None]
     if len(rows) < 2:
         return []
-    mat = np.asarray([r["emb"] for r in rows], dtype=np.float32)  # rows pre-normalized
+    mat = np.asarray([r["emb"] for r in rows], dtype=np.float32)  # pre-normalized
     sims = mat @ mat.T
     pairs = []
     for i in range(len(rows)):

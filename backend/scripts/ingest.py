@@ -1,7 +1,5 @@
 """Headless ingest entry point.
 
-datasets/*.{md,json,pdf} -> load -> extract (GLiNER/spaCy) -> curate [TODO] -> .lbug
-
     python -m scripts.ingest --datasets datasets --db memory.lbug
     python scripts/ingest.py --reset
 """
@@ -16,7 +14,6 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterator
 
-# Allow `python scripts/ingest.py` as well as `-m scripts.ingest`.
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from tracerag import config                       # noqa: E402
@@ -34,9 +31,6 @@ class Document:
     meta: dict
 
 
-# --------------------------------------------------------------------------- #
-# Generic loaders (.md / .json / .pdf)
-# --------------------------------------------------------------------------- #
 def load_documents(datasets_dir: Path) -> Iterator[Document]:
     if not datasets_dir.exists():
         logger.warning("Datasets dir does not exist: %s", datasets_dir)
@@ -56,7 +50,7 @@ def load_documents(datasets_dir: Path) -> Iterator[Document]:
                 yield _load_pdf(path, rel)
             else:
                 logger.debug("Skipping unsupported file: %s", rel)
-        except Exception as exc:  # noqa: BLE001 — one bad file shouldn't abort
+        except Exception as exc:  # noqa: BLE001
             logger.warning("Failed to load %s: %s", rel, exc)
 
 
@@ -68,13 +62,13 @@ def _load_markdown(path: Path, rel: str) -> Document:
 
         post = frontmatter.loads(raw)
         meta, body = dict(post.metadata), post.content
-    except Exception:  # noqa: BLE001 — front-matter optional
+    except Exception:  # noqa: BLE001
         pass
     return Document(doc_id=rel, text=body, meta=meta)
 
 
 def _load_json(path: Path, rel: str) -> Iterator[Document]:
-    # Arrays -> one Document per record (e.g. Jira tickets), flattened generically.
+    # arrays -> one Document per record
     data = json.loads(path.read_text(encoding="utf-8", errors="replace"))
     records = data if isinstance(data, list) else [data]
     for i, rec in enumerate(records):
@@ -107,9 +101,6 @@ def _flatten(obj: dict, prefix: str = "") -> dict:
     return out
 
 
-# --------------------------------------------------------------------------- #
-# Reusable single-document ingest (shared by main() and external loaders)
-# --------------------------------------------------------------------------- #
 def ingest_text(
     engine: CurationEngine,
     extractor: EntityExtractor,
@@ -117,22 +108,14 @@ def ingest_text(
     text: str,
     source: str | None = None,
 ) -> IngestStats:
-    """Run one text blob through the pipeline: spaCy/GLiNER extraction ->
-    two-tier curation -> graph write. Returns the per-document IngestStats.
+    """Run one text blob through extraction -> curation -> graph write.
 
-    ``source`` (e.g. a GitHub PR URL) is stored as the Document path so the UI
-    can deep-link back to the origin.
-
-    NOTE: callers must invoke ``db.build_vector_index()`` once after the final
-    document (the HNSW index is static and can't be updated incrementally).
+    Callers must invoke ``db.build_vector_index()`` once after the final document.
     """
     entities = extractor.extract(text)
     return engine.ingest(doc_id, text, entities, source=source)
 
 
-# --------------------------------------------------------------------------- #
-# CLI
-# --------------------------------------------------------------------------- #
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     p = argparse.ArgumentParser(description="TraceRAG headless ingest.")
     p.add_argument("--datasets", type=Path, default=config.DATASETS_DIR)
@@ -151,13 +134,11 @@ def main(argv: list[str] | None = None) -> int:
         level=logging.DEBUG if args.verbose else logging.INFO,
         format="%(asctime)s  %(levelname)-7s %(name)s  %(message)s",
     )
-    # Keep -v focused on TraceRAG; mute third-party HTTP/SDK chatter.
     for noisy in ("httpx", "httpcore", "openai", "sentence_transformers"):
         logging.getLogger(noisy).setLevel(logging.WARNING)
 
     if args.reset:
-        # Remove the .lbug file AND its sidecars (.wal / .lock / .tmp) — a stale
-        # .wal from a force-killed process otherwise blocks a fresh open.
+        # remove the .lbug file plus its .wal/.lock/.tmp sidecars
         for p in sorted(args.db.parent.glob(args.db.name + "*")):
             logger.info("Reset: removing %s", p)
             p.unlink()
@@ -182,7 +163,6 @@ def main(argv: list[str] | None = None) -> int:
             totals.merge(stats)
             logger.debug("  %s", stats)
 
-        # Build the HNSW index once, now that all embeddings are written.
         if not args.dry_run:
             db.build_vector_index()
 

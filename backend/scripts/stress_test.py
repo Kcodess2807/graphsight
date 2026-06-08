@@ -1,15 +1,8 @@
 """Async load test for the TraceRAG FastAPI endpoint.
 
-Hammers POST /api/trace with concurrent requests to surface the bottleneck
-(OpenRouter rate limits, LadybugDB read-locks, memory pressure) and to verify
-the server degrades gracefully (429/503) instead of crashing the worker.
+Start the API first (uvicorn api:app --port 8000), then:
 
-    # start the API first (separate terminal):
-    #   uvicorn api:app --port 8000
     python scripts/stress_test.py --requests 200 --concurrency 25
-
-Reports status-code distribution, latency percentiles, and throughput. Non-200
-responses and connection errors are counted, never fatal — that's the point.
 """
 
 from __future__ import annotations
@@ -38,7 +31,7 @@ async def _one(session, url, query, sem, timeout) -> dict:
         start = time.perf_counter()
         try:
             async with session.post(url, json={"query": query}, timeout=timeout) as resp:
-                await resp.read()  # drain body
+                await resp.read()  # drain
                 return {"status": resp.status, "latency": time.perf_counter() - start}
         except asyncio.TimeoutError:
             return {"status": "timeout", "latency": time.perf_counter() - start}

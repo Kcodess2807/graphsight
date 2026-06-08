@@ -26,7 +26,7 @@ import type { TraceState } from "@/types/trace";
 
 const API_HINT = `Could not reach ${API_BASE}`;
 
-/** A blank canvas state for a fresh "New chat" (no nodes, no metrics). */
+// blank canvas for a fresh "New chat"
 const EMPTY_TRACE: TraceState = {
   id: "trace_empty",
   query: "",
@@ -47,7 +47,7 @@ const EMPTY_TRACE: TraceState = {
   graph: { nodes: [], edges: [] },
 };
 
-/** SSR-safe media query hook. */
+// ssr-safe media query hook
 function useMediaQuery(query: string) {
   const [matches, setMatches] = useState(
     () => typeof window !== "undefined" && window.matchMedia(query).matches
@@ -62,10 +62,6 @@ function useMediaQuery(query: string) {
   return matches;
 }
 
-/**
- * Builds a derived trace for a given query so switching presets visibly
- * re-routes the graph (relational → graph-heavy, conceptual → vector-heavy).
- */
 function deriveTrace(query: string): TraceState {
   const preset = QUERY_PRESETS.find((p) => p.label === query);
   const intent = preset?.intent ?? MOCK_TRACE.weights.intent;
@@ -93,22 +89,17 @@ export function TraceDashboard() {
   const [answering, setAnswering] = useState(false);
   const isDesktop = useMediaQuery("(min-width: 1024px)");
 
-  // Full-graph focus: when on, the History sidebar and the Studio (left) column
-  // are collapsed so the canvas owns the full screen width. Purely a layout
-  // toggle — no trace/data is touched, so exiting restores the exact same view.
+  // full-graph focus collapses the sidebar + left column so the canvas fills the row
   const [graphFocus, setGraphFocus] = useState(false);
   const toggleGraphFocus = useCallback(() => setGraphFocus((v) => !v), []);
 
-  // Answer-citation focus: clicking an entity name in the Answer pans/highlights
-  // its node on the canvas. The nonce makes clicking the SAME citation twice
-  // re-trigger the pan (a bare id wouldn't change and the effect wouldn't fire).
+  // nonce lets clicking the same citation twice re-trigger the pan
   const [focusNode, setFocusNode] = useState<FocusRequest | null>(null);
   const focusNodeById = useCallback((id: string) => {
     setFocusNode((prev) => ({ id, nonce: (prev?.nonce ?? 0) + 1 }));
   }, []);
 
-  // Esc exits focus mode (standard fullscreen muscle-memory). The listener is
-  // only attached while focused, so it never swallows Esc elsewhere in the app.
+  // esc exits focus mode; listener only attached while focused
   useEffect(() => {
     if (!graphFocus) return;
     const onKey = (e: KeyboardEvent) => {
@@ -118,8 +109,7 @@ export function TraceDashboard() {
     return () => window.removeEventListener("keydown", onKey);
   }, [graphFocus]);
 
-  // Lazily generate the plain-language answer from a trace's context, AFTER
-  // the graph has rendered — so it never adds to the trace's latency.
+  // generate the plain-language answer after the graph renders, off the trace latency
   const fetchAnswer = useCallback((state: TraceState) => {
     const ctx = state.context?.trim();
     if (!ctx) {
@@ -128,21 +118,19 @@ export function TraceDashboard() {
     }
     setAnswering(true);
     setAnswer(""); // start empty so the card streams in instead of popping whole
-    // Stream tokens straight into state — the AnswerCard renders the growing
-    // text with a typing cursor while `answering` stays true.
     streamAnswer(state.query, ctx, (partial) => setAnswer(partial))
       .catch(() => setAnswer(null))
       .finally(() => setAnswering(false));
   }, []);
 
-  // --- Session / history state (only meaningful when signed in) ----------- //
+  // session/history state, only meaningful when signed in
   const { userId, email } = useSessionUser();
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [sessionsList, setSessionsList] = useState<ChatSessionDto[]>([]);
   const [sessionsLoading, setSessionsLoading] = useState(false);
   const historyEnabled = Boolean(userId);
 
-  // Load the user's sessions on sign-in (and clear them on sign-out).
+  // load sessions on sign-in, clear on sign-out
   useEffect(() => {
     if (!userId) {
       setSessionsList([]);
@@ -163,17 +151,7 @@ export function TraceDashboard() {
     };
   }, [userId]);
 
-  /**
-   * The chained integration flow:
-   *   1. loading on
-   *   2. (signed in, no active session) → POST /api/sessions to start one
-   *   3. POST /api/trace {session_id}  →  extract execution-path node ids
-   *   4. POST /api/subgraph with those ids
-   *   5. merge + lay out into a TraceState, push to React state
-   * Falls back to a derived sample trace if the backend is unreachable, so the
-   * UI never ends up blank during a demo. `persist` is false for the on-mount
-   * demo query so we don't create a stray session every page load.
-   */
+  // trace → subgraph → TraceState; falls back to a sample trace if backend is down
   const handleSearch = useCallback(
     async (q: string, opts?: { persist?: boolean }) => {
       const persist = opts?.persist ?? true;
@@ -183,7 +161,7 @@ export function TraceDashboard() {
         description: "POST /api/trace → /api/subgraph",
       });
       try {
-        // Lazily start a session on the user's first query of a new chat.
+        // lazily start a session on the first query of a new chat
         let sessionId = activeSessionId;
         if (persist && userId && !sessionId) {
           try {
@@ -196,7 +174,7 @@ export function TraceDashboard() {
             setActiveSessionId(created.id);
             setSessionsList((prev) => [created, ...prev]);
           } catch (err) {
-            // Persistence is best-effort — never block retrieval on it.
+            // persistence is best-effort, never block retrieval on it
             console.error("[TraceRAG] createSession failed:", err);
           }
         }
@@ -225,7 +203,7 @@ export function TraceDashboard() {
     [activeSessionId, userId, email, fetchAnswer]
   );
 
-  // New chat: drop the active session and blank the canvas.
+  // new chat: drop the active session and blank the canvas
   const handleNewChat = useCallback(() => {
     setActiveSessionId(null);
     setQuery("");
@@ -234,8 +212,7 @@ export function TraceDashboard() {
     setLoading(false);
   }, []);
 
-  // Re-open a past session: hydrate the canvas from its latest stored trace,
-  // with NO LLM call (only a pure /api/subgraph graph read).
+  // re-open a past session: hydrate from its latest stored trace, no llm call
   const handleSelectSession = useCallback(async (sessionId: string) => {
     setActiveSessionId(sessionId);
     setAnswer(null);
@@ -252,7 +229,7 @@ export function TraceDashboard() {
         });
         return;
       }
-      const latest = logs[logs.length - 1]; // oldest → newest
+      const latest = logs[logs.length - 1];
       const state = await hydrateTraceFromLog(latest);
       setTrace(state);
       setQuery(latest.query);
@@ -271,8 +248,7 @@ export function TraceDashboard() {
     }
   }, []);
 
-  // Attempt a live trace on mount for the default query (falls back to sample).
-  // persist:false so the demo query never creates a session.
+  // live trace on mount for the default query; persist:false so it creates no session
   useEffect(() => {
     void handleSearch(MOCK_TRACE.query, { persist: false });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -283,10 +259,7 @@ export function TraceDashboard() {
       {isDesktop ? (
         <div className="flex min-h-0 flex-1">
           {graphFocus ? (
-            // FOCUS MODE — sidebar + Studio column are simply not rendered, so
-            // the canvas fills the whole row. VisualTracer still gets the toggle
-            // (now showing a "minimize" icon) plus graphFocus so it can flip the
-            // button label; Esc also exits (handler above).
+            // focus mode: only the canvas is rendered
             <div className="h-full w-full bg-white">
               <VisualTracer
                 trace={trace}
@@ -331,8 +304,6 @@ export function TraceDashboard() {
                 <ResizableHandle withHandle />
                 <ResizablePanel defaultSize={65} minSize={40}>
                   <div className="h-full bg-white">
-                    {/* Pass the toggle here too so the user can ENTER focus mode
-                        from the normal 3-column view. */}
                     <VisualTracer
                       trace={trace}
                       loading={loading}
