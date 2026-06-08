@@ -39,6 +39,11 @@ uvicorn[standard]>=0.29.0
 sqlmodel>=0.0.16              # User / ChatSession / TraceLog tables
 psycopg2-binary>=2.9.9        # Postgres driver for the postgresql:// engine
 
+# --- Auth (Clerk session-token verification) ---
+# [crypto] pulls in `cryptography` for RS256 signature verification; PyJWKClient
+# (fetches + caches Clerk's public JWKS) ships in the base PyJWT package.
+PyJWT[crypto]>=2.8.0
+
 # --- Ops / testing ---
 tqdm>=4.66.0                  # ingest progress bars
 aiohttp>=3.9.0                 # scripts/stress_test.py load generator

@@ -7,17 +7,22 @@ from contextlib import asynccontextmanager
 from dataclasses import asdict
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
+from slowapi.errors import RateLimitExceeded
+from slowapi import _rate_limit_exceeded_handler
 
 from tracerag import config
 from tracerag.db import TraceDB
 from tracerag.router import TraceRouter
 from tracerag.integrations.langchain import format_page_content
 
+from auth import get_current_user
+from cache import LRUCache
 from database import init_db
+from ratelimit import limiter, LLM_RATE_LIMIT
 from routers import history
 
 logging.basicConfig(level=logging.INFO)
@@ -51,6 +56,12 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="TraceRAG STUDIO API", version="0.1.0", lifespan=lifespan)
+
+# Rate limiting: slowapi reads the limiter off app.state, and the handler turns
+# the library's RateLimitExceeded into a clean HTTP 429 (+ Retry-After header).
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
 app.include_router(history.router)
 
 app.add_middleware(
@@ -72,7 +83,10 @@ class SubgraphRequest(BaseModel):
 
 
 @app.post("/api/trace")
-def trace(req: TraceRequest) -> dict:
+def trace(
+    req: TraceRequest,
+    user_id: str = Depends(get_current_user),  # require a valid token
+) -> dict:
     """Run the router and return the full trace for visualization."""
     router: TraceRouter = _state["router"]
     response = router.route(req.query, top_k=req.top_k or config.TOP_K_VECTOR)
@@ -82,6 +96,14 @@ def trace(req: TraceRequest) -> dict:
         result["page_content"] = format_page_content(node)
     payload["context"] = router.build_context(response.results)
     if req.session_id:
+        # Ownership check (write-side IDOR): only persist into a session that
+        # belongs to the authenticated user. Unknown session → 404; someone
+        # else's session → 403. A query with no session_id stays anonymous.
+        owner = history.session_owner(req.session_id)
+        if owner is None:
+            raise HTTPException(status_code=404, detail="session not found")
+        if owner != user_id:
+            raise HTTPException(status_code=403, detail="not your session")
         payload["trace_id"] = history.persist_trace(
             session_id=req.session_id,
             query=req.query,
@@ -103,15 +125,22 @@ class SummarizeRequest(BaseModel):
     text: str
 
 
-_SUMMARY_CACHE: dict[str, str] = {}
+# bounded so a long-running server can't leak memory; LRU evicts cold snippets
+_SUMMARY_CACHE: LRUCache[str, str] = LRUCache(capacity=512)
 
 
 @app.post("/api/summarize")
-def summarize(req: SummarizeRequest) -> dict:
+@limiter.limit(LLM_RATE_LIMIT)  # per-user cap; needs the `request` param below
+def summarize(
+    request: Request,  # required by slowapi to read the rate-limit key
+    req: SummarizeRequest,
+    _user: str = Depends(get_current_user),  # require a valid token (LLM = billed)
+) -> dict:
     """One-sentence LLM summary of a node's snippet, cached by key."""
     key = req.key or req.text[:64]
-    if key in _SUMMARY_CACHE:
-        return {"summary": _SUMMARY_CACHE[key], "cached": True}
+    cached = _SUMMARY_CACHE.get(key)
+    if cached is not None:
+        return {"summary": cached, "cached": True}
     text = (req.text or "").strip()
     if not text:
         return {"summary": "", "cached": False}
@@ -138,7 +167,7 @@ def summarize(req: SummarizeRequest) -> dict:
     except Exception as exc:  # noqa: BLE001
         logger.warning("summarize failed for %s: %s", key, exc)
         return {"summary": "", "cached": False, "error": str(exc)}
-    _SUMMARY_CACHE[key] = summary
+    _SUMMARY_CACHE.set(key, summary)
     return {"summary": summary, "cached": False}
 
 
@@ -279,7 +308,8 @@ class AnswerRequest(BaseModel):
     context: str
 
 
-_ANSWER_CACHE: dict[str, str] = {}
+# bounded LRU shared by the blocking and streaming answer endpoints below
+_ANSWER_CACHE: LRUCache[str, str] = LRUCache(capacity=512)
 
 
 def _answer_key(query: str, context: str) -> str:
@@ -310,11 +340,17 @@ def _answer_client():
 
 
 @app.post("/api/answer")
-def answer(req: AnswerRequest) -> dict:
+@limiter.limit(LLM_RATE_LIMIT)  # per-user cap; needs the `request` param below
+def answer(
+    request: Request,  # required by slowapi to read the rate-limit key
+    req: AnswerRequest,
+    _user: str = Depends(get_current_user),  # require a valid token (LLM = billed)
+) -> dict:
     """Plain-language answer grounded in the retrieved context, cached per (query, context)."""
     key = _answer_key(req.query, req.context)
-    if key in _ANSWER_CACHE:
-        return {"answer": _ANSWER_CACHE[key], "cached": True}
+    cached = _ANSWER_CACHE.get(key)
+    if cached is not None:
+        return {"answer": cached, "cached": True}
     context = (req.context or "").strip()
     if not context:
         return {"answer": "No supporting context was retrieved for this query.",
@@ -329,12 +365,18 @@ def answer(req: AnswerRequest) -> dict:
     except Exception as exc:  # noqa: BLE001
         logger.warning("answer failed: %s", exc)
         return {"answer": "", "cached": False, "error": str(exc)}
-    _ANSWER_CACHE[key] = text
+    _ANSWER_CACHE.set(key, text)
     return {"answer": text, "cached": False}
 
 
 @app.post("/api/answer/stream")
-def answer_stream(req: AnswerRequest) -> StreamingResponse:
+@limiter.limit(LLM_RATE_LIMIT)  # same per-user cap — the streaming twin hits the
+                               # same billing API, so it must be capped too
+def answer_stream(
+    request: Request,  # required by slowapi to read the rate-limit key
+    req: AnswerRequest,
+    _user: str = Depends(get_current_user),  # require a valid token (LLM = billed)
+) -> StreamingResponse:
     """Same answer as /api/answer, streamed token-by-token as plain UTF-8 chunks."""
 
     def gen():
@@ -372,7 +414,7 @@ def answer_stream(req: AnswerRequest) -> StreamingResponse:
             return
         full = "".join(parts).strip()
         if full:
-            _ANSWER_CACHE[key] = full
+            _ANSWER_CACHE.set(key, full)
 
     # no-store + disable proxy buffering so chunks flush immediately
     return StreamingResponse(
