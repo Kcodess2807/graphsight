@@ -45,6 +45,90 @@ benchmark section (§VI) where the headline thesis did *not* hold on the current
 
 ## II. Architecture & Stack
 
+The single idea the whole project is built around: **one hybrid store, queried by two arms
+(vector + graph), fused by intent.**
+
+```mermaid
+flowchart TB
+  %% ---------- 1 · INGESTION ----------
+  subgraph INGEST["1 · Ingestion pipeline (offline CLI)"]
+    direction TB
+    DOC["Source doc<br/>'PR #N merged by AUTHOR. Title… Description…'"]
+    DOC --> WIN["sliding_window_words<br/>300-word windows · 50 overlap"]
+    WIN --> NER["GLiNER zero-shot NER<br/>Person · Service · Library · PR<br/>Ticket · Team · Tool<br/>(spaCy ruler fallback)"]
+    NER --> MEMB["embed each mention<br/>MiniLM · 384-dim · normalized"]
+    MEMB --> CUR1{"cosine vs<br/>existing nodes"}
+    CUR1 -->|"≥ 0.92"| FAST["fast auto-merge<br/>0 LLM"]
+    CUR1 -->|"0.85 – 0.92"| DEEP["Groq · same entity?<br/>YES / NO · fail-safe NO"]
+    CUR1 -->|"under 0.85"| NEW["mint new node<br/>slug id"]
+    DEEP -->|YES| FAST
+    DEEP -->|NO| NEW
+  end
+
+  %% ---------- 2 · HYBRID STORE ----------
+  subgraph SCHEMA["2 · LadybugDB — single .lbug (vectors + graph)"]
+    direction LR
+    ENT[("Entity<br/>id · label · type<br/>embedding FLOAT 384")]
+    DOCN[("Document<br/>id · path · content")]
+    ENT -->|"RELATES_TO · confidence"| ENT
+    DOCN -->|MENTIONS| ENT
+    HNSW["HNSW vector index<br/>on Entity.embedding"]
+    ENT --- HNSW
+  end
+  FAST --> ENT
+  NEW --> ENT
+  MEMB -. "document + edges" .-> DOCN
+
+  %% ---------- 3 · QUERY ----------
+  Q(["User query"]) --> IC["classify_intent"]
+  IC -->|"keyword markers"| W["alpha / beta weights"]
+  IC -->|"ambiguous"| GROQI["Groq · SEMANTIC / RELATIONAL"]
+  GROQI --> W
+
+  subgraph VEC["3a · Vector arm — semantic"]
+    direction TB
+    QE["embed_query · MiniLM"] --> VS["QUERY_VECTOR_INDEX (HNSW)<br/>top-k pool · similarity s_v"]
+  end
+
+  subgraph GRAPH["3b · Graph arm — relational"]
+    direction TB
+    SEEDL["linked seeds<br/>spaCy ruler → find_nodes_by_label"]
+    SEEDF["fuzzy seeds<br/>cosine ≥ 0.35 · top-3"]
+    SEEDL --> SD["seed set · dedup"]
+    SEEDF --> SD
+    SD --> EF["expand_frontier<br/>ONE query per hop · no N+1"]
+    EF --> HUB["hub throttle<br/>skip degree above MAX_DEGREE"]
+    HUB --> PS["path_score =<br/>product of edge confidences"]
+    PS --> HOPQ{"hop below MAX_HOPS<br/>and frontier left?"}
+    HOPQ -->|yes| EF
+    HOPQ -->|no| GG["graph_scores s_g + hops"]
+  end
+
+  W --> QE
+  W --> SEEDL
+  VS --> SEEDF
+  QE -. reads .-> HNSW
+  VS -. reads .-> ENT
+  EF -. traverses .-> ENT
+
+  VS --> FUSE["Fusion · S = alpha·s_v + beta·s_g<br/>dynamic vector_k throttle by graph hits<br/>rank → top_k nodes"]
+  GG --> FUSE
+  FUSE --> AD["attach_documents · via MENTIONS"]
+  AD -. reads .-> DOCN
+  AD --> BC["build_context<br/>dedup chunks · graph traces first"]
+  BC --> GEN["Grounded generation<br/>OpenRouter · context-only · streamed"]
+  GEN --> OUT(["answer + per-node score pills<br/>+ trace_log → ReactFlow canvas"])
+```
+
+**The GraphRAG story in five lines**
+1. **One hybrid store, no sync.** LadybugDB holds *both* the 384-dim embeddings *and* the relationship graph in a single `.lbug` — no graph-DB ↔ vector-DB consistency problem.
+2. **Ingestion builds the graph.** Docs → GLiNER typed entities → two-tier curation dedupes → entities, embeddings, and `RELATES_TO` / `MENTIONS` edges land in the store.
+3. **Two arms read the same store.** A query fans into a **vector arm** (semantic similarity via HNSW) and a **graph arm** (multi-hop traversal over `RELATES_TO`, scoring paths by the product of edge confidences).
+4. **Intent decides the blend.** The classifier sets `alpha/beta`; fusion combines them as `S = alpha·s_v + beta·s_g`. "Who caused X?" leans graph; "explain X" leans vector.
+5. **Why it beats plain RAG.** Embeddings find *similar text*; the graph arm follows *relationships* — surfacing the PR / person / service connected to the answer even when the words don't match.
+
+### Stack
+
 | Layer | Technology | Role |
 |---|---|---|
 | **Embeddings** | `sentence-transformers` · `all-MiniLM-L6-v2` | 384-dim sentence vectors (cosine) |
@@ -99,6 +183,261 @@ A single generic `Entity` node table (`id, label, type, embedding`) keeps the sc
 across all entity labels. `Document` nodes store one **sliding-window chunk** each (with raw
 `content` for generation). Edges: `Document -[MENTIONS]-> Entity` and `Entity -[RELATES_TO]->
 Entity` (only between entities co-occurring in the *same* window — no document-wide hairball).
+
+### High-Level Design (HLD)
+
+```mermaid
+flowchart LR
+  subgraph CLIENT["TraceRAG Studio — Vite + React + ReactFlow"]
+    direction TB
+    UI["Visual canvas<br/>traced path · score pills · hover"]
+    AC["Answer card<br/>streamed + clickable citations"]
+    CK["Clerk SDK<br/>getToken bridge"]
+  end
+
+  CLERK[("Clerk<br/>Auth Provider / JWKS")]
+
+  subgraph BACKEND["FastAPI Backend"]
+    direction TB
+    CORS["CORS"]
+    AUTH["Auth dependency<br/>PyJWT + JWKS verify"]
+    RL["slowapi rate limiter<br/>per-user 10/min"]
+    ROUTER["TraceRouter<br/>intent-weighted hybrid retrieval"]
+    GEN["Answer / Summarize<br/>grounded · streamed · cached"]
+    HIST["History API<br/>ownership-checked"]
+    CACHE[("LRU caches")]
+  end
+
+  subgraph LOCAL["Local models (in-process)"]
+    direction TB
+    EMB["sentence-transformers<br/>all-MiniLM-L6-v2 · 384-dim"]
+    RULER["spaCy ruler<br/>query-side entity linking"]
+  end
+
+  subgraph DATA["Data stores"]
+    direction TB
+    LBUG[("LadybugDB<br/>vectors + graph in one .lbug<br/>HNSW vector index")]
+    PG[("Neon Postgres<br/>users · chat sessions · trace logs")]
+  end
+
+  subgraph EXT["External LLMs"]
+    direction TB
+    GROQ["Groq · llama-3.1-8b-instant<br/>intent + grey-zone merge"]
+    OR["OpenRouter · claude-3-haiku<br/>answers + summaries"]
+  end
+
+  subgraph INGESTHLD["Offline ingestion (CLI)"]
+    direction TB
+    GH[("GitHub API<br/>merged PRs")]
+    GLINER["GLiNER zero-shot NER<br/>spaCy fallback"]
+    CUR["Two-tier curation"]
+  end
+
+  CK -->|sign in| CLERK
+  UI -->|"query + Bearer JWT"| CORS
+  AC -->|"answer + Bearer JWT"| CORS
+  CORS --> AUTH
+  AUTH -->|verify| CLERK
+  AUTH --> RL
+  RL --> ROUTER
+  RL --> HIST
+  RL --> GEN
+  ROUTER --> EMB
+  ROUTER --> RULER
+  ROUTER --> LBUG
+  ROUTER --> GROQ
+  GEN --> CACHE
+  GEN --> OR
+  GEN -->|SSE tokens| AC
+  ROUTER -->|subgraph| UI
+  HIST --> PG
+
+  GH --> GLINER --> CUR
+  CUR -->|nodes + edges| LBUG
+  CUR -->|adjudicate| GROQ
+```
+
+- Every request crosses **CORS → Auth (JWT verify against Clerk's JWKS) → per-user rate limit** before any business logic.
+- The retrieval core (`TraceRouter`) reads the **single hybrid store (LadybugDB)**, embeds locally (no network for embeddings), and calls **Groq** only for the cheap intent decision.
+- Generation is a **separate, cached, streamed** path to **OpenRouter** — off the retrieval critical path. **History** is independent (Postgres), and **ingestion is fully offline**.
+
+### Low-Level Design — query & retrieval pipeline (`POST /api/trace`)
+
+```mermaid
+flowchart TB
+  START(["POST /api/trace<br/>{ query, top_k, session_id }"])
+
+  subgraph SEC["Security chain"]
+    direction TB
+    A1["extract Bearer token"] --> A2["JWKS: resolve public key by kid"]
+    A2 --> A3["verify RS256 sig + exp / iss / azp"]
+    A3 --> A4["sub → request.state.user_id"]
+    A4 --> A5["slowapi: bucket = user_id<br/>10/min else HTTP 429"]
+  end
+
+  START --> A1
+  A5 --> I1
+
+  subgraph ROUTE["TraceRouter.route — recall"]
+    direction TB
+    I1["classify_intent<br/>keyword markers (free)"] -->|ambiguous| I2["Groq fallback<br/>SEMANTIC / RELATIONAL"]
+    I1 --> W["alpha, beta weights"]
+    I2 --> W
+    W --> E["embed_query<br/>MiniLM 384-dim, normalized"]
+    E --> V["vector_hits<br/>CALL QUERY_VECTOR_INDEX (HNSW)<br/>pool = (id, similarity)"]
+    V --> S1["linked seeds<br/>spaCy ruler → find_nodes_by_label"]
+    V --> S2["fuzzy seeds<br/>cosine ≥ min_sim, top-N"]
+    S1 --> S["seeds (dedup)"]
+    S2 --> S
+  end
+
+  S --> B1
+
+  subgraph BFS["graph_stream — multiplicative BFS, per hop"]
+    direction TB
+    B1["expand_frontier(frontier)<br/>ONE query per hop (no N+1)"] --> B2["hub throttle:<br/>skip nodes with degree above MAX_DEGREE"]
+    B2 --> B3["path_score = product of edge confidences<br/>keep max score per node"]
+    B3 --> B4{"more hops left<br/>and frontier not empty?"}
+    B4 -->|yes| B1
+    B4 -->|no| BOUT["graph_scores + hops"]
+  end
+
+  subgraph ASSEMBLE["Fuse & assemble"]
+    direction TB
+    F["fuse: S = alpha·s_v + beta·s_g<br/>throttle vector_k by graph hits<br/>rank → top_k"]
+    F --> D["attach_documents<br/>via MENTIONS edges"]
+    D --> C["build_context<br/>dedup chunks · traces first"]
+  end
+
+  BOUT --> F
+  C --> OUT(["results + trace_log + context"])
+
+  E -. uses .-> EMB[("MiniLM (local)")]
+  V -. reads .-> LBUG[("LadybugDB")]
+  B1 -. reads .-> LBUG
+  D -. reads .-> LBUG
+  I2 -. calls .-> GROQ[("Groq")]
+
+  OUT --> SUB["POST /api/subgraph<br/>1-hop neighborhood → ReactFlow canvas"]
+  OUT -. "if session_id" .-> PERSIST[("persist_trace → Postgres<br/>ownership-checked")]
+  OUT --> ANS["POST /api/answer/stream"]
+
+  subgraph GENF["Answer generation"]
+    direction TB
+    G1{"LRU hit?<br/>key = (query, context)"} -->|hit| G3["stream cached text"]
+    G1 -->|miss| G2["OpenRouter (stream)<br/>grounded, context-only prompt"]
+    G2 --> G3
+  end
+
+  ANS --> G1
+  G3 --> TOK["SSE tokens → Answer card<br/>→ clickable citations"]
+```
+
+1. **Security first.** Auth + rate limit run as dependencies *before* the handler; the verified `sub` is stashed on `request.state` so the limiter keys per user.
+2. **Intent is two-tier.** Keyword markers decide most queries for free; only ambiguous ones pay a fast Groq call. Intent sets the fusion weights.
+3. **Two recall arms.** Vector arm hits HNSW; graph arm seeds from links + fuzzy hits, then runs a **batched BFS** (one DB query per hop), scoring paths by the product of edge confidences, with hubs throttled.
+4. **Fusion + assembly.** `S = alpha·s_v + beta·s_g`; documents pulled via `MENTIONS`, de-duplicated into the final context.
+5. **Generation is decoupled.** Canvas (`/api/subgraph`) and streamed answer (`/api/answer/stream`, LRU-cached) are separate calls — the LLM never blocks retrieval.
+
+### Low-Level Design — ingestion & curation pipeline (offline)
+
+```mermaid
+flowchart TB
+  GH[("GitHub API<br/>/repos/{repo}/pulls?state=closed")] --> FETCH["fetch_merged_prs<br/>page, keep merged_at != null, limit 50"]
+  FETCH --> ASM["assemble_text<br/>'PR #N merged by AUTHOR. Title… Description…'<br/>strip markdown / HTML"]
+  ASM --> WIN["sliding_window_words<br/>300-word windows, 50 overlap"]
+  WIN --> NER["GLiNER zero-shot NER<br/>Person · Service · Library · PR · Ticket · Team · Tool<br/>(spaCy ruler fallback)"]
+  NER --> MEMB["embed each mention<br/>MiniLM 384-dim"]
+  MEMB --> C1
+
+  subgraph CURING["Two-tier curation — per mention"]
+    direction TB
+    C1{"cosine vs existing nodes"}
+    C1 -->|"≥ 0.92"| C2["fast auto-merge<br/>0 LLM calls"]
+    C1 -->|"0.85 – 0.92"| C3["Groq: same entity? YES / NO<br/>fail-safe to NO"]
+    C1 -->|"under 0.85"| C4["mint new node<br/>deterministic slug id"]
+    C3 -->|YES| C2
+    C3 -->|NO| C4
+  end
+
+  C2 --> UP
+  C4 --> UP
+  UP["upsert nodes (never clobber canonical)<br/>RELATES_TO = same-window co-occurrence<br/>Document → Entity via MENTIONS<br/>store PR url as source"] --> IDX["build_vector_index<br/>HNSW over embeddings (once, post-ingest)"]
+  IDX --> OUTDB[("graphs/{owner}__{repo}.lbug")]
+
+  C3 -. calls .-> GROQ2[("Groq")]
+```
+
+- Each merged PR becomes one document; entities are extracted **per sliding window** so long bodies don't lose tail entities.
+- The **"Janitor"** is the two-tier curation: cosine auto-merges obvious duplicates; only the grey zone (0.85–0.92) costs a Groq call, which **fails safe to NO**.
+- The HNSW index is built **once after** ingestion (the index is static and can't be mutated while embeddings are written).
+
+### End-to-end request sequence
+
+```mermaid
+sequenceDiagram
+  autonumber
+  participant U as Browser Studio
+  participant A as FastAPI auth+ratelimit
+  participant R as TraceRouter
+  participant L as LadybugDB
+  participant G as Groq
+  participant O as OpenRouter
+  participant P as Postgres
+
+  U->>A: POST /api/trace (query + Bearer JWT)
+  A->>A: verify JWT via JWKS, set user_id
+  A->>A: rate-limit bucket(user_id)
+  A->>R: route(query)
+  R->>R: classify intent (keyword markers)
+  opt ambiguous
+    R->>G: classify SEMANTIC / RELATIONAL
+    G-->>R: intent
+  end
+  R->>L: vector_hits (HNSW)
+  L-->>R: pool
+  loop per hop (up to MAX_HOPS)
+    R->>L: expand_frontier (batched, 1 query)
+    L-->>R: neighbors + confidences
+  end
+  R->>L: documents_for_entities (MENTIONS)
+  L-->>R: chunks
+  R-->>A: results + trace_log + context
+  opt session_id present
+    A->>P: persist_trace (ownership-checked)
+  end
+  A-->>U: trace payload
+
+  U->>A: POST /api/subgraph (node_ids)
+  A->>L: 1-hop neighborhood
+  L-->>A: nodes + edges
+  A-->>U: nodes + edges (canvas render)
+
+  U->>A: POST /api/answer/stream (query, context)
+  alt LRU cache hit
+    A-->>U: stream cached answer
+  else cache miss
+    A->>O: grounded prompt (context only)
+    O-->>A: token stream
+    A-->>U: SSE tokens
+  end
+  U->>U: click citation, then pan / zoom / highlight node
+```
+
+### Component reference
+
+| Component | Responsibility | Key files |
+|---|---|---|
+| TraceRouter | Intent classification, dual-arm retrieval, fusion, context assembly | `tracerag/router.py` |
+| TraceDB | LadybugDB schema, HNSW, batched graph queries | `tracerag/db.py` |
+| EntityExtractor | GLiNER (→ spaCy) over sliding windows | `tracerag/extract.py` |
+| CurationEngine | Two-tier entity resolution | `tracerag/curation.py` |
+| Auth | Clerk JWT verification (PyJWT + JWKS) + dev-bypass | `auth.py` |
+| Rate limiter | Per-user slowapi limiter | `ratelimit.py` |
+| LRU caches | Bounded answer / summary caches | `cache.py` |
+| History | Sessions + trace logs, ownership-checked | `routers/history.py`, `models.py` |
+| API | FastAPI app + endpoints | `api.py` |
+| Studio | Visual tracer, answer card, citations | `frontend/src/` |
 
 ---
 
