@@ -29,6 +29,25 @@ from routers import history
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("tracerag.api")
 
+# Error tracking + performance monitoring. No-op when SENTRY_DSN is unset, so
+# dev runs are unaffected. Initialized before the app is created so Sentry's
+# auto-enabled FastAPI/Starlette/asyncio/threading integrations hook in — the
+# asyncio + threading ones are what capture errors raised inside our async
+# routes and the embed ThreadPoolExecutor (they re-raise via future.result()).
+if config.SENTRY_ENABLED:
+    import sentry_sdk
+
+    sentry_sdk.init(
+        dsn=config.SENTRY_DSN,
+        environment=config.SENTRY_ENVIRONMENT,
+        traces_sample_rate=config.SENTRY_TRACES_SAMPLE_RATE,
+        send_default_pii=False,  # don't ship request bodies / auth headers to Sentry
+    )
+    logger.info(
+        "Sentry enabled (env=%s, traces_sample_rate=%.2f)",
+        config.SENTRY_ENVIRONMENT, config.SENTRY_TRACES_SAMPLE_RATE,
+    )
+
 _state: dict = {}
 
 

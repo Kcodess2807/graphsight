@@ -50,3 +50,6 @@ aiohttp>=3.9.0                 # scripts/stress_test.py load generator
 slowapi>=0.1.9                 # FastAPI rate limiting (see api.py hardening)
 requests>=2.31.0              # scripts/ingest_github.py live PR connector
 
+# --- Observability ---
+sentry-sdk[fastapi]>=2.0.0    # error tracking + perf monitoring (opt-in via SENTRY_DSN)
+

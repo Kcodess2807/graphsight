@@ -39,6 +39,14 @@ QUERY_EXTRACT_CACHE = int(os.getenv("TRACERAG_QUERY_EXTRACT_CACHE", "512"))
 # testing). Real questions are short; truncate the rest. Guards embed + extract.
 MAX_QUERY_CHARS = int(os.getenv("TRACERAG_MAX_QUERY_CHARS", "2000"))
 
+# Sentry error tracking + performance monitoring. Fully optional: unset DSN =
+# disabled, so local/dev runs are untouched. traces_sample_rate is 1.0 (trace
+# everything) in dev; scale down in production (e.g. 0.1) to cap overhead/cost.
+SENTRY_DSN = os.getenv("SENTRY_DSN")
+SENTRY_ENABLED = bool(SENTRY_DSN)
+SENTRY_ENVIRONMENT = os.getenv("SENTRY_ENVIRONMENT", "development")
+SENTRY_TRACES_SAMPLE_RATE = float(os.getenv("SENTRY_TRACES_SAMPLE_RATE", "1.0"))
+
 
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 OPENROUTER_BASE_URL = os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1")
