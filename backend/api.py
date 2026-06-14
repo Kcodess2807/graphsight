@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from contextlib import asynccontextmanager
 from dataclasses import asdict
@@ -16,7 +17,7 @@ from slowapi import _rate_limit_exceeded_handler
 
 from tracerag import config
 from tracerag.db import TraceDB
-from tracerag.router import TraceRouter
+from tracerag.router import TraceRouter, shutdown_embed_executor
 from tracerag.integrations.langchain import format_page_content
 
 from auth import get_current_user
@@ -33,26 +34,52 @@ _state: dict = {}
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    """Startup: open the DB + warm models. Shutdown: drain pools, flush to disk."""
+    # ---- startup --------------------------------------------------------------
     db = TraceDB(config.DB_PATH)
     db.init_schema()
     _state["db"] = db
     _state["db_path"] = str(config.DB_PATH)
     _state["router"] = TraceRouter(db)
-    # warm models so the first query isn't slow
+
+    # Cold-boot warmup: pull model weights into RAM and spin up the embed-executor
+    # threads + spaCy pipeline, so the first real UI query skips the cold-start
+    # latency spike. Runs off the event loop and never blocks boot on failure.
     try:
-        _state["router"].warm()
-    except Exception as exc:  # noqa: BLE001
+        await asyncio.to_thread(_state["router"].warm)
+        logger.info("Warmup complete (embedder + executor threads + spaCy primed).")
+    except Exception as exc:  # noqa: BLE001 — warmup is best-effort
         logger.warning("Router warmup skipped (%s).", exc)
+
     # history is optional; api still boots without it
     try:
         init_db()
     except Exception as exc:  # noqa: BLE001
         logger.warning("Postgres history disabled (%s).", exc)
+
     logger.info("TraceRAG STUDIO API ready (db=%s)", config.DB_PATH)
     try:
         yield
     finally:
-        db.close()
+        # ---- graceful shutdown ------------------------------------------------
+        # Close BOTH the original and the currently-active DB: a graph hot-swap
+        # replaces _state["db"] with a new TraceDB, so the active one would
+        # otherwise leak its pooled connections. close() drains every leased
+        # connection and lets LadybugDB flush its WAL to disk (idempotent, so
+        # closing an already-swapped-out handle is a safe no-op).
+        for handle in {db, _state.get("db")}:  # set dedupes when no swap happened
+            if handle is None:
+                continue
+            try:
+                handle.close()
+            except Exception as exc:  # noqa: BLE001
+                logger.warning("DB close failed during shutdown: %s", exc)
+        # Join the embed executor's worker threads (let in-flight encodes finish).
+        try:
+            shutdown_embed_executor(wait=True)
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("Embed executor shutdown failed: %s", exc)
+        logger.info("TraceRAG shutdown complete (pools drained, flushed to disk).")
 
 
 app = FastAPI(title="TraceRAG STUDIO API", version="0.1.0", lifespan=lifespan)
@@ -83,13 +110,15 @@ class SubgraphRequest(BaseModel):
 
 
 @app.post("/api/trace")
-def trace(
+async def trace(
     req: TraceRequest,
     user_id: str = Depends(get_current_user),  # require a valid token
 ) -> dict:
     """Run the router and return the full trace for visualization."""
     router: TraceRouter = _state["router"]
-    response = router.route(req.query, top_k=req.top_k or config.TOP_K_VECTOR)
+    # aroute offloads the blocking hybrid retrieval (DB pool + embed pool) off
+    # the event loop, so concurrent requests no longer serialize on one thread.
+    response = await router.aroute(req.query, top_k=req.top_k or config.TOP_K_VECTOR)
     payload = asdict(response)
     # rendered context the generation model would receive
     for node, result in zip(response.results, payload["results"]):
@@ -99,12 +128,14 @@ def trace(
         # Ownership check (write-side IDOR): only persist into a session that
         # belongs to the authenticated user. Unknown session → 404; someone
         # else's session → 403. A query with no session_id stays anonymous.
-        owner = history.session_owner(req.session_id)
+        # Postgres calls are blocking → run them off the loop too.
+        owner = await asyncio.to_thread(history.session_owner, req.session_id)
         if owner is None:
             raise HTTPException(status_code=404, detail="session not found")
         if owner != user_id:
             raise HTTPException(status_code=403, detail="not your session")
-        payload["trace_id"] = history.persist_trace(
+        payload["trace_id"] = await asyncio.to_thread(
+            history.persist_trace,
             session_id=req.session_id,
             query=req.query,
             execution_plan=payload["trace_log"],
@@ -114,10 +145,11 @@ def trace(
 
 
 @app.post("/api/subgraph")
-def subgraph(req: SubgraphRequest) -> dict:
+async def subgraph(req: SubgraphRequest) -> dict:
     """Requested nodes plus their 1-hop neighbors and edges."""
     db: TraceDB = _state["db"]
-    return db.subgraph(req.node_ids)
+    # blocking DB read -> offload so the loop stays free under concurrency
+    return await asyncio.to_thread(db.subgraph, req.node_ids)
 
 
 class SummarizeRequest(BaseModel):

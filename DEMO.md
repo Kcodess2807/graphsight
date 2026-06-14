@@ -139,6 +139,33 @@ A tight three-beat sequence that shows the whole story:
 
 ---
 
+## New source: Jira tickets (not GitHub)
+
+> This is the **"same engine, any source"** proof. The graphs above are GitHub
+> PRs; the one below is **150 live Apache Jira tickets** pulled straight from
+> `issues.apache.org` via the REST API (`scripts/ingest_jira_api.py`, built
+> 2026-06-14). Identical pipeline — GLiNER extraction → two-tier curation →
+> hybrid retrieval — just a different ingestion adapter. Switching to it on
+> camera shows TraceRAG isn't a GitHub toy.
+
+### apache/kafka
+- ⭐ `[Graph]` **What is related to KAFKA-20688?** — the hero: a real memory-leak
+  bug; the answer names reporter **Lucy Liu**, assignee **Matthias J. Sax**, and
+  the **streams** component, and its node lights up a dense neighborhood.
+- `[Graph]` What did Matthias J. Sax work on?
+- `[Graph]` What did Alieh Saeedi work on?
+- `[Graph]` What is connected to Kafka Streams?
+- `[Graph]` What is related to KAFKA-20570?
+- `[Graph]` What is KIP-1301 about?
+- `[Vector]` Explain the recent RocksDB / state-store changes.
+
+> Tickets, components, and reporter/assignee names are all real GLiNER-extracted
+> entities. Accented committer names (e.g. *José Armando García Sancio*) store
+> correctly after the multi-byte extraction fix — safe to land on if a citation
+> surfaces one.
+
+---
+
 ## Tips for a clean demo
 
 - **Lead with `[Graph]` questions** — they produce the visible traced-path "pop"

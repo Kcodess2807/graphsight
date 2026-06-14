@@ -82,9 +82,10 @@ function deriveTrace(query: string): TraceState {
 }
 
 export function TraceDashboard() {
-  const [query, setQuery] = useState(MOCK_TRACE.query);
-  const [trace, setTrace] = useState<TraceState>(MOCK_TRACE);
-  const [loading, setLoading] = useState(true);
+  // start on a clean empty canvas; the EmptyState shows graph-aware suggestions
+  const [query, setQuery] = useState("");
+  const [trace, setTrace] = useState<TraceState>(EMPTY_TRACE);
+  const [loading, setLoading] = useState(false);
   const [answer, setAnswer] = useState<string | null>(null);
   const [answering, setAnswering] = useState(false);
   const isDesktop = useMediaQuery("(min-width: 1024px)");
@@ -246,12 +247,6 @@ export function TraceDashboard() {
     } finally {
       setLoading(false);
     }
-  }, []);
-
-  // live trace on mount for the default query; persist:false so it creates no session
-  useEffect(() => {
-    void handleSearch(MOCK_TRACE.query, { persist: false });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (

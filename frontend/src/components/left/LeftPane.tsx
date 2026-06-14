@@ -106,7 +106,11 @@ export function LeftPane({
             <AuthControls />
           </div>
         </div>
-        <SearchCommand query={query} onQueryChange={onQueryChange} />
+        <SearchCommand
+          query={query}
+          onQueryChange={onQueryChange}
+          suggestions={suggestions}
+        />
         <GraphSwitcher onSwitched={handleGraphSwitched} />
       </div>
 

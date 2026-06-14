@@ -23,6 +23,22 @@ RESULTS_CSV = Path(os.getenv("TRACERAG_RESULTS_CSV", PROJECT_ROOT / "results.csv
 EMBED_MODEL = os.getenv("TRACERAG_EMBED_MODEL", "all-MiniLM-L6-v2")
 EMBED_DIM = 384  # must match the FLOAT[384] schema column
 
+# Concurrency: LadybugDB parallelizes reads across connections (it releases the
+# GIL in C++), so a small pool of read connections removes the single-connection
+# convoy seen under load. Writes stay on one dedicated connection (single-writer).
+DB_POOL_SIZE = int(os.getenv("TRACERAG_DB_POOL_SIZE", "10"))
+DB_POOL_TIMEOUT = float(os.getenv("TRACERAG_DB_POOL_TIMEOUT", "15"))  # s to wait for a free conn
+# Embedding is CPU-heavy; bound concurrent encodes so they can't starve request
+# threads. torch releases the GIL during encode, so threads (not processes) suffice.
+EMBED_WORKERS = int(os.getenv("TRACERAG_EMBED_WORKERS", "4"))
+# Query-side entity extraction (spaCy) is GIL-bound; cache results so repeated
+# queries skip it. 0 disables (ingest path). Bounded LRU — no unbounded growth.
+QUERY_EXTRACT_CACHE = int(os.getenv("TRACERAG_QUERY_EXTRACT_CACHE", "512"))
+# Cap query length before retrieval. spaCy work grows with input size, so an
+# oversized query is a CPU-DoS (a 50 KB query stalled a worker for ~90s in
+# testing). Real questions are short; truncate the rest. Guards embed + extract.
+MAX_QUERY_CHARS = int(os.getenv("TRACERAG_MAX_QUERY_CHARS", "2000"))
+
 
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 OPENROUTER_BASE_URL = os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1")

@@ -47,3 +47,7 @@ yarn-error.log*
 .idea/
 .vscode/*
 !.vscode/extensions.json
+DEMO_SCRIPT.md
+DEMO.md
+STRESS_RESULTS.md
+DEMO.md

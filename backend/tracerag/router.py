@@ -2,14 +2,33 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import time
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 
 from . import config
 from .db import TraceDB
 
 logger = logging.getLogger(__name__)
+
+# Dedicated, bounded pool for the CPU-heavy embedding step. torch releases the
+# GIL during encode, so threads parallelize; bounding the workers keeps a burst
+# of embeds from starving the request threads (or the FastAPI threadpool).
+# Module-level + lazy so it is shared across requests and survives graph swaps.
+_EMBED_EXECUTOR = ThreadPoolExecutor(
+    max_workers=config.EMBED_WORKERS, thread_name_prefix="embed"
+)
+
+
+def shutdown_embed_executor(wait: bool = True) -> None:
+    """Stop the shared embed executor, letting in-flight encodes finish first.
+
+    Called from the FastAPI lifespan shutdown so worker threads are joined
+    cleanly on Ctrl+C instead of being abandoned at interpreter exit.
+    """
+    _EMBED_EXECUTOR.shutdown(wait=wait)
 
 
 @dataclass
@@ -42,10 +61,16 @@ class TraceRouter:
         self._extractor = None
 
     def warm(self) -> None:
-        """Preload embedder + spaCy extractor so the first query skips model-load cost."""
-        self._get_embedder().encode("warmup", normalize_embeddings=True)
+        """Cold-boot warmup: load model weights into RAM and spin up the worker
+        threads, so the first real query skips the cold-start latency spike.
+
+        Routes through ``embed_query`` (not the raw embedder) so the bounded embed
+        executor's threads are created and the torch graph is traced; and through
+        the extractor so the spaCy pipeline is loaded into memory.
+        """
+        self.embed_query("warmup query")          # warms embedder + executor threads
         try:
-            self._get_extractor().extract("warmup")
+            self._get_extractor().extract("warmup query")  # warms spaCy pipeline
         except Exception as exc:  # noqa: BLE001 — never let warmup break boot
             logger.debug("extractor warmup skipped (%s)", exc)
 
@@ -80,9 +105,26 @@ class TraceRouter:
                 ids.append(nid)
         return list(dict.fromkeys(ids))
 
-    def embed_query(self, text: str) -> list[float]:
+    def _encode(self, text: str) -> list[float]:
         vec = self._get_embedder().encode(text, normalize_embeddings=True)
         return [float(x) for x in vec]
+
+    def embed_query(self, text: str) -> list[float]:
+        # Offload the encode to the dedicated bounded pool: concurrent embeds are
+        # isolated and capped, so a burst can't monopolize the request threads.
+        # .result() blocks the calling worker thread, never the event loop.
+        return _EMBED_EXECUTOR.submit(self._encode, text).result()
+
+    async def aroute(self, query: str, top_k: int | None = None) -> "RouterResponse":
+        """Async entry point: run the (blocking) hybrid route off the event loop.
+
+        The retrieval itself stays synchronous — its concurrency now comes from
+        the DB read pool (parallel graph/vector reads) and the bounded embed
+        pool. This wrapper just keeps the asyncio loop free so the API can serve
+        many requests at once without blocking.
+        """
+        loop = asyncio.get_running_loop()
+        return await loop.run_in_executor(None, self.route, query, top_k)
 
     def _get_llm(self):
         if self._llm is None:
@@ -219,6 +261,9 @@ class TraceRouter:
         return "\n\n".join(sections)
 
     def route(self, query: str, top_k: int | None = None) -> RouterResponse:
+        # Bound input size: spaCy/embedding cost scales with length, so an
+        # oversized query is a CPU-DoS. Real questions are short — truncate.
+        query = (query or "")[: config.MAX_QUERY_CHARS]
         t0 = time.perf_counter()
         alpha, beta, intent = self._classify_intent(query)
         t_intent = time.perf_counter()
