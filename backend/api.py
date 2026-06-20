@@ -112,7 +112,7 @@ app.include_router(history.router)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=config.CORS_ORIGINS,  # "*" by default; lock to the frontend in prod
     allow_methods=["*"],
     allow_headers=["*"],
 )

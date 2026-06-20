@@ -18,7 +18,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Wordmark } from "@/components/Wordmark";
-import { TraceRAGArchitectureFlow } from "@/components/docs/TraceRAGArchitectureFlow";
+import { MermaidDiagram } from "@/components/docs/MermaidDiagram";
+import { ARCHITECTURE_CHART } from "@/components/docs/architectureChart";
 import { cn } from "@/lib/utils";
 
 const fadeUp = {
@@ -396,14 +397,15 @@ export default function TraceRAGConceptsDoc() {
         {/* architecture walkthrough */}
         <Section index={4} className="mt-12">
           <div className="prose prose-zinc mb-7 max-w-none prose-h2:mb-3 prose-h2:text-2xl prose-p:text-zinc-600">
-            <h2>The Lifecycle of a Query</h2>
+            <h2>The Architecture, End to End</h2>
             <p>
-              Here is the whole system, end to end. Step through it to watch a
-              question travel from the router, split across the two brains, fuse
-              back together, and become a fully-traced answer.
+              The complete system in a single view — ingestion building the
+              graph, the one hybrid store that holds vectors and relationships
+              together, and a query fanning across the vector and graph arms
+              before fusing into a fully-traced answer.
             </p>
           </div>
-          <TraceRAGArchitectureFlow />
+          <MermaidDiagram chart={ARCHITECTURE_CHART} />
         </Section>
 
         <Separator />

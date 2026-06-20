@@ -92,3 +92,29 @@
   opacity: 0;
   pointer-events: none;
 }
+
+/* Mermaid architecture diagram — staggered reveal (see MermaidDiagram.tsx) */
+.mermaid-host svg {
+  max-width: 100%;
+  height: auto;
+}
+@keyframes mm-fade {
+  to {
+    opacity: 1;
+  }
+}
+@keyframes mm-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mermaid-host .node,
+  .mermaid-host .cluster,
+  .mermaid-host .edgePaths path,
+  .mermaid-host .edgeLabel {
+    opacity: 1 !important;
+    stroke-dashoffset: 0 !important;
+    animation: none !important;
+  }
+}

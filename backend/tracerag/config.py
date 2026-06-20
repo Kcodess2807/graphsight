@@ -39,6 +39,13 @@ QUERY_EXTRACT_CACHE = int(os.getenv("TRACERAG_QUERY_EXTRACT_CACHE", "512"))
 # testing). Real questions are short; truncate the rest. Guards embed + extract.
 MAX_QUERY_CHARS = int(os.getenv("TRACERAG_MAX_QUERY_CHARS", "2000"))
 
+# CORS allow-list. "*" (default) accepts any origin — fine for local/dev. In
+# production set CORS_ORIGINS to your frontend origin(s), comma-separated,
+# e.g. "https://tracerag.vercel.app".
+CORS_ORIGINS = [
+    o.strip() for o in os.getenv("CORS_ORIGINS", "*").split(",") if o.strip()
+] or ["*"]
+
 # Sentry error tracking + performance monitoring. Fully optional: unset DSN =
 # disabled, so local/dev runs are untouched. traces_sample_rate is 1.0 (trace
 # everything) in dev; scale down in production (e.g. 0.1) to cap overhead/cost.
