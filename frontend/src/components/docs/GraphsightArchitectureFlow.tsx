@@ -77,7 +77,7 @@ const ACCENT: Record<
   slate: { stroke: "#64748b", border: "border-slate-300", glow: "shadow-[0_0_22px_rgba(100,116,139,0.28)]", chip: "bg-slate-100", icon: "text-slate-600" },
 };
 
-export function TraceRAGArchitectureFlow() {
+export function GraphsightArchitectureFlow() {
   const [activeStep, setActiveStep] = useState(0);
   const canvasRef = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ w: 0, h: 0 });

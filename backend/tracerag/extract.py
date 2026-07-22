@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import logging
 import re
+import threading
+from collections import OrderedDict
 from dataclasses import dataclass
 from typing import Iterator
 
@@ -119,6 +121,12 @@ class EntityExtractor:
         self._gliner = None
         self._spacy = None
         self._gliner_failed = False
+        # Query-side extraction is a pure fn of the text and GIL-bound (spaCy),
+        # so cache it: repeated queries skip the pass entirely. Disabled for the
+        # ingest path (prefer_gliner=True), where every document text is unique.
+        self._cache_cap = 0 if prefer_gliner else config.QUERY_EXTRACT_CACHE
+        self._cache: "OrderedDict[str, list[ExtractedEntity]]" = OrderedDict()
+        self._cache_lock = threading.Lock()
 
     def _get_gliner(self):
         if not self._prefer_gliner:
@@ -140,7 +148,13 @@ class EntityExtractor:
 
             try:
                 logger.info("Loading spaCy model: %s", config.SPACY_MODEL)
-                nlp = spacy.load(config.SPACY_MODEL)
+                # Entity linking needs only tok2vec + ruler + ner. Excluding the
+                # tagger/parser/lemmatizer cuts per-call CPU (and GIL-hold), which
+                # is what dominates query latency under concurrency.
+                nlp = spacy.load(
+                    config.SPACY_MODEL,
+                    exclude=["tagger", "parser", "lemmatizer", "attribute_ruler"],
+                )
             except OSError as exc:
                 raise RuntimeError(
                     f"spaCy model '{config.SPACY_MODEL}' not found. "
@@ -156,10 +170,24 @@ class EntityExtractor:
     def extract(self, text: str) -> list[ExtractedEntity]:
         if not text or not text.strip():
             return []
+        if self._cache_cap:
+            with self._cache_lock:
+                cached = self._cache.get(text)
+                if cached is not None:
+                    self._cache.move_to_end(text)
+                    return cached
         model = self._get_gliner()
         if model is not None:
-            return self._extract_gliner(text, model)
-        return self._extract_spacy(text)
+            result = self._extract_gliner(text, model)
+        else:
+            result = self._extract_spacy(text)
+        if self._cache_cap:
+            with self._cache_lock:
+                self._cache[text] = result
+                self._cache.move_to_end(text)
+                if len(self._cache) > self._cache_cap:
+                    self._cache.popitem(last=False)
+        return result
 
     def _extract_gliner(self, text: str, model) -> list[ExtractedEntity]:
         found: list[ExtractedEntity] = []
@@ -172,7 +200,10 @@ class EntityExtractor:
                 logger.warning("GLiNER failed on a window (%s); skipping.", exc)
                 continue
             for p in preds:
-                clean = clean_entity_text(p["text"])
+                # GLiNER's p["text"] corrupts multi-byte chars (José -> Jos�);
+                # re-slice the span from the source using its (correct) offsets.
+                raw = win.text[p["start"]:p["end"]] or p["text"]
+                clean = clean_entity_text(raw)
                 if clean is None:
                     continue
                 found.append(ExtractedEntity(

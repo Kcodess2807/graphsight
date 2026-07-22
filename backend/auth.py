@@ -15,7 +15,10 @@ locked out. Configured => enforce; unconfigured => warn-and-allow.
 
 from __future__ import annotations
 
+import hashlib
+import hmac
 import logging
+from contextvars import ContextVar
 
 import jwt
 from fastapi import Header, HTTPException, Request, status
@@ -178,3 +181,105 @@ def _resolve_user_id(authorization: str | None) -> str:
     token = _extract_bearer(authorization)
     claims = _verify_token(token)
     return claims["sub"]  # the Clerk user id — safe to trust post-verification.
+
+
+# ===========================================================================
+# Tenant resolution (SaaS API tier). Separate from Clerk user auth above:
+# Clerk identifies a *user* (web app); an API key identifies an *org* (tenant),
+# and selects which isolated graph the request is served from.
+# ===========================================================================
+
+# Request-scoped current org, so code paths without a Request handle (the MCP
+# tools, run under asyncio.to_thread which copies the context) can read it.
+_current_org: ContextVar[str | None] = ContextVar("current_org", default=None)
+
+
+def current_org() -> str | None:
+    """The org resolved for the in-flight request, or None if unset."""
+    return _current_org.get()
+
+
+def set_current_org(org_id: str | None) -> None:
+    _current_org.set(org_id)
+
+
+def hash_api_key(raw: str) -> str:
+    """Deterministic hash of a raw API key. We only ever store/compare hashes."""
+    return hashlib.sha256(raw.encode("utf-8")).hexdigest()
+
+
+def _report_anomaly(message: str, **context) -> None:
+    """Log an auth/tenancy anomaly and forward it to Sentry when enabled."""
+    logger.warning("%s | %s", message, context)
+    if config.SENTRY_ENABLED:
+        try:
+            import sentry_sdk
+
+            with sentry_sdk.push_scope() as scope:
+                for k, v in context.items():
+                    scope.set_tag(f"tenant.{k}", str(v))
+                sentry_sdk.capture_message(message, level="warning")
+        except Exception:  # noqa: BLE001 — telemetry must never break a request
+            pass
+
+
+def resolve_org_from_token(token: str | None) -> str | None:
+    """Resolve a Bearer API key to an org_id via the control-plane ApiKey table.
+
+    Constant-time: we look the key up by its hash (indexed), then confirm with
+    ``hmac.compare_digest`` so a partial hash collision can't slip through, and we
+    reject revoked keys. Returns None on any miss (never leaks which check failed).
+    """
+    if not token:
+        return None
+    digest = hash_api_key(token)
+    try:
+        from sqlmodel import Session, select
+
+        from models.control_plane import ApiKey, get_control_plane_engine
+
+        with Session(get_control_plane_engine()) as db:
+            row = db.exec(select(ApiKey).where(ApiKey.hashed_key == digest)).first()
+    except Exception as exc:  # noqa: BLE001 — DB down, misconfig, etc.
+        _report_anomaly("api_key_lookup_failed", error=str(exc))
+        return None
+
+    if row is None or not hmac.compare_digest(row.hashed_key, digest):
+        return None
+    if row.revoked_at is not None:
+        _report_anomaly("revoked_api_key_used", org_id=row.org_id, key_id=row.key_id)
+        return None
+    return row.org_id
+
+
+def get_current_tenant_org(
+    request: Request,
+    authorization: str | None = Header(default=None),
+) -> str:
+    """FastAPI dependency → the org_id this request is scoped to.
+
+    Single-tenant (MULTI_TENANCY_ENABLED unset): returns DEFAULT_TENANT_ORG_ID
+    with no token required, so local/dev is never locked out. Multi-tenant:
+    resolves the Bearer API key to an org (reusing the routing middleware's result
+    if it already ran), 401 on an invalid/revoked key.
+    """
+    if not config.MULTI_TENANCY_ENABLED:
+        org_id = config.DEFAULT_TENANT_ORG_ID
+        request.state.org_id = org_id
+        set_current_org(org_id)
+        return org_id
+
+    # the routing middleware may have already resolved + verified this org
+    org_id = getattr(request.state, "org_id", None)
+    if not org_id:
+        token = _extract_bearer(authorization)
+        org_id = resolve_org_from_token(token)
+        if not org_id:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid or revoked API key.",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        request.state.org_id = org_id
+    set_current_org(org_id)
+    return org_id

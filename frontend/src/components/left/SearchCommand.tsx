@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Search, History, Sparkles, CornerDownLeft, GitBranch } from "lucide-react";
+import { Search, History, Sparkles, CornerDownLeft } from "lucide-react";
 import {
   CommandDialog,
   CommandEmpty,
@@ -10,14 +10,20 @@ import {
   CommandShortcut,
 } from "@/components/ui/command";
 import { Badge } from "@/components/ui/badge";
-import { QUERY_PRESETS } from "@/data/mockTrace";
+import type { Suggestion } from "@/lib/api";
 
 interface SearchCommandProps {
   query: string;
   onQueryChange: (q: string) => void;
+  // graph-aware example questions for the active graph (from /api/suggestions)
+  suggestions?: Suggestion[];
 }
 
-export function SearchCommand({ query, onQueryChange }: SearchCommandProps) {
+export function SearchCommand({
+  query,
+  onQueryChange,
+  suggestions = [],
+}: SearchCommandProps) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
 
@@ -52,7 +58,7 @@ export function SearchCommand({ query, onQueryChange }: SearchCommandProps) {
       >
         <Search className="h-4 w-4 shrink-0 text-zinc-400 transition-colors group-hover:text-zinc-500" />
         <span className="line-clamp-1 flex-1 truncate text-sm text-zinc-600">
-          {query}
+          {query || "Ask a question about this graph…"}
         </span>
         <kbd className="hidden shrink-0 items-center gap-0.5 rounded-md border border-border bg-secondary px-1.5 py-0.5 font-mono text-[10px] font-medium text-zinc-500 sm:inline-flex">
           ⌘K
@@ -63,7 +69,7 @@ export function SearchCommand({ query, onQueryChange }: SearchCommandProps) {
         <CommandInput
           value={search}
           onValueChange={setSearch}
-          placeholder="Trace any query, recall history, or run a preset…"
+          placeholder="Ask a question about this graph…"
         />
         <CommandList>
           <CommandEmpty>Type a query and press Enter to trace it.</CommandEmpty>
@@ -72,45 +78,43 @@ export function SearchCommand({ query, onQueryChange }: SearchCommandProps) {
               {/* value is the live input so cmdk ranks it top and Enter submits it */}
               <CommandItem value={typed} onSelect={() => select(typed)}>
                 <Search className="text-indigo-500" />
-                <span className="line-clamp-1 flex-1">
-                  Trace “{typed}”
-                </span>
+                <span className="line-clamp-1 flex-1">Trace “{typed}”</span>
                 <CommandShortcut>
                   <CornerDownLeft className="h-3 w-3" />
                 </CommandShortcut>
               </CommandItem>
             </CommandGroup>
           )}
-          <CommandGroup heading="Recent">
-            <CommandItem value={query} onSelect={() => select(query)}>
-              <History className="text-zinc-400" />
-              <span className="line-clamp-1 flex-1">{query}</span>
-              <Badge variant="indigo" className="shrink-0">
-                <GitBranch className="h-3 w-3" /> relational
-              </Badge>
-            </CommandItem>
-          </CommandGroup>
-          <CommandGroup heading="Preset queries">
-            {QUERY_PRESETS.map((preset) => (
-              <CommandItem
-                key={preset.label}
-                value={preset.label}
-                onSelect={() => select(preset.label)}
-              >
-                <Sparkles className="text-indigo-500" />
-                <span className="line-clamp-1 flex-1">{preset.label}</span>
-                <Badge
-                  variant={preset.intent === "relational" ? "indigo" : "zinc"}
-                  className="shrink-0"
-                >
-                  {preset.intent}
-                </Badge>
-                <CommandShortcut>
-                  <CornerDownLeft className="h-3 w-3" />
-                </CommandShortcut>
+          {query && (
+            <CommandGroup heading="Recent">
+              <CommandItem value={query} onSelect={() => select(query)}>
+                <History className="text-zinc-400" />
+                <span className="line-clamp-1 flex-1">{query}</span>
               </CommandItem>
-            ))}
-          </CommandGroup>
+            </CommandGroup>
+          )}
+          {suggestions.length > 0 && (
+            <CommandGroup heading="Suggested for this graph">
+              {suggestions.map((s) => (
+                <CommandItem
+                  key={s.query}
+                  value={s.query}
+                  onSelect={() => select(s.query)}
+                >
+                  <Sparkles className="text-indigo-500" />
+                  <span className="line-clamp-1 flex-1">{s.query}</span>
+                  {s.type && (
+                    <Badge variant="zinc" className="shrink-0">
+                      {s.type}
+                    </Badge>
+                  )}
+                  <CommandShortcut>
+                    <CornerDownLeft className="h-3 w-3" />
+                  </CommandShortcut>
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          )}
         </CommandList>
       </CommandDialog>
     </>

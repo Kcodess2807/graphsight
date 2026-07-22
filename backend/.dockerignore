@@ -1,0 +1,23 @@
+# Keep the image lean — but DO ship graphs/ (the read-only demo data).
+__pycache__/
+**/__pycache__/
+*.pyc
+.env
+.env.*
+.venv/
+venv/
+# scratch / local-only DBs (the demo graphs live in graphs/ and are kept)
+memory.lbug
+memory.lbug.*
+_*.lbug
+*.lbug.wal
+*.lbug-shm
+# debug + result artifacts
+_*.out.txt
+results*.csv
+backups/
+.pytest_cache/
+# offline ingestion inputs — not needed by the running server (114 MB CSV etc.)
+datasets/
+Dockerfile
+.dockerignore

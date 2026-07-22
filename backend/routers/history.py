@@ -45,17 +45,28 @@ class TraceRead(BaseModel):
 
 
 def _ensure_user(db: Session, user_id: str, email: str | None) -> User:
-    """Get the user by Clerk id, creating the row on first sight."""
+    """Get the user by id, creating the row on first sight.
+
+    Email is best-effort, not a hard requirement: dev-bypass has none, and
+    Clerk's email can lag the user id on first load — blocking "new chat" on a
+    missing email made history silently break. Fall back to a deterministic
+    per-user placeholder (unique, so no constraint clash) and use the real
+    address whenever the client supplies it.
+    """
     user = db.get(User, user_id)
     if user is None:
-        if not email:
-            raise HTTPException(
-                status_code=400,
-                detail="email is required when first creating a user.",
-            )
-        user = User(id=user_id, email=email)
+        placeholder = f"{user_id}@users.tracerag.local"
+        candidate = email or placeholder
+        # The email column is unique. If this address is already held by a
+        # DIFFERENT id (e.g. a real-Clerk row vs. the dev-bypass "dev-user"),
+        # claiming it would 500. Fall back to the per-id placeholder, which only
+        # this id can ever own.
+        clash = db.exec(select(User).where(User.email == candidate)).first()
+        if clash is not None and clash.id != user_id:
+            candidate = placeholder
+        user = User(id=user_id, email=candidate)
         db.add(user)
-        db.flush()  # surface unique-email violations before committing
+        db.flush()  # surface any remaining unique violations before committing
     return user
 
 

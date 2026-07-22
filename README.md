@@ -32,14 +32,70 @@ three:
   (Groq) adjudicates only the ambiguous "grey zone," keeping the graph clean without a human
   janitor.
 - **Traceable routing** — every query returns a structured `trace_log` (intent weights, vector
-  seeds, graph hops) that **TraceRAG Studio** renders so stakeholders can watch the reasoning path.
+  seeds, graph hops) that **Graphsight Studio** renders so stakeholders can watch the reasoning path.
 
 On top of the retrieval core sits a secured application layer: streamed, grounded answers with
 clickable citations, multi-graph hot-swapping, persistent session history, and end-to-end
 authentication and rate limiting.
 
+**And a multi-tenant SaaS mode.** Beyond the single-tenant engine, TraceRAG runs as a B2B
+platform where each customer org gets a *physically isolated, per-tenant graph* — durable graph
+truth in Postgres, compiled into per-org `.lbug` read-artifacts that serving pods pull and
+**hot-swap atomically**, fed by a Celery ingestion pipeline (**GitHub → NLP → Postgres → compile →
+S3**), with API-key tenancy, gateway-style pod routing, an **MCP agent surface**, and one-call
+tenant onboarding. See **§VII**. It is **off by default** (`MULTI_TENANCY_ENABLED` unset); with it
+off the engine documented above is completely unchanged.
+
 This document reports what was built **and how it actually performs** — including a candid
-benchmark section (§VI) where the headline thesis did *not* hold on the current data, and why.
+benchmark section (§VIII) where the headline thesis did *not* hold on the current data, and why.
+
+---
+
+## For Reviewers — Start Here
+
+**One-sentence pitch:** a graph-backed causal memory tier for AI coding agents — GitHub/Jira
+events become a live knowledge graph (vectors + edges in one embedded store), agents query it
+over **MCP** instead of re-reading repos, and every answer ships with the exact traced path that
+produced it.
+
+**Suggested 15-minute review path:**
+
+1. **The core idea** — §II *Architecture* (one hybrid store, two retrieval arms, intent-fused) and
+   §IV *Routing*. The interesting engineering decisions live here and in §III (two-tier entity
+   resolution).
+2. **Run it** — §IX Quickstart, single-tenant path. Open `http://localhost:5173/studio`, run a
+   suggested trace, click a citation chip in the answer, watch the camera pan to the cited node.
+   That loop — *claim → traced evidence* — is the product.
+3. **The SaaS layer** — §VII (per-tenant compiled artifacts, atomic hot-swap, Celery ingestion,
+   MCP surface). `backend/tests/` contains e2e proofs for each stage.
+4. **The honest part** — §VIII. The token-reduction thesis did **not** hold on the current
+   benchmark data; the section explains why and what the fix is. Read it before forming a verdict.
+5. **The standalone packages** — the Studio decoupled from the engine, pip-installable:
+   [`graphsight-langgraph`](graphsight-langgraph/README.md) traces *any* LangGraph agent (one
+   callback handler) and ships `graphsight-github-trace` (repo → traced run in one command);
+   [`graphsight`](graphsight/README.md) serves the bundled UI locally and opens a
+   trace with `graphsight trace_state.json` — zero dependencies, no backend.
+   Testing this? Start at [BETA.md](BETA.md).
+
+**What's real vs. what's mocked (current state):**
+
+| Layer | Status |
+|---|---|
+| Retrieval engine (ingest → curate → hybrid route → trace) | **Real**, benchmarked in §VIII |
+| Studio UI (trace canvas, streamed answers, citations, sessions) | **Real**, wired to the live API with an offline sample fallback |
+| Multi-tenant pipeline (GitHub → Postgres → compile → S3 → pod swap) | **Real**, e2e-tested; off by default via `MULTI_TENANCY_ENABLED` |
+| MCP server (`trace_impact` / `search_context` / `find_entity`) | **Real**, mounted in SaaS mode |
+| Landing page (`/`) waitlist form | UI real; form logs to console (backend `TODO` marked in code) |
+| `archive/dashboard/` Next.js console (GitHub connect, API keys, billing) | UI complete; data mocked — retired to `archive/` after the Graphsight pivot |
+| Auth (Clerk JWT, JWKS-verified) + per-user rate limits | **Real**; explicit dev-bypass when `CLERK_ISSUER` unset |
+| `graphsight-langgraph/` adapter (LangGraph → Studio, standalone) | **Real**, verified vs `langchain-core 1.5.0`; renders at `/memory/import` with no backend |
+| `graphsight-github-trace` CLI (GitHub repo → traced run) | **Real**, tested against `langchain-ai/langgraph` live; lexical + 1-hop retrieval, labeled as such |
+| `graphsight` pip package (local viewer, bundled UI) | **Real**, wheel built + smoke-tested; stdlib-only server |
+
+**Known gaps we already know about:** single-writer LadybugDB lock (API must start after ingest;
+single worker), in-memory rate-limit counters (Redis URI is the multi-worker path), §VIII accuracy
+ceiling (grounding-prompt strictness + benchmark label noise), and the production-hardening TODO
+list in §VII.
 
 ---
 
@@ -132,49 +188,99 @@ flowchart TB
 | Layer | Technology | Role |
 |---|---|---|
 | **Embeddings** | `sentence-transformers` · `all-MiniLM-L6-v2` | 384-dim sentence vectors (cosine) |
-| **Entity extraction** | **GLiNER** (designed) / **spaCy** (current fallback) | Zero-shot domain NER; see §VI for why spaCy is active |
+| **Entity extraction** | **GLiNER** (designed) / **spaCy** (current fallback) | Zero-shot domain NER; see §VIII for why spaCy is active |
 | **Storage** | **LadybugDB** (embedded, Kùzu-lineage) | Single-file hybrid vector + graph store with a native HNSW `VECTOR` extension |
 | **LLM — extraction / intent** | **Groq** · `llama-3.1-8b-instant` | Grey-zone entity disambiguation + router intent fallback |
 | **LLM — generation** | **OpenRouter** · `anthropic/claude-3-haiku` (default) | Grounded plain-language answers + node summaries |
 | **API** | **FastAPI** + Uvicorn | Headless backend: trace, subgraph, answer, graphs, history |
+| **Concurrency** | read connection pool + bounded embed `ThreadPoolExecutor` | parallel graph/vector reads; embeds off the request threads |
 | **Auth** | **Clerk** (frontend) + **PyJWT / JWKS** (backend) | Networkless session-token verification; dev-bypass when unconfigured |
 | **History** | **Neon Postgres** via **SQLModel** | Users, chat sessions, persisted trace logs |
-| **Frontend** | **Vite + React + ReactFlow** · Tailwind / shadcn | TraceRAG Studio — visual query tracer |
+| **Frontend** | **Vite + React + ReactFlow** · Tailwind / shadcn | Graphsight Studio — visual query tracer |
+| **Observability** | **Sentry** (backend + frontend) | Full-stack error + performance tracing (opt-in via DSN) |
+| _**SaaS platform (§VII)**_ | _active only when_ | `MULTI_TENANCY_ENABLED` |
+| **Task queue / debounce** | **Celery** + **Redis** | Incremental-compute orchestration + ZSET debounce-coalesce |
+| **Control plane / graph store** | **Postgres** (two DBs) via SQLModel | Orgs·keys·pods·assignments·jobs / durable EntityNode·EntityEdge |
+| **Artifact storage** | **AWS S3** (boto3, multipart) · local mock | Versioned per-org `.lbug` artifacts |
+| **Agent interface** | **MCP** (Model Context Protocol) SDK | Typed semantic tools for IDE agents at `/mcp` |
 
 ### Repository layout
 
 ```
 backend/
-├── api.py                  # FastAPI app: trace, subgraph, answer, graphs, suggestions, health
-├── auth.py                 # Clerk JWT verification (PyJWT + JWKS) + dev-bypass dependency
+├── api.py                  # FastAPI app + lifespan (warmup, pools, MCP mount, pod agent)
+├── auth.py                 # Clerk JWT verify + tenant API-key resolution + org context
 ├── cache.py                # bounded OrderedDict LRU for the answer / summary caches
 ├── ratelimit.py            # per-user slowapi limiter (keyed by the verified user id)
 ├── database.py             # SQLModel engine / session for the Postgres history store
-├── models.py               # User / ChatSession / TraceLog tables
+├── storage.py              # artifact store: AWS S3 (boto3) or local mock  ← SaaS
+├── registry.py             # TenantDatabaseRegistry: per-org loaded graph + atomic swap  ← SaaS
+├── pod_agent.py            # REALITY loop: poll assignments, pull + swap tenant graphs  ← SaaS
+├── mcp_server.py           # MCP server: trace_impact / search_context / find_entity  ← SaaS
+├── middleware/
+│   └── routing.py          # gateway simulation: org→pod check, 421 misdirected  ← SaaS
+├── models/
+│   ├── history.py          # User / ChatSession / TraceLog tables
+│   ├── control_plane.py    # Organization·Repository·GraphArtifact·IngestJob·Pod·PodAssignment·ApiKey  ← SaaS
+│   └── graph_store.py      # EntityNode / EntityEdge (composite PK (org_id, node_id)) + UPSERT  ← SaaS
 ├── routers/
-│   └── history.py          # session + trace-log endpoints (ownership-checked)
+│   ├── history.py          # session + trace-log endpoints (ownership-checked)
+│   └── onboarding.py       # POST /api/admin/onboarding/provision (X-Admin-Secret)  ← SaaS
+├── worker/                 # ← SaaS: Celery ingestion + orchestration
+│   ├── celery_app.py       # Celery app (Redis broker) + beat schedule
+│   ├── settings.py         # broker, debounce window, sweep cadence, compile lock
+│   ├── debounce.py         # Redis ZSET debounce-coalesce (atomic Lua claim)
+│   ├── tasks.py            # request_reconcile · sweeper · reconcile_org_to_head (5 phases)
+│   └── ingestion/
+│       ├── github_client.py  # real GitHub delta fetch (httpx, paginated, rate-limit aware)
+│       ├── pipeline.py       # delta → NLP → embed → UPSERT to graph store
+│       └── compiler.py       # stream PG rows → build .lbug + HNSW (worker-side)
 ├── tracerag/
-│   ├── config.py           # single source of truth for thresholds, weights, models
-│   ├── db.py               # LadybugDB connection, schema, HNSW index, graph queries
-│   ├── extract.py          # GLiNER (→ spaCy fallback) + word-based sliding window
+│   ├── config.py           # single source of truth: thresholds, weights, models, tenancy flags
+│   ├── db.py               # LadybugDB: read connection pool + write conn, HNSW, graph queries
+│   ├── extract.py          # GLiNER (→ spaCy fallback) + sliding window + LRU query cache
 │   ├── curation.py         # two-tier resolution (vector fast-merge + Groq grey-zone)
-│   ├── router.py           # intent classification + dual-stream rank fusion + trace_log
+│   ├── router.py           # intent classify + dual-stream fusion + async aroute + embed pool
 │   ├── llm.py              # Groq / OpenRouter client factories
-│   └── integrations/
-│       └── langchain.py    # drop-in BaseRetriever
-└── scripts/
-    ├── ingest.py           # headless ingest CLI
-    ├── ingest_github.py    # multi-repo GitHub PR connector
-    ├── benchmark.py        # LLM-as-judge evaluation → results.csv
-    ├── stress_test.py      # async load test (graceful-degradation)
-    └── ratelimit_test.py   # burst test verifying the per-user rate limit
+│   └── integrations/langchain.py   # drop-in BaseRetriever
+├── scripts/
+│   ├── ingest.py · ingest_github.py · benchmark.py · stress_test.py
+│   └── generate_dry_run_artifact.py   # tiny real .lbug for the serve dry-run  ← SaaS
+└── tests/                  # ← SaaS: e2e proofs (torch-free where possible)
+    ├── test_e2e_serve.py         # dynamic tenant load + model-sharing + real query
+    ├── test_ingest_pipeline.py   # GitHub → NLP → Postgres; cursor idempotency; isolation
+    ├── test_compiler.py          # Postgres truth → queryable .lbug (+ HNSW)
+    ├── test_github_client.py     # pagination · normalization · rate limits · cursor
+    └── test_onboarding.py        # admin guard · provision txn · key auth · reconcile armed
 
-frontend/
+infra/postgres/init.sql     # creates control_plane_db + graph_store_db on first boot  ← SaaS
+docker-compose.yml          # db + redis + api + worker + beat on one bridge network  ← SaaS
+.env.example                # full-stack environment template
+
+frontend/                   # Vite + React 18 — the product surface (landing + studio)
 └── src/
-    ├── components/         # TraceDashboard + left (query/answer) & right (canvas) panes
+    ├── components/
+    │   ├── landing/        # marketing/waitlist page at `/` (light neubrutalist system)
+    │   ├── memory/         # Graphsight Studio at `/studio`: CommandPanel · GraphCanvas ·
+    │   │                   #   InspectorPanel · AppLayout (+ DESIGN.md, the design system)
+    │   ├── left|right/     # legacy dashboard panes, kept at `/classic` for reference
+    │   └── auth/           # Clerk sign-in/up pages
     ├── lib/                # api client, auth-token bridge, dagre layout, Clerk helpers
-    ├── data/               # mock trace for the offline fallback
+    ├── data/               # mock trace for the offline fallback + /memory/preview demo
     └── types/              # shared TraceState / node / edge types
+
+graphsight-langgraph/       # standalone adapter: trace any LangGraph agent (one callback
+                            #   handler, depends only on langchain-core) → AgentTrace v0.1 →
+                            #   Studio render at /memory/import — no TraceRAG backend needed
+                            #   + `graphsight-github-trace`: GitHub repo → trace in one command
+graphsight/                 # pip-installable local viewer: bundled Studio UI + stdlib server;
+                            #   `graphsight trace_state.json` opens the trace, zero deps
+BETA.md                     # "Beta for Friends" — 10-minute test script + feedback questions
+
+docs/                       # demo scripts, deploy notes, stress results, planning docs
+archive/                    # retired deliverables: standalone landing page, Next.js
+                            #   customer console (UI complete, data mocked), scratch files
+hf-space/                   # HuggingFace Space deployment (own git remote)
 ```
 
 ### Data model
@@ -188,7 +294,7 @@ Entity` (only between entities co-occurring in the *same* window — no document
 
 ```mermaid
 flowchart LR
-  subgraph CLIENT["TraceRAG Studio — Vite + React + ReactFlow"]
+  subgraph CLIENT["Graphsight Studio — Vite + React + ReactFlow"]
     direction TB
     UI["Visual canvas<br/>traced path · score pills · hover"]
     AC["Answer card<br/>streamed + clickable citations"]
@@ -511,10 +617,34 @@ consumed by the UI:
 
 ---
 
-## V. Application Layer — TraceRAG Studio
+## V. Application Layer — Graphsight Studio
 
 Retrieval is half the loop; the Studio closes it with generation, exploration, and observability
 over the retrieved subgraph.
+
+**Product surface & routes** (Vite app, `npm run dev` → `localhost:5173`):
+
+| Route | What it is |
+|---|---|
+| `/` | Waitlist landing page — hero, animated marquee, interactive code showcase, use-case bento, pricing |
+| `/studio` | **Graphsight Studio** — the memory tool itself (below) |
+| `/memory/preview` | Studio on mock data with simulated tracing; demos with no backend |
+| `/memory/import` | Drop/paste a `trace_state.json` from `graphsight-langgraph` — the Studio renders an external agent's run, no backend |
+| `/classic` | The previous dashboard UI, kept for comparison |
+
+The landing page and Studio share one design system (documented in
+`frontend/src/components/memory/DESIGN.md`): light, white surfaces, `#131316` ink and borders,
+hard offset shadows, Space Grotesk display type, a lime `#C8F169` highlight, and emerald for all
+interactive/traced states — so color is semantic on the canvas: **emerald shadow = on the traced
+path, lime shadow = citation focus, gray = background context**.
+
+**The Studio shell** is deliberately *not* a chatbot: a collapsible command sidebar
+(⌘K-focusable trace input, streamed "Recall" answer with citation chips, sessions, suggested
+traces, recent queries, and a persistent latency readout), a full-bleed React Flow canvas, and a
+floating inspector that slides in on node click with the exact context snippet, retrieval
+scores, and provenance. Keyboard: `⌘K` search, `⌘\` sidebar, `Esc` inspector. While a query
+runs there is no spinner — nodes pulse a sonar ring and a light beam sweeps the canvas until the
+traced path lights up.
 
 **Visual observability.** The backend is fully decoupled from the UI: `POST /api/trace` returns the
 ranked nodes *and* the `trace_log`, and `POST /api/subgraph` returns a bounded neighborhood
@@ -568,7 +698,174 @@ The billed and user-data surface is protected end-to-end:
 
 ---
 
-## VII. Benchmarks & Known Constraints (read this carefully)
+## VII. The Multi-Tenant SaaS Platform (Cell Model)
+
+Enable with `MULTI_TENANCY_ENABLED=True`. With it off, every request maps to one default org
+served by the single warm local graph and nothing below applies — the engine in §I–§VI is
+untouched.
+
+**The one idea:** *Postgres is the durable truth; each `.lbug` is a compiled, versioned,
+disposable read-artifact.* Ingestion writes graph content to Postgres; a worker compiles it into an
+optimized `.lbug`; serving pods pull that file and **atomically swap** it to answer queries.
+Durability (Postgres) and read-performance (the artifact) are decoupled — lose a `.lbug`,
+recompile it from the truth.
+
+### The Cell Model
+- **One `.lbug` per organization** ("cell"). All of an org's repos compile into the *same* file,
+  so cross-repo traversal (a PR in repo A → a ticket in project C) is a **native graph edge**, not
+  a federation query.
+- **Physical isolation is the security boundary.** A tenant's queries open a different file; there
+  is no shared table to leak across. In the graph store this is enforced structurally: `EntityNode`
+  has the **composite primary key `(org_id, node_id)`**, so the same `node_id` can exist under two
+  orgs with zero collision and every read is org-scoped by construction.
+- **Two isolated Postgres databases:** `control_plane_db` (orchestration) and `graph_store_db`
+  (durable content). Created on first boot by `infra/postgres/init.sql`.
+
+### End-to-end: from a merged PR to a served query
+
+```mermaid
+flowchart TB
+  WH["GitHub webhook<br/>PR merged"] --> ARM["request_reconcile<br/>arm Redis ZSET debounce"]
+  ARM --> BEAT["Celery beat sweeper<br/>claim due orgs · atomic Lua pop"]
+  BEAT --> REC["reconcile_org_to_head<br/>per-org compile lock"]
+
+  subgraph WORKER["Celery worker"]
+    direction TB
+    REC --> FETCH["GitHub client<br/>since=cursor · paginated · rate-limit aware"]
+    FETCH --> NLP["NLP pipeline<br/>GLiNER/spaCy on the delta only"]
+    NLP --> UPSERT["UPSERT nodes/edges/embeddings"]
+    UPSERT --> COMPILE["compiler<br/>stream PG rows · build .lbug + HNSW"]
+    COMPILE --> S3PUT["upload to S3"]
+    S3PUT --> REG["register GraphArtifact<br/>flip desired_artifact_id  (INTENT)"]
+  end
+
+  UPSERT --> GS[("graph_store_db<br/>EntityNode · EntityEdge<br/>PK (org_id, node_id)")]
+  COMPILE -. reads .-> GS
+  REG --> CP[("control_plane_db<br/>orgs · keys · pods · assignments · jobs")]
+  S3PUT --> BUCKET[("S3 / mock bucket<br/>versioned org .lbug")]
+
+  subgraph POD["Serving pod"]
+    direction TB
+    AGENT["pod agent<br/>poll assignments"] --> SWAP["desired != loaded?<br/>download · verify checksum · atomic swap"]
+    SWAP --> REGY["TenantDatabaseRegistry<br/>org → loaded .lbug (shared warm models)"]
+    SWAP --> REAL["write loaded_artifact_id  (REALITY)"]
+  end
+
+  REG -. INTENT .-> AGENT
+  REAL -. REALITY .-> CP
+  BUCKET -. download .-> SWAP
+
+  Q(["Bearer sk_live_… query"]) --> GW["routing middleware<br/>key → org · PodAssignment check<br/>ready / 421 / 503 / 409"]
+  GW --> REGY
+  REGY --> TRACE["/api/trace<br/>hybrid retrieval on the tenant graph"]
+  AG(["IDE agent · Cursor"]) --> MCP["/mcp semantic tools<br/>trace_impact · search_context · find_entity"]
+  MCP --> REGY
+```
+
+### Ingestion — debounce, incremental compute, compile
+- **Webhook → debounce.** A merge doesn't compile immediately; it arms a Redis **ZSET debounce**
+  (`worker/debounce.py`) scored by an *effective deadline* `min(now+window, first+max_wait)`. A
+  burst of PRs **coalesces into one compile**; a Celery **beat** sweeper atomically claims due orgs
+  (Lua pop, race-free) and enqueues `reconcile_org_to_head`. A per-org compile lock serializes
+  compiles without serializing the cheap fetch.
+- **Incremental compute.** The real **GitHub client** (`worker/ingestion/github_client.py` — httpx,
+  Link-header pagination, `?since=cursor`, typed rate-limit exceptions the worker retries on)
+  fetches only the delta; the **pipeline** (`pipeline.py`) runs GLiNER/spaCy on that delta and
+  **UPSERTs** nodes/edges/embeddings into `graph_store_db`. Entities and authors are org-shared
+  nodes, so the same service mentioned in two repos merges into one node — the seed of cross-repo
+  traversal.
+- **Compile.** The **compiler** (`compiler.py`) streams the org's rows from Postgres with a
+  server-side cursor (RAM stays flat), writes a fresh `.lbug`, and builds the **HNSW index** — the
+  CPU-heavy step, **on the worker, never on a serving pod** — then uploads to S3 (`storage.py`,
+  boto3 multipart; local file mock for dev/CI).
+
+### Serving — the "Intent vs. Reality" state machine
+The worker registers the artifact and flips the org's **`desired_artifact_id`** (INTENT). Each pod
+runs a **pod agent** (`pod_agent.py`) polling its `PodAssignment` rows; on `desired != loaded` it
+downloads the artifact, **verifies the checksum**, and performs an **atomic in-process swap**
+(`registry.py` — a locked pointer flip that shares the one warmed embedder/spaCy across tenants, so
+a new tenant costs ≈0 model RAM), then writes **`loaded_artifact_id`** (REALITY). The desired≠loaded
+gap *is* the self-healing transition window; a pod that dies mid-pull never advances REALITY and
+simply retries.
+
+```mermaid
+sequenceDiagram
+  autonumber
+  participant W as Celery worker
+  participant CP as control_plane_db
+  participant S3 as S3 bucket
+  participant PA as Pod agent
+  participant REG as Tenant registry
+  W->>S3: upload org-v(N+1).lbug
+  W->>CP: GraphArtifact(ready) · desired_artifact_id = N+1   (INTENT)
+  loop poll
+    PA->>CP: my assignments — desired vs loaded
+  end
+  PA->>PA: desired != loaded → pull from S3 + verify checksum
+  PA->>REG: atomic swap to v(N+1)
+  PA->>CP: loaded_artifact_id = N+1                          (REALITY)
+  Note over CP: desired == loaded → converged
+```
+
+### Multi-tenant auth & gateway-style routing
+- **API keys.** Each org has an `sk_live_…` key; **only its SHA-256 is stored**.
+  `auth.resolve_org_from_token` maps a Bearer key → `org_id` with a constant-time compare and a
+  revocation check.
+- **Gateway simulation** (`middleware/routing.py`). Tenant-scoped routes are gated on this pod's
+  assignment for the org: **ready here → pass**; still loading → **`503`**; served by a *different*
+  pod → **`421 Misdirected Request`** (advertising the correct pod, exactly how a stateless gateway
+  reroutes); unassigned → **`409`**. The resolved org then selects that tenant's loaded graph from
+  the registry — an org can never touch another's file.
+- **Org context** flows to the MCP tools via a request-scoped `ContextVar`, so the same tenancy
+  applies to the agent surface.
+
+### The agent surface (MCP)
+`mcp_server.py` mounts a **Model Context Protocol** server at `/mcp` exposing three typed,
+read-only **semantic tools** — never raw Cypher — over the hybrid engine:
+
+| Tool | Use |
+|---|---|
+| `trace_impact(entity_name, max_hops)` | "What breaks if I change X?" — confidence-decayed blast radius with citations |
+| `search_context(query)` | "Why does X exist / how does it work?" — hybrid retrieval passages with citations |
+| `find_entity(name)` | Disambiguate a name to the graph's actual entities |
+
+An IDE agent (Cursor, Claude Desktop) gets a **cited, cross-repo** answer because it's one graph.
+Guards (hop/degree/`top_k`) are enforced server-side; the seed node is expanded generously while
+deeper hops keep hub-suppression.
+
+### Control-plane schema (`control_plane_db`)
+
+| Table | Purpose |
+|---|---|
+| **Organization** | the tenant; holds `desired_artifact_id` (INTENT) |
+| **Repository** | repos under an org; `last_synced_cursor` (incremental engine) + per-repo `github_token` |
+| **GraphArtifact** | append-only registry of compiled `.lbug` versions in S3; `entity_count` (watch the ~1M/org ceiling) |
+| **IngestJob** | Celery orchestration + audit; a partial-unique index enforces **one active job per org** |
+| **Pod** | the serving fleet (fungible, sticky) |
+| **PodAssignment** | sticky org→pod; `loaded_artifact_id` (REALITY) — the routing ground truth |
+| **ApiKey** | per-org key; SHA-256 stored, `revoked_at` for instant kill |
+
+### One-call onboarding
+`POST /api/admin/onboarding/provision` (guarded by an `X-Admin-Secret` header vs `ADMIN_SECRET_KEY`;
+**fail-closed** — unset secret → `503`) creates **Organization + ApiKey + Repository + PodAssignment
+in one transaction** and arms the first ingestion, returning the raw `sk_live_…` key **exactly
+once**. That is the entire "sign up a tenant" flow.
+
+### Status & production-hardening TODO
+Every layer above is **built and test-proven** (`backend/tests/`), end-to-end on real files — the
+only mock left in the data path was retired when the real GitHub client landed. Not yet done, and
+explicitly out of scope so far:
+- **Secrets at rest** — `Repository.github_token` is stored plaintext; encrypt / move to a secrets
+  manager, and rotate any keys shared during development.
+- **Multi-pod scheduler** — onboarding pins every org to the single `POD_ID`; spreading tenants
+  across a real fleet needs a placement policy (the pod agent already obeys whatever assignments
+  exist).
+- **Real deploy** — the stack runs under docker-compose (below); production means managed Postgres,
+  Redis, an S3 bucket, and a pod fleet behind a real gateway.
+
+---
+
+## VIII. Benchmarks & Known Constraints (read this carefully)
 
 We evaluate with an **LLM-as-a-judge** (Groq) over 10 queries (5 semantic, 5 relational), comparing
 the hybrid router's context against a **pure-vector baseline**, and measuring a token "sufficiency"
@@ -614,7 +911,9 @@ constraints, not logic defects. The path to the originally-hypothesized gains:
 
 ---
 
-## VIII. Quickstart
+## IX. Quickstart
+
+### Single-tenant engine (local)
 
 ```powershell
 # 1. backend install
@@ -634,11 +933,44 @@ python scripts/benchmark.py            # -> results.csv + summary table
 # 4. serve the API  (run AFTER ingest — single-writer DB lock; single-worker)
 uvicorn api:app --reload --port 8000   # docs at /docs
 
-# 5. run TraceRAG Studio (in a second shell)
+# 5. run the frontend (in a second shell)
 cd ../frontend
 npm install
-npm run dev                            # http://localhost:5173
+npm run dev
+#   http://localhost:5173/          → landing page
+#   http://localhost:5173/studio    → Graphsight Studio (live API, sample fallback)
+#   http://localhost:5173/memory/preview → mock-data demo, no backend needed
+#   http://localhost:5173/memory/import  → render an external LangGraph trace (graphsight-langgraph)
 ```
+
+### Multi-tenant SaaS mode (docker-compose)
+
+Brings up Postgres (both DBs), Redis, the API, the Celery worker, and the beat scheduler on one
+bridge network, then provisions a tenant and serves a query end-to-end.
+
+```bash
+# 1. configure — set at minimum ADMIN_SECRET_KEY, GITHUB_TOKEN, OPENROUTER_API_KEY
+cp .env.example .env
+
+# 2. bring the stack up (db + redis + api:8000 + worker + beat)
+docker compose up --build
+
+# 3. provision a tenant — save the returned sk_live_… key (shown once)
+curl -X POST localhost:8000/api/admin/onboarding/provision \
+  -H "X-Admin-Secret: $ADMIN_SECRET_KEY" -H "Content-Type: application/json" \
+  -d '{"tenant_name":"Acme","repo_name":"tiangolo/fastapi"}'
+#    → within ~2 min: worker ingests the repo (GitHub→NLP→Postgres→compile→S3)
+#      and the pod agent atomically swaps the tenant's graph in
+
+# 4. query as the tenant (routed by the API key to its pod + graph)
+curl -X POST localhost:8000/api/trace \
+  -H "Authorization: Bearer sk_live_…" -H "Content-Type: application/json" \
+  -d '{"query":"what changed in dependency injection?"}'
+```
+
+> Storage defaults to a shared local volume (`TRACERAG_STORAGE_PROVIDER=local`); set it to `s3`
+> with `TRACERAG_S3_BUCKET` + `AWS_*` to use a real bucket. Point a repo at any public GitHub repo;
+> with no `GITHUB_TOKEN` the fetcher falls back to a deterministic mock batch.
 
 ### API surface
 
@@ -652,6 +984,8 @@ npm run dev                            # http://localhost:5173
 | GET | `/api/suggestions` | — | graph-aware example questions |
 | POST · GET | `/api/sessions` · `/api/sessions/{id}/traces` | token (owner) | create / list sessions, fetch trace logs |
 | GET | `/api/health` | — | `{ status, nodes }` |
+| POST | `/api/admin/onboarding/provision` | `X-Admin-Secret` | _SaaS:_ provision Org+Key+Repo+Assignment, arm first sync → `sk_live_…` |
+| — | `/mcp` | Bearer (org key) | _SaaS:_ MCP server — `trace_impact` · `search_context` · `find_entity` |
 
 > **Operational note.** LadybugDB is a single-writer embedded store. Don't run `ingest.py` and
 > `uvicorn` against the same `.lbug` simultaneously — ingest first, then serve. The API loads the

@@ -25,7 +25,7 @@ export function SignInPage() {
               Welcome back
             </h1>
             <p className="mt-1 text-sm text-zinc-500">
-              Sign in to your TraceRAG Studio workspace.
+              Sign in to your Graphsight Studio workspace.
             </p>
           </div>
           <SignIn

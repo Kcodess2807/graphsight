@@ -101,12 +101,16 @@ export function LeftPane({
                   </Link>
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Concepts · how TraceRAG works</TooltipContent>
+              <TooltipContent>Concepts · how Graphsight works</TooltipContent>
             </Tooltip>
             <AuthControls />
           </div>
         </div>
-        <SearchCommand query={query} onQueryChange={onQueryChange} />
+        <SearchCommand
+          query={query}
+          onQueryChange={onQueryChange}
+          suggestions={suggestions}
+        />
         <GraphSwitcher onSwitched={handleGraphSwitched} />
       </div>
 

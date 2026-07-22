@@ -1,0 +1,40 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "graphsight"
+version = "0.1.3"
+description = "See why your AI agent retrieved what it did — interactive graph viewer for agent retrieval traces. One command, zero dependencies, nothing leaves your machine."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "Arush Karnatak" }]
+keywords = ["tracing", "observability", "rag", "retrieval", "agents", "visualization", "langgraph"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Debuggers",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+# stdlib-only on purpose: http.server + webbrowser
+dependencies = []
+
+[project.urls]
+Repository = "https://github.com/Kcodess2807/graphsight"
+Documentation = "https://github.com/Kcodess2807/graphsight/tree/main/graphsight"
+
+[project.scripts]
+graphsight = "graphsight.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["graphsight*"]
+
+[tool.setuptools.package-data]
+graphsight = ["dist/**/*"]

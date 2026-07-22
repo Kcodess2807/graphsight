@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
+import os
 from contextlib import asynccontextmanager
 from dataclasses import asdict
 from pathlib import Path
@@ -16,43 +18,180 @@ from slowapi import _rate_limit_exceeded_handler
 
 from tracerag import config
 from tracerag.db import TraceDB
-from tracerag.router import TraceRouter
+from tracerag.router import TraceRouter, shutdown_embed_executor
 from tracerag.integrations.langchain import format_page_content
 
-from auth import get_current_user
+from auth import get_current_user, get_current_tenant_org
 from cache import LRUCache
 from database import init_db
 from ratelimit import limiter, LLM_RATE_LIMIT
-from routers import history
+from routers import history, onboarding, github_oauth, webhooks
+from registry import REGISTRY, default_tenant_loader, set_model_source
+from middleware.routing import TenantRoutingMiddleware
+import mcp_server
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("tracerag.api")
 
+# Error tracking + performance monitoring. No-op when SENTRY_DSN is unset, so
+# dev runs are unaffected. Initialized before the app is created so Sentry's
+# auto-enabled FastAPI/Starlette/asyncio/threading integrations hook in — the
+# asyncio + threading ones are what capture errors raised inside our async
+# routes and the embed ThreadPoolExecutor (they re-raise via future.result()).
+if config.SENTRY_ENABLED:
+    import sentry_sdk
+
+    sentry_sdk.init(
+        dsn=config.SENTRY_DSN,
+        environment=config.SENTRY_ENVIRONMENT,
+        traces_sample_rate=config.SENTRY_TRACES_SAMPLE_RATE,
+        send_default_pii=False,  # don't ship request bodies / auth headers to Sentry
+    )
+    logger.info(
+        "Sentry enabled (env=%s, traces_sample_rate=%.2f)",
+        config.SENTRY_ENVIRONMENT, config.SENTRY_TRACES_SAMPLE_RATE,
+    )
+
 _state: dict = {}
+
+
+# --- Tenant graph resolution (single path for both single- and multi-tenant) ---
+def _mcp_tenant_provider(org_id: str) -> "mcp_server.Tenant":
+    """Resolve an org_id to its MCP tenant (router+db) via the shared registry,
+    falling back to the warm local graph in single-tenant mode."""
+    lg = REGISTRY.get_tenant(org_id)
+    if lg is not None and lg.router is not None and lg.db is not None:
+        return mcp_server.Tenant(router=lg.router, db=lg.db,
+                                 graph_id=lg.artifact_id or org_id)
+    if not config.MULTI_TENANCY_ENABLED:
+        return mcp_server.Tenant(
+            router=_state["router"], db=_state["db"],
+            graph_id=(Path(_state.get("db_path", "")).name or org_id),
+        )
+    raise RuntimeError(f"tenant graph not loaded on this pod: {org_id}")
+
+
+def _resolve_tenant(org_id: str):
+    """(router, db) for an org via the registry; warm local graph in dev; 503 if a
+    multi-tenant graph isn't loaded on this pod."""
+    lg = REGISTRY.get_tenant(org_id)
+    if lg is not None and lg.router is not None and lg.db is not None:
+        return lg.router, lg.db
+    if not config.MULTI_TENANCY_ENABLED:
+        return _state["router"], _state["db"]
+    raise HTTPException(status_code=503,
+                        detail=f"Tenant graph not loaded on this pod: {org_id}")
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    """Startup: open the DB + warm models. Shutdown: drain pools, flush to disk."""
+    # ---- startup --------------------------------------------------------------
     db = TraceDB(config.DB_PATH)
     db.init_schema()
     _state["db"] = db
     _state["db_path"] = str(config.DB_PATH)
     _state["router"] = TraceRouter(db)
-    # warm models so the first query isn't slow
+
+    # Cold-boot warmup: pull model weights into RAM and spin up the embed-executor
+    # threads + spaCy pipeline, so the first real UI query skips the cold-start
+    # latency spike. Runs off the event loop and never blocks boot on failure.
     try:
-        _state["router"].warm()
-    except Exception as exc:  # noqa: BLE001
+        await asyncio.to_thread(_state["router"].warm)
+        logger.info("Warmup complete (embedder + executor threads + spaCy primed).")
+    except Exception as exc:  # noqa: BLE001 — warmup is best-effort
         logger.warning("Router warmup skipped (%s).", exc)
+
     # history is optional; api still boots without it
     try:
         init_db()
     except Exception as exc:  # noqa: BLE001
         logger.warning("Postgres history disabled (%s).", exc)
+
+    # In multi-tenant mode, provision the control-plane + graph-store schemas on
+    # boot so a fresh stack is self-initializing (single-tenant/dev skips this).
+    if config.MULTI_TENANCY_ENABLED:
+        try:
+            from models.control_plane import init_control_plane
+            from models.graph_store import init_graph_store
+
+            init_control_plane()
+            init_graph_store()
+            logger.info("Control-plane + graph-store schemas ready (multi-tenant).")
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("Multi-tenant schema init skipped (%s).", exc)
+
+    # Tenant graph resolution goes through the shared registry. Bind the warm
+    # local graph as the DEFAULT tenant so single-tenant serves through the exact
+    # same path (no second load), and register the handle loader so the pod agent
+    # can open real per-tenant graphs later (sharing the warm models). The MCP
+    # provider now resolves per org_id — the same function serves both modes.
+    REGISTRY.set_handle_loader(default_tenant_loader)
+    set_model_source(_state["router"])   # tenants share this warm embedder/spaCy
+    REGISTRY.bind(
+        config.DEFAULT_TENANT_ORG_ID,
+        db=_state["db"], router=_state["router"],
+        artifact_id="local-default", version=0, path=_state.get("db_path"),
+    )
+    mcp_server.set_tenant_provider(_mcp_tenant_provider)
+
+    # Optional: run the pod agent (the multi-tenant REALITY loop) on this web pod.
+    # Off by default (POD_AGENT_ENABLED != "1"), so the single-tenant demo and the
+    # HF deploy are completely unaffected; it needs the control-plane DB configured.
+    if os.getenv("POD_AGENT_ENABLED") == "1":
+        import lifecycle
+        import pod_agent
+
+        # Boot sync: register this pod in the fleet + re-hydrate any tenants it was
+        # already assigned (so a rescheduled/crashed pod serves immediately, before
+        # any user intent check). Off the event loop; never blocks boot on failure.
+        try:
+            hydrated = await asyncio.to_thread(lifecycle.boot_pod, config.POD_ID)
+            logger.info("Pod boot: registered + hydrated %d assigned tenant(s).",
+                        len(hydrated))
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("Pod boot sync skipped (%s).", exc)
+
+        _state["pod_agent_stop"] = asyncio.Event()
+        _state["pod_agent_task"] = asyncio.create_task(
+            pod_agent.run_pod_agent(_state["pod_agent_stop"])
+        )
+        logger.info("Pod agent enabled (pod_id=%s).", pod_agent.POD_ID)
+
     logger.info("TraceRAG STUDIO API ready (db=%s)", config.DB_PATH)
     try:
-        yield
+        # session_lifespan drives FastMCP's Streamable-HTTP session manager for
+        # the mounted /mcp sub-app (a no-op when the MCP SDK isn't installed).
+        async with mcp_server.session_lifespan():
+            yield
     finally:
-        db.close()
+        # Stop the pod agent first (if running): signal + await the task.
+        _agent_task = _state.get("pod_agent_task")
+        if _agent_task is not None:
+            _state["pod_agent_stop"].set()
+            try:
+                await _agent_task
+            except Exception as exc:  # noqa: BLE001
+                logger.warning("Pod agent shutdown failed: %s", exc)
+        # ---- graceful shutdown ------------------------------------------------
+        # Close BOTH the original and the currently-active DB: a graph hot-swap
+        # replaces _state["db"] with a new TraceDB, so the active one would
+        # otherwise leak its pooled connections. close() drains every leased
+        # connection and lets LadybugDB flush its WAL to disk (idempotent, so
+        # closing an already-swapped-out handle is a safe no-op).
+        for handle in {db, _state.get("db")}:  # set dedupes when no swap happened
+            if handle is None:
+                continue
+            try:
+                handle.close()
+            except Exception as exc:  # noqa: BLE001
+                logger.warning("DB close failed during shutdown: %s", exc)
+        # Join the embed executor's worker threads (let in-flight encodes finish).
+        try:
+            shutdown_embed_executor(wait=True)
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("Embed executor shutdown failed: %s", exc)
+        logger.info("TraceRAG shutdown complete (pools drained, flushed to disk).")
 
 
 app = FastAPI(title="TraceRAG STUDIO API", version="0.1.0", lifespan=lifespan)
@@ -63,13 +202,32 @@ app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 app.include_router(history.router)
+app.include_router(onboarding.router)   # admin tenant provisioning (X-Admin-Secret)
+app.include_router(github_oauth.router) # GitHub OAuth connect (encrypts the token)
+app.include_router(webhooks.router)     # real-time GitHub webhook -> debounce
+
+# Gateway routing simulation: gate tenant-scoped routes on this pod's
+# PodAssignment (no-op unless MULTI_TENANCY_ENABLED). Added BEFORE CORS so CORS
+# stays the outermost layer and its headers apply even to 421/409/503 rejections.
+app.add_middleware(TenantRoutingMiddleware)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=config.CORS_ORIGINS,  # "*" by default; lock to the frontend in prod
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Agent-facing MCP surface (Cursor / Claude Desktop) mounted as a Streamable-HTTP
+# sub-app. Semantic tools only — no raw Cypher. The parent app's CORS middleware
+# wraps it; the session manager is driven from the lifespan above. Skipped cleanly
+# when disabled or the SDK is absent, so the core API is never affected.
+if config.MCP_ENABLED and mcp_server.is_available():
+    app.mount(config.MCP_MOUNT_PATH, mcp_server.build_app())
+    logger.info("MCP server mounted at %s (tools: trace_impact, search_context, "
+                "find_entity)", config.MCP_MOUNT_PATH)
+elif config.MCP_ENABLED:
+    logger.info("MCP enabled but SDK not installed; /mcp surface unavailable.")
 
 
 class TraceRequest(BaseModel):
@@ -83,13 +241,16 @@ class SubgraphRequest(BaseModel):
 
 
 @app.post("/api/trace")
-def trace(
+async def trace(
     req: TraceRequest,
-    user_id: str = Depends(get_current_user),  # require a valid token
+    user_id: str = Depends(get_current_user),           # who (Clerk user)
+    org_id: str = Depends(get_current_tenant_org),      # which tenant graph
 ) -> dict:
     """Run the router and return the full trace for visualization."""
-    router: TraceRouter = _state["router"]
-    response = router.route(req.query, top_k=req.top_k or config.TOP_K_VECTOR)
+    router, _db = _resolve_tenant(org_id)
+    # aroute offloads the blocking hybrid retrieval (DB pool + embed pool) off
+    # the event loop, so concurrent requests no longer serialize on one thread.
+    response = await router.aroute(req.query, top_k=req.top_k or config.TOP_K_VECTOR)
     payload = asdict(response)
     # rendered context the generation model would receive
     for node, result in zip(response.results, payload["results"]):
@@ -99,12 +260,14 @@ def trace(
         # Ownership check (write-side IDOR): only persist into a session that
         # belongs to the authenticated user. Unknown session → 404; someone
         # else's session → 403. A query with no session_id stays anonymous.
-        owner = history.session_owner(req.session_id)
+        # Postgres calls are blocking → run them off the loop too.
+        owner = await asyncio.to_thread(history.session_owner, req.session_id)
         if owner is None:
             raise HTTPException(status_code=404, detail="session not found")
         if owner != user_id:
             raise HTTPException(status_code=403, detail="not your session")
-        payload["trace_id"] = history.persist_trace(
+        payload["trace_id"] = await asyncio.to_thread(
+            history.persist_trace,
             session_id=req.session_id,
             query=req.query,
             execution_plan=payload["trace_log"],
@@ -114,10 +277,14 @@ def trace(
 
 
 @app.post("/api/subgraph")
-def subgraph(req: SubgraphRequest) -> dict:
+async def subgraph(
+    req: SubgraphRequest,
+    org_id: str = Depends(get_current_tenant_org),
+) -> dict:
     """Requested nodes plus their 1-hop neighbors and edges."""
-    db: TraceDB = _state["db"]
-    return db.subgraph(req.node_ids)
+    _router, db = _resolve_tenant(org_id)
+    # blocking DB read -> offload so the loop stays free under concurrency
+    return await asyncio.to_thread(db.subgraph, req.node_ids)
 
 
 class SummarizeRequest(BaseModel):
@@ -234,6 +401,10 @@ def switch_graph(req: SwitchGraphRequest) -> dict:
     _state["db"] = new_db
     _state["db_path"] = str(target)
     _state["router"].db = new_db
+    # keep the default-tenant registry entry in sync so tenant resolution (and
+    # the MCP tools) follow the hot-swap too.
+    REGISTRY.bind(config.DEFAULT_TENANT_ORG_ID, db=new_db, router=_state["router"],
+                  artifact_id="local-default", version=0, path=str(target))
     _SUMMARY_CACHE.clear()  # snippets differ per graph
     if old is not None and old is not new_db:
         try:
@@ -263,9 +434,12 @@ _SUGGESTION_DEFAULT = "What is related to {label}?"
 
 
 @app.get("/api/suggestions")
-def suggestions(limit: int = 5) -> dict:
+def suggestions(
+    limit: int = 5,
+    org_id: str = Depends(get_current_tenant_org),
+) -> dict:
     """Example questions built from the active graph's hub entities."""
-    db: TraceDB = _state["db"]
+    _router, db = _resolve_tenant(org_id)
     try:
         hubs = db.top_entities(limit=limit * 4)  # over-fetch, then diversify
     except Exception as exc:  # noqa: BLE001

@@ -3,8 +3,11 @@
 from __future__ import annotations
 
 import logging
+import queue
+import threading
+from contextlib import contextmanager
 from pathlib import Path
-from typing import Any, Sequence
+from typing import Any, Iterator, Sequence
 
 import ladybug as lb
 
@@ -14,28 +17,96 @@ logger = logging.getLogger(__name__)
 
 
 class TraceDB:
-    """Thin wrapper over a LadybugDB connection: schema, upsert, edges, search."""
+    """Wrapper over LadybugDB with a read-connection pool.
 
-    def __init__(self, db_path: str | Path = config.DB_PATH) -> None:
+    LadybugDB (a Kuzu fork) parallelizes reads across *separate* connections — it
+    releases the GIL in C++ — but a single connection serializes everything. So:
+
+      * reads lease one of N pooled connections (``_fetch`` / ``_lease``), giving
+        true read concurrency under load;
+      * writes/DDL go through one dedicated connection under a lock, matching the
+        engine's single-writer model (ingestion is single-threaded anyway).
+    """
+
+    def __init__(
+        self, db_path: str | Path = config.DB_PATH, *, pool_size: int | None = None
+    ) -> None:
         self.db_path = str(db_path)
         self._db = lb.Database(self.db_path)
-        self._conn = lb.Connection(self._db)
-        logger.info("Opened LadybugDB at %s", self.db_path)
-        self._load_vector_extension()
+        self._closed = False
 
-    def execute(self, query: str, params: dict[str, Any] | None = None):
-        return self._conn.execute(query, params or {})
+        # dedicated write/DDL connection (single-writer); guarded by a lock
+        self._write_lock = threading.Lock()
+        self._write_conn = self._new_connection()
 
-    def _load_vector_extension(self) -> None:
-        """Load the VECTOR extension; LOAD per session, INSTALL once (needs net)."""
+        # bounded pool of read connections; reads parallelize across them
+        self._pool_size = max(1, config.DB_POOL_SIZE if pool_size is None else pool_size)
+        self._pool: "queue.Queue" = queue.Queue(maxsize=self._pool_size)
+        self._read_conns: list = []  # kept for clean shutdown
+        for _ in range(self._pool_size):
+            conn = self._new_connection()
+            self._read_conns.append(conn)
+            self._pool.put(conn)
+        logger.info(
+            "Opened LadybugDB at %s (read pool=%d)", self.db_path, self._pool_size
+        )
+
+    # ---- connection plumbing -------------------------------------------------
+
+    def _new_connection(self):
+        """Create a connection with the VECTOR extension loaded (per-connection)."""
+        conn = lb.Connection(self._db)
+        self._load_vector_on(conn)
+        return conn
+
+    @staticmethod
+    def _load_vector_on(conn) -> None:
+        """LOAD the VECTOR extension on a connection; INSTALL once if missing."""
         try:
-            self.execute("LOAD VECTOR;")
+            conn.execute("LOAD VECTOR;")
         except Exception:  # noqa: BLE001 — not installed yet on this machine
             try:
-                self.execute("INSTALL VECTOR;")
-                self.execute("LOAD VECTOR;")
+                conn.execute("INSTALL VECTOR;")
+                conn.execute("LOAD VECTOR;")
             except Exception as exc:  # noqa: BLE001
                 logger.warning("VECTOR extension unavailable: %s", exc)
+
+    def _load_vector_extension(self) -> None:
+        """Reload VECTOR on the write connection (used before index rebuilds)."""
+        self._load_vector_on(self._write_conn)
+
+    @contextmanager
+    def _lease(self) -> Iterator[Any]:
+        """Borrow a read connection from the pool, returning it on exit."""
+        if self._closed:
+            raise RuntimeError("TraceDB is closed")
+        conn = self._pool.get(timeout=config.DB_POOL_TIMEOUT)
+        try:
+            yield conn
+        finally:
+            self._pool.put(conn)
+
+    def execute(self, query: str, params: dict[str, Any] | None = None):
+        """Write/DDL path: runs on the single write connection under a lock.
+
+        Reads should use ``_fetch`` so they fan out across the pool; this is kept
+        for schema, upserts and index builds (and any caller that ignores the
+        result). The returned result must be consumed before the next write.
+        """
+        with self._write_lock:
+            return self._write_conn.execute(query, params or {})
+
+    def _fetch(
+        self, query: str, params: dict[str, Any] | None = None
+    ) -> list[dict[str, Any]]:
+        """Read path: lease a pooled connection, run, materialize, release.
+
+        Materializing (``get_as_df``) inside the lease is required — the result
+        is bound to its connection, so it must be consumed before the connection
+        goes back to the pool.
+        """
+        with self._lease() as conn:
+            return self._records(conn.execute(query, params or {}))
 
     def init_schema(self) -> None:
         self.execute(
@@ -120,17 +191,17 @@ class TraceDB:
 
     def find_nodes_by_label(self, label: str) -> list[dict[str, Any]]:
         """Exact, case-insensitive match of entities by their label."""
-        return self._records(self.execute(
+        return self._fetch(
             f"MATCH (e:{config.NODE_TABLE}) WHERE lower(e.label) = lower($label) "
             f"RETURN e.id AS id, e.label AS label, e.type AS type;",
             {"label": label},
-        ))
+        )
 
     def node_exists(self, node_id: str) -> bool:
-        rows = self._records(self.execute(
+        rows = self._fetch(
             f"MATCH (e:{config.NODE_TABLE} {{id: $id}}) RETURN e.id AS id LIMIT 1;",
             {"id": node_id},
-        ))
+        )
         return len(rows) > 0
 
     def vector_search(
@@ -140,7 +211,7 @@ class TraceDB:
     ) -> list[dict[str, Any]]:
         """Top-k cosine neighbours via the HNSW index; similarity = 1 - distance."""
         self._check_dim(query_embedding)
-        result = self.execute(
+        result = self._fetch(
             f"CALL QUERY_VECTOR_INDEX('{config.NODE_TABLE}', "
             f"'{config.VECTOR_INDEX}', $q, {int(k)}) "
             f"RETURN node.id AS id, node.label AS label, node.type AS type, "
@@ -148,7 +219,7 @@ class TraceDB:
             {"q": list(query_embedding)},
         )
         rows = []
-        for r in self._records(result):
+        for r in result:
             distance = float(r["distance"])
             rows.append({
                 "id": r["id"], "label": r["label"], "type": r["type"],
@@ -158,7 +229,7 @@ class TraceDB:
 
     def neighbors(self, node_id: str, k: int = config.TOP_K_GRAPH) -> list[dict[str, Any]]:
         """One-hop graph neighbours, strongest edge first (deterministic order)."""
-        result = self.execute(
+        return self._fetch(
             f"MATCH (a:{config.NODE_TABLE} {{id: $id}})"
             f"-[r:{config.REL_TABLE}]-(b:{config.NODE_TABLE}) "
             f"RETURN b.id AS id, b.label AS label, b.type AS type, "
@@ -167,16 +238,15 @@ class TraceDB:
             f"LIMIT $k;",
             {"id": node_id, "k": k},
         )
-        return self._records(result)
 
     def node_degree(self, node_id: str) -> int:
         """Distinct one-hop neighbour count — used to detect hub super-nodes."""
-        rows = self._records(self.execute(
+        rows = self._fetch(
             f"MATCH (a:{config.NODE_TABLE} {{id: $id}})"
             f"-[r:{config.REL_TABLE}]-(b:{config.NODE_TABLE}) "
             f"RETURN count(DISTINCT b.id) AS d;",
             {"id": node_id},
-        ))
+        )
         return int(rows[0]["d"]) if rows else 0
 
     def expand_frontier(
@@ -185,13 +255,13 @@ class TraceDB:
         """Batched 1-hop expansion of a whole frontier in one query (avoids N+1)."""
         if not node_ids:
             return {}
-        rows = self._records(self.execute(
+        rows = self._fetch(
             f"MATCH (a:{config.NODE_TABLE}) WHERE a.id IN $ids "
             f"OPTIONAL MATCH (a)-[r:{config.REL_TABLE}]-(b:{config.NODE_TABLE}) "
             f"RETURN a.id AS from_id, b.id AS to_id, b.label AS label, "
             f"b.type AS type, r.confidence AS confidence;",
             {"ids": list(node_ids)},
-        ))
+        )
         grouped: dict[str, list[dict[str, Any]]] = {}
         for r in rows:
             if r["to_id"] is None:  # isolated node
@@ -213,14 +283,14 @@ class TraceDB:
         """Chunk text of every Document mentioning the given entities, keyed by entity id."""
         if not entity_ids:
             return {}
-        rows = self._records(self.execute(
+        rows = self._fetch(
             f"MATCH (d:{config.DOC_TABLE})-[:{config.MENTIONS_TABLE}]->"
             f"(e:{config.NODE_TABLE}) "
             f"WHERE e.id IN $ids "
             f"RETURN e.id AS entity_id, d.id AS doc_id, d.path AS path, "
             f"d.content AS content;",
             {"ids": entity_ids},
-        ))
+        )
         grouped: dict[str, list[dict]] = {}
         for r in rows:
             grouped.setdefault(r["entity_id"], []).append(
@@ -234,13 +304,13 @@ class TraceDB:
             return {"nodes": [], "edges": []}
 
         # optional match so isolated requested nodes still appear
-        rows = self._records(self.execute(
+        rows = self._fetch(
             f"MATCH (a:{config.NODE_TABLE}) WHERE a.id IN $ids "
             f"OPTIONAL MATCH (a)-[:{config.REL_TABLE}]-(b:{config.NODE_TABLE}) "
             f"RETURN a.id AS a_id, a.label AS a_label, a.type AS a_type, "
             f"b.id AS b_id, b.label AS b_label, b.type AS b_type;",
             {"ids": node_ids},
-        ))
+        )
 
         requested = set(node_ids)
         nodes: dict[str, dict] = {}
@@ -256,13 +326,13 @@ class TraceDB:
 
         # edges strictly between visible nodes
         all_ids = list(nodes)
-        edge_rows = self._records(self.execute(
+        edge_rows = self._fetch(
             f"MATCH (a:{config.NODE_TABLE})-[r:{config.REL_TABLE}]->"
             f"(b:{config.NODE_TABLE}) "
             f"WHERE a.id IN $ids AND b.id IN $ids "
             f"RETURN a.id AS source, b.id AS target, r.confidence AS confidence;",
             {"ids": all_ids},
-        )) if all_ids else []
+        ) if all_ids else []
         edges = [
             {"source": r["source"], "target": r["target"],
              "confidence": r["confidence"]}
@@ -271,22 +341,22 @@ class TraceDB:
         return {"nodes": list(nodes.values()), "edges": edges}
 
     def count_nodes(self) -> int:
-        rows = self._records(self.execute(
-            f"MATCH (e:{config.NODE_TABLE}) RETURN count(e) AS n;"))
+        rows = self._fetch(
+            f"MATCH (e:{config.NODE_TABLE}) RETURN count(e) AS n;")
         return int(rows[0]["n"]) if rows else 0
 
     def top_entities(self, limit: int = 12) -> list[dict[str, Any]]:
         """Most-connected entities (highest distinct degree), with type."""
         # aggregate via WITH before ordering; ordering by a.label alongside the aggregate
         # fails in Kuzu ("Variable a is not in scope")
-        return self._records(self.execute(
+        return self._fetch(
             f"MATCH (a:{config.NODE_TABLE})-[r:{config.REL_TABLE}]-(b:{config.NODE_TABLE}) "
             f"WITH a, count(DISTINCT b) AS degree "
             f"RETURN a.id AS id, a.label AS label, a.type AS type, degree "
             f"ORDER BY degree DESC, a.label ASC "
             f"LIMIT $limit;",
             {"limit": int(limit)},
-        ))
+        )
 
     @staticmethod
     def _check_dim(embedding: Sequence[float]) -> None:
@@ -300,7 +370,17 @@ class TraceDB:
         return result.get_as_df().to_dict(orient="records")
 
     def close(self) -> None:
-        for handle in (self._conn, self._db):
+        """Drain the read pool and close every connection (idempotent).
+
+        Safe across the hot-swap path: ``/api/graphs/switch`` builds a new
+        TraceDB and closes the old one, so each pool is owned by exactly one
+        TraceDB and never outlives it.
+        """
+        if self._closed:
+            return
+        self._closed = True
+        handles = list(self._read_conns) + [self._write_conn, self._db]
+        for handle in handles:
             try:
                 handle.close()
             except Exception:  # noqa: BLE001

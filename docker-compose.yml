@@ -1,0 +1,125 @@
+# Production-parity local stack: Postgres (two DBs) + Redis + API + Celery worker
+# + Celery beat, all on one bridge network. Copy .env.example -> .env first.
+#
+#   docker compose up --build
+#
+# Note on the celery module path: the image copies the *backend/* contents flat
+# into WORKDIR, so the app is imported as `worker.celery_app.app` (not
+# `backend.worker...`) — the same reason the API runs `uvicorn api:app`.
+
+x-backend-build: &backend-build
+  context: ./backend
+  dockerfile: Dockerfile
+
+# Shared environment for the app containers (api / worker / beat).
+x-app-env: &app-env
+  # two isolated databases on the same Postgres instance
+  CONTROL_PLANE_DATABASE_URL: postgresql://tracerag:${POSTGRES_PASSWORD:-tracerag}@db:5432/control_plane_db
+  GRAPH_STORE_DATABASE_URL: postgresql://tracerag:${POSTGRES_PASSWORD:-tracerag}@db:5432/graph_store_db
+  APP_DATABASE_URL: postgresql://tracerag:${POSTGRES_PASSWORD:-tracerag}@db:5432/control_plane_db
+  # redis: celery broker/result backend AND the ZSET debounce store
+  REDIS_URL: redis://redis:6379/0
+  # tenancy
+  MULTI_TENANCY_ENABLED: "True"
+  DEFAULT_TENANT_ORG_ID: org_local_dev
+  # storage: 'local' (shared named volume) by default; set to 's3' in .env for AWS
+  TRACERAG_STORAGE_PROVIDER: ${TRACERAG_STORAGE_PROVIDER:-local}
+  TRACERAG_S3_BUCKET: ${TRACERAG_S3_BUCKET:-}
+  AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+  AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+  AWS_REGION: ${AWS_REGION:-us-east-1}
+  # integrations
+  GITHUB_TOKEN: ${GITHUB_TOKEN:-}
+  OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+  GROQ_API_KEY: ${GROQ_API_KEY:-}
+  CLERK_ISSUER: ${CLERK_ISSUER:-}
+  CORS_ORIGINS: ${CORS_ORIGINS:-*}
+  SENTRY_DSN: ${SENTRY_DSN:-}
+  # secrets + GitHub App (encryption key needed by api AND worker)
+  ENCRYPTION_MASTER_KEY: ${ENCRYPTION_MASTER_KEY:-}
+  ADMIN_SECRET_KEY: ${ADMIN_SECRET_KEY:-}
+  GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID:-}
+  GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET:-}
+  GITHUB_OAUTH_REDIRECT_URI: ${GITHUB_OAUTH_REDIRECT_URI:-http://localhost:8000/api/github/callback}
+  GITHUB_OAUTH_SCOPES: ${GITHUB_OAUTH_SCOPES:-repo read:org}
+  GITHUB_OAUTH_STATE_SECRET: ${GITHUB_OAUTH_STATE_SECRET:-}
+  GITHUB_WEBHOOK_SECRET: ${GITHUB_WEBHOOK_SECRET:-}
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: tracerag
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-tracerag}
+      POSTGRES_DB: tracerag
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./infra/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tracerag"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks: [tracerag_net]
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks: [tracerag_net]
+
+  api:
+    build: *backend-build
+    image: tracerag-backend:latest
+    command: ["uvicorn", "api:app", "--host", "0.0.0.0", "--port", "8000"]
+    environment:
+      <<: *app-env
+      POD_ID: pod-local-1
+      POD_AGENT_ENABLED: "1"
+    ports:
+      - "8000:8000"
+    depends_on:
+      db: {condition: service_healthy}
+      redis: {condition: service_healthy}
+    volumes:
+      - tenant_data:/home/user/app/tenant_data
+    networks: [tracerag_net]
+
+  worker:
+    build: *backend-build
+    image: tracerag-backend:latest
+    command: ["celery", "-A", "worker.celery_app.app", "worker", "--loglevel=info", "-P", "threads"]
+    environment:
+      <<: *app-env
+    depends_on:
+      db: {condition: service_healthy}
+      redis: {condition: service_healthy}
+    volumes:
+      - tenant_data:/home/user/app/tenant_data
+    networks: [tracerag_net]
+
+  beat:
+    build: *backend-build
+    image: tracerag-backend:latest
+    command: ["celery", "-A", "worker.celery_app.app", "beat", "--loglevel=info"]
+    environment:
+      <<: *app-env
+    depends_on:
+      db: {condition: service_healthy}
+      redis: {condition: service_healthy}
+    networks: [tracerag_net]
+
+volumes:
+  postgres_data:
+  tenant_data:
+
+networks:
+  tracerag_net:
+    driver: bridge

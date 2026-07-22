@@ -82,9 +82,10 @@ function deriveTrace(query: string): TraceState {
 }
 
 export function TraceDashboard() {
-  const [query, setQuery] = useState(MOCK_TRACE.query);
-  const [trace, setTrace] = useState<TraceState>(MOCK_TRACE);
-  const [loading, setLoading] = useState(true);
+  // start on a clean empty canvas; the EmptyState shows graph-aware suggestions
+  const [query, setQuery] = useState("");
+  const [trace, setTrace] = useState<TraceState>(EMPTY_TRACE);
+  const [loading, setLoading] = useState(false);
   const [answer, setAnswer] = useState<string | null>(null);
   const [answering, setAnswering] = useState(false);
   const isDesktop = useMediaQuery("(min-width: 1024px)");
@@ -142,7 +143,7 @@ export function TraceDashboard() {
       .then((rows) => {
         if (!cancelled) setSessionsList(rows);
       })
-      .catch((err) => console.error("[TraceRAG] listSessions failed:", err))
+      .catch((err) => console.error("[Graphsight] listSessions failed:", err))
       .finally(() => {
         if (!cancelled) setSessionsLoading(false);
       });
@@ -175,7 +176,7 @@ export function TraceDashboard() {
             setSessionsList((prev) => [created, ...prev]);
           } catch (err) {
             // persistence is best-effort, never block retrieval on it
-            console.error("[TraceRAG] createSession failed:", err);
+            console.error("[Graphsight] createSession failed:", err);
           }
         }
 
@@ -190,7 +191,7 @@ export function TraceDashboard() {
           description: `${tracedNodes} nodes · ${tracedEdges} traced edges · ${state.metrics.queryTimeSec}s`,
         });
       } catch (err) {
-        console.error("[TraceRAG] live trace failed, falling back to sample:", err);
+        console.error("[Graphsight] live trace failed, falling back to sample:", err);
         setTrace(deriveTrace(q));
         toast.warning("Backend unreachable — showing sample trace", {
           id: toastId,
@@ -238,7 +239,7 @@ export function TraceDashboard() {
         description: `${state.graph.nodes.length} nodes re-rendered (no LLM call).`,
       });
     } catch (err) {
-      console.error("[TraceRAG] hydrate session failed:", err);
+      console.error("[Graphsight] hydrate session failed:", err);
       toast.error("Could not restore session", {
         id: toastId,
         description: API_HINT,
@@ -246,12 +247,6 @@ export function TraceDashboard() {
     } finally {
       setLoading(false);
     }
-  }, []);
-
-  // live trace on mount for the default query; persist:false so it creates no session
-  useEffect(() => {
-    void handleSearch(MOCK_TRACE.query, { persist: false });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (

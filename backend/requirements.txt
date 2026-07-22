@@ -49,4 +49,24 @@ tqdm>=4.66.0                  # ingest progress bars
 aiohttp>=3.9.0                 # scripts/stress_test.py load generator
 slowapi>=0.1.9                 # FastAPI rate limiting (see api.py hardening)
 requests>=2.31.0              # scripts/ingest_github.py live PR connector
+httpx>=0.27.0                 # GitHub delta client (worker/ingestion/github_client.py)
+
+# --- Observability ---
+sentry-sdk[fastapi]>=2.0.0    # error tracking + perf monitoring (opt-in via SENTRY_DSN)
+
+# --- Agent interface (MCP) ---
+# Model Context Protocol server SDK. Exposes the retrieval engine to IDE agents
+# (Cursor, Claude Desktop) as typed semantic tools, mounted at /mcp. Optional:
+# api.py boots without it, just without the /mcp surface.
+mcp>=1.2.0
+
+# --- SaaS control plane + worker (infra only; not needed by the serving API) ---
+# Celery orchestrates incremental-compute + atomic-swap compiles; Redis is the
+# broker AND the debounce store. celery[redis] pulls a compatible redis client;
+# redis is listed explicitly because worker/debounce.py uses it directly.
+celery[redis]>=5.3.0
+redis>=5.0.0
+# S3 artifact storage (storage.py 's3' provider; imported lazily, so local/dev
+# runs without it). Multipart upload/download for large .lbug files.
+boto3>=1.34.0
 
