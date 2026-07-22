@@ -176,8 +176,8 @@ export function MemoryImport() {
             python example/demo_agent.py
           </code>{" "}
           in <code className="font-mono text-[11px] font-bold">graphsight-langgraph/</code> ·{" "}
-          <Link to="/studio" className="font-bold text-emerald-700 hover:underline">
-            back to Studio
+          <Link to="/memory/preview" className="font-bold text-emerald-700 hover:underline">
+            see the live demo
           </Link>
         </p>
       </div>

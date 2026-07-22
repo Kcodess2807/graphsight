@@ -164,6 +164,36 @@ function WaitlistForm({ inputId, center }: { inputId: string; center?: boolean }
   );
 }
 
+/* copyable shell command, terminal-styled */
+function CopyCommand({ command, compact }: { command: string; compact?: boolean }) {
+  const [copied, setCopied] = useState(false);
+  const copy = useCallback(() => {
+    navigator.clipboard?.writeText(command).then(() => {
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1600);
+    });
+  }, [command]);
+  return (
+    <button
+      type="button"
+      onClick={copy}
+      aria-label={`Copy command: ${command}`}
+      className={cn(
+        "group flex w-full items-center justify-between gap-3 rounded-lg border border-zinc-700 bg-[#131316] text-left font-mono text-zinc-100 transition-colors duration-150 hover:border-zinc-500",
+        compact ? "px-3.5 py-2 text-[12.5px]" : "px-4 py-3 text-[13px]"
+      )}
+    >
+      <span className="truncate">
+        <span className="text-zinc-500">$ </span>
+        {command}
+      </span>
+      <span className="shrink-0 text-[10.5px] font-bold uppercase tracking-wide text-zinc-500 transition-colors duration-150 group-hover:text-lime-300">
+        {copied ? "copied" : "copy"}
+      </span>
+    </button>
+  );
+}
+
 /* ═══════════════════════ hero ════════════════════════════════════ */
 
 /* floating hard-shadow sticker, rotation on the wrapper so the bob
@@ -274,6 +304,19 @@ function Hero() {
             <div id="waitlist" className="w-full max-w-md scroll-mt-28">
               <WaitlistForm inputId="email-hero" center />
             </div>
+          </Reveal>
+
+          <Reveal delay={0.24} className="mx-auto mt-6 flex max-w-md flex-col items-center gap-2.5">
+            <CopyCommand compact command="pip install graphsight" />
+            <p className="text-[13px] font-medium text-zinc-500">
+              already on PyPI ·{" "}
+              <Link
+                to="/memory/preview"
+                className="font-bold text-emerald-700 underline-offset-2 hover:underline"
+              >
+                try the live demo →
+              </Link>
+            </p>
           </Reveal>
         </div>
       </div>
@@ -793,6 +836,105 @@ function FinalCta() {
   );
 }
 
+/* ══════════ install — the pip packages, available today ══════════ */
+
+const PACKAGES = [
+  {
+    name: "graphsight",
+    desc: "The viewer. Opens any trace as an interactive graph in your browser — zero dependencies, nothing leaves your machine.",
+    href: "https://pypi.org/project/graphsight/",
+  },
+  {
+    name: "graphsight-langgraph",
+    desc: "The tracer. One callback handler records every retriever call, score, and relational path in a LangGraph agent.",
+    href: "https://pypi.org/project/graphsight-langgraph/",
+  },
+];
+
+function Install() {
+  return (
+    <section className="border-t border-zinc-200 bg-white">
+      <div className="mx-auto max-w-6xl px-5 py-20 sm:py-24">
+        <SectionHead
+          eyebrow="Open source · available today"
+          title="See your agent's memory in three commands"
+          sub="The hosted graph engine is coming — but the tracer and the viewer ship now, as two small pip packages. Trace any repo or any LangGraph agent, locally."
+        />
+
+        <div className="mt-12 grid items-start gap-6 lg:grid-cols-[1.2fr_1fr]">
+          {/* terminal walkthrough */}
+          <Reveal>
+            <div className="rounded-xl border border-[#131316] bg-[#131316] p-4 shadow-[4px_5px_0_0_#C8F169] sm:p-5">
+              <div className="mb-4 flex items-center gap-1.5" aria-hidden="true">
+                <span className="h-2.5 w-2.5 rounded-full bg-red-400" />
+                <span className="h-2.5 w-2.5 rounded-full bg-amber-400" />
+                <span className="h-2.5 w-2.5 rounded-full bg-emerald-400" />
+              </div>
+              <div className="flex flex-col gap-3">
+                <p className="font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-zinc-500">
+                  1 · install
+                </p>
+                <CopyCommand command='pip install graphsight "graphsight-langgraph[example]"' />
+                <p className="mt-1 font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-zinc-500">
+                  2 · trace your repo
+                </p>
+                <CopyCommand command='graphsight-github-trace your-org/your-repo "who touched auth recently?"' />
+                <p className="mt-1 font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-zinc-500">
+                  3 · open the graph
+                </p>
+                <CopyCommand command="graphsight graphsight_out/trace_state.json" />
+              </div>
+              <p className="mt-4 text-[12.5px] leading-relaxed text-zinc-400">
+                Public repos need no token. Your browser opens on the PRs that matched, who
+                authored them, and the issues they resolve — every node inspectable.
+              </p>
+            </div>
+          </Reveal>
+
+          {/* package cards */}
+          <div className="flex flex-col gap-4">
+            {PACKAGES.map((pkg, i) => (
+              <Reveal key={pkg.name} delay={0.06 * (i + 1)}>
+                <a
+                  href={pkg.href}
+                  target="_blank"
+                  rel="noreferrer"
+                  className={cn(
+                    CARD,
+                    "block p-5 transition-transform duration-150 hover:-translate-y-0.5"
+                  )}
+                >
+                  <p className="flex items-center justify-between font-mono text-[14px] font-bold text-[#131316]">
+                    {pkg.name}
+                    <span
+                      className="rounded-full px-2 py-0.5 text-[10.5px] font-bold"
+                      style={{ backgroundColor: LIME }}
+                    >
+                      PyPI
+                    </span>
+                  </p>
+                  <p className="mt-2 text-[13.5px] leading-relaxed text-zinc-600">{pkg.desc}</p>
+                </a>
+              </Reveal>
+            ))}
+            <Reveal delay={0.2}>
+              <a
+                href="https://github.com/Kcodess2807/graphsight"
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center justify-center gap-2 rounded-lg border border-[#131316] bg-white px-4 py-3 text-sm font-semibold text-[#131316] shadow-[2px_3px_0_0_#131316] transition-transform duration-150 hover:-translate-y-0.5"
+              >
+                <Github className="h-4 w-4" strokeWidth={2.25} />
+                Star it on GitHub
+              </a>
+            </Reveal>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 /* ═══════════════════════ page ════════════════════════════════════ */
 
 export function LandingPage() {
@@ -826,11 +968,19 @@ export function LandingPage() {
           </span>
           <div className="flex items-center gap-2">
             <Link
-              to="/studio"
+              to="/memory/preview"
               className="rounded-lg px-3 py-1.5 text-sm font-semibold text-zinc-600 transition-colors duration-150 hover:bg-zinc-100 hover:text-[#131316]"
             >
-              Studio
+              Live demo
             </Link>
+            <a
+              href="https://pypi.org/project/graphsight/"
+              target="_blank"
+              rel="noreferrer"
+              className="hidden rounded-lg px-3 py-1.5 text-sm font-semibold text-zinc-600 transition-colors duration-150 hover:bg-zinc-100 hover:text-[#131316] sm:block"
+            >
+              PyPI
+            </a>
             <button
               type="button"
               onClick={goToForm}
@@ -846,6 +996,7 @@ export function LandingPage() {
         <Hero />
         <Marquee />
         <CodeShowcase />
+        <Install />
         <Stats />
         <UseCases />
         <Benefits />
@@ -864,9 +1015,25 @@ export function LandingPage() {
             <span className="text-xs text-zinc-500">© 2026</span>
           </span>
           <p className="flex items-center gap-4 text-[13px] font-medium text-zinc-500">
-            <Link to="/studio" className="transition-colors duration-150 hover:text-[#131316]">
-              Studio
+            <Link to="/memory/preview" className="transition-colors duration-150 hover:text-[#131316]">
+              Live demo
             </Link>
+            <a
+              href="https://pypi.org/project/graphsight/"
+              target="_blank"
+              rel="noreferrer"
+              className="transition-colors duration-150 hover:text-[#131316]"
+            >
+              PyPI
+            </a>
+            <a
+              href="https://github.com/Kcodess2807/graphsight"
+              target="_blank"
+              rel="noreferrer"
+              className="transition-colors duration-150 hover:text-[#131316]"
+            >
+              GitHub
+            </a>
             <a href="mailto:hello@graphsight.dev" className="transition-colors duration-150 hover:text-[#131316]">
               Contact
             </a>
