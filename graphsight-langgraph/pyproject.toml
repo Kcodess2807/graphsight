@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "graphsight-langgraph"
-version = "0.1.2"
+version = "0.1.3"
 description = "X-ray for LangGraph retrieval: one callback handler captures every retriever call, score, and relational path — rendered as an interactive graph."
 readme = "README.md"
 requires-python = ">=3.10"

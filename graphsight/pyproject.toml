@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "graphsight"
-version = "0.1.3"
+version = "0.1.5"
 description = "See why your AI agent retrieved what it did — interactive graph viewer for agent retrieval traces. One command, zero dependencies, nothing leaves your machine."
 readme = "README.md"
 requires-python = ">=3.10"
