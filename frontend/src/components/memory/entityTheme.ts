@@ -3,6 +3,7 @@
 // 300-weight hues on the void. Wells stay at 10–15% alpha in both.
 // Classes are written out literally — Tailwind's JIT cannot see composed names.
 import {
+  GitCommitHorizontal,
   GitPullRequest,
   Server,
   User,
@@ -34,6 +35,13 @@ export const MEMORY_ENTITY_STYLES: Record<EntityType, MemoryEntityStyle> = {
     glyph: "text-indigo-600 dark:text-indigo-300",
     text: "text-indigo-600 dark:text-indigo-300",
     label: "Pull Request",
+  },
+  Commit: {
+    icon: GitCommitHorizontal,
+    well: "bg-teal-500/10 border-teal-500/20 dark:bg-teal-500/15 dark:border-teal-400/25",
+    glyph: "text-teal-600 dark:text-teal-300",
+    text: "text-teal-600 dark:text-teal-300",
+    label: "Commit",
   },
   Service: {
     icon: Server,

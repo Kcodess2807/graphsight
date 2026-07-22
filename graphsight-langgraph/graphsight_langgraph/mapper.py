@@ -20,6 +20,7 @@ _KIND_TO_ENTITY = {
     "document": "Document",
     "doc": "Document",
     "chunk": "Document",
+    "commit": "Commit",
     "repo": "Repo",
     "repository": "Repo",
     "branch": "Repo",

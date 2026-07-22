@@ -33,7 +33,7 @@ _STOP = {
 }
 
 # tie-break on equal lexical score: substantive artifacts over boilerplate
-_KIND_PRIORITY = {"pull_request": 3, "ticket": 2, "repo": 1, "person": 0}
+_KIND_PRIORITY = {"pull_request": 4, "commit": 3, "ticket": 2, "repo": 1, "person": 0}
 
 
 # github fetch, stdlib only
@@ -65,7 +65,9 @@ def _excerpt(text: Optional[str], limit: int = 400) -> str:
 
 
 # corpus
-def build_corpus(repo: str, token: Optional[str], n_prs: int, n_issues: int) -> list[Document]:
+def build_corpus(
+    repo: str, token: Optional[str], n_prs: int, n_issues: int, n_commits: int
+) -> list[Document]:
     owner_name = repo.split("/")[-1]
     meta = _get(f"/repos/{repo}", token)
     repo_id = f"repo_{owner_name}"
@@ -119,15 +121,34 @@ def build_corpus(repo: str, token: Optional[str], n_prs: int, n_issues: int) -> 
         ))
         authored.setdefault(login, [])
 
-    for login, pr_ids in authored.items():
+    # solo repos often have no PRs/issues at all — commits carry the history
+    commits = _get(f"/repos/{repo}/commits?per_page={n_commits}", token) if n_commits else []
+    for c in commits:
+        sha = c["sha"][:7]
+        login = (c.get("author") or {}).get("login") or (c.get("commit", {}).get("author") or {}).get("name") or "unknown"
+        commit_id = f"commit_{sha}"
+        message = c.get("commit", {}).get("message") or ""
+        edges = [{"source": commit_id, "target": repo_id, "relation": "TOUCHES", "weight": 0.6},
+                 {"source": f"person_{login}", "target": commit_id, "relation": "AUTHORED", "weight": 0.9}]
+        for ref in _RESOLVE_RE.findall(message):
+            edges.append({"source": commit_id, "target": f"tkt_{ref}", "relation": "RESOLVES", "weight": 0.8})
+        summary = _excerpt(message.splitlines()[0] if message else sha, 48)
         docs.append(Document(
-            page_content=f"GitHub user {login} — authored {len(pr_ids)} of the "
-                         f"last {len(prs)} pull requests in {repo}.",
+            page_content=_excerpt(f"Commit {sha} by {login}: {message}"),
+            metadata={"id": commit_id, "label": summary, "kind": "commit",
+                      "source": c.get("html_url"), "edges": edges},
+        ))
+        authored.setdefault(login, []).append(commit_id)
+
+    for login, work_ids in authored.items():
+        docs.append(Document(
+            page_content=f"GitHub user {login} — authored {len(work_ids)} of the "
+                         f"recent changes (PRs/commits) in {repo}.",
             metadata={"id": f"person_{login}", "label": login, "kind": "person",
                       "source": f"https://github.com/{login}",
                       # carried on both endpoints; the tracer dedups per retrieval
-                      "edges": [{"source": f"person_{login}", "target": pid,
-                                 "relation": "AUTHORED", "weight": 0.9} for pid in pr_ids]},
+                      "edges": [{"source": f"person_{login}", "target": wid,
+                                 "relation": "AUTHORED", "weight": 0.9} for wid in work_ids]},
         ))
     return docs
 
@@ -180,11 +201,12 @@ class LexicalGraphRetriever(BaseRetriever):
         for score, doc in sorted(kept.values(), key=lambda pair: pair[0], reverse=True):
             edges = [e for e in doc.metadata.get("edges", [])
                      if e["source"] in kept and e["target"] in kept]
-            out.append(Document(
-                page_content=doc.page_content,
-                metadata={**{k: v for k, v in doc.metadata.items() if k != "edges"},
-                          "score": score, "edges": edges},
-            ))
+            meta = {k: v for k, v in doc.metadata.items() if k != "edges"}
+            # zero overlap means "here because of its edges, not the query" —
+            # no score is more honest than a 0.00 chip
+            if score > 0:
+                meta["score"] = score
+            out.append(Document(page_content=doc.page_content, metadata={**meta, "edges": edges}))
         return out
 
 
@@ -253,6 +275,7 @@ def main(argv: Optional[list[str]] = None) -> None:
                         help="GitHub token (or set GITHUB_TOKEN); needed for private repos")
     parser.add_argument("--prs", type=int, default=25, help="recent PRs to fetch (default 25)")
     parser.add_argument("--issues", type=int, default=25, help="recent issues to fetch (default 25)")
+    parser.add_argument("--commits", type=int, default=25, help="recent commits to fetch (default 25)")
     parser.add_argument("--top", type=int, default=10, help="items to retrieve (default 10)")
     parser.add_argument("--out", type=Path, default=Path("graphsight_out"), help="output directory")
     args = parser.parse_args(argv)
@@ -261,8 +284,8 @@ def main(argv: Optional[list[str]] = None) -> None:
         parser.error("repo must be owner/name")
     question = args.question or f"What changed recently in {args.repo}, and who drove it?"
 
-    print(f"fetching {args.repo} (last {args.prs} PRs, {args.issues} issues)…", file=sys.stderr)
-    corpus = build_corpus(args.repo, args.token, args.prs, args.issues)
+    print(f"fetching {args.repo} (last {args.prs} PRs, {args.issues} issues, {args.commits} commits)…", file=sys.stderr)
+    corpus = build_corpus(args.repo, args.token, args.prs, args.issues, args.commits)
     print(f"corpus   : {len(corpus)} documents", file=sys.stderr)
 
     trace = run_traced(corpus, question, args.repo, args.top)

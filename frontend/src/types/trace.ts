@@ -1,6 +1,7 @@
 // shared contract between the GraphRAG engine and the Studio UI
 export type EntityType =
   | "PR"
+  | "Commit"
   | "Service"
   | "Person"
   | "Document"

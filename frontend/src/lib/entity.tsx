@@ -1,4 +1,5 @@
 import {
+  GitCommitHorizontal,
   GitPullRequest,
   Server,
   User,
@@ -33,6 +34,13 @@ export const ENTITY_STYLES: Record<EntityType, EntityStyle> = {
     iconColor: "text-indigo-600",
     badge: "indigo",
     label: "Pull Request",
+  },
+  Commit: {
+    icon: GitCommitHorizontal,
+    chip: "bg-emerald-50 border-emerald-100",
+    iconColor: "text-emerald-600",
+    badge: "emerald",
+    label: "Commit",
   },
   Service: {
     icon: Server,
