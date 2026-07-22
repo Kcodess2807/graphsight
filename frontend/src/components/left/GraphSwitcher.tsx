@@ -3,7 +3,7 @@ import { Database } from "lucide-react";
 import { toast } from "sonner";
 import { listGraphs, switchGraph, type GraphInfo } from "@/lib/api";
 
-const STORAGE_KEY = "tracerag.activeGraph";
+const STORAGE_KEY = "graphsight.activeGraph";
 
 // localStorage access can throw (private mode, disabled storage), so every
 // read/write is guarded — persistence is a nicety and must never break the UI.
@@ -65,7 +65,7 @@ export function GraphSwitcher({ onSwitched }: { onSwitched?: () => void }) {
             onSwitched?.();
             return;
           } catch (err) {
-            console.error("[TraceRAG] restore saved graph failed:", err);
+            console.error("[Graphsight] restore saved graph failed:", err);
             // fall through to adopt the server's active graph
           }
         }
@@ -75,7 +75,7 @@ export function GraphSwitcher({ onSwitched }: { onSwitched?: () => void }) {
 
         setActive(r.active);
       })
-      .catch((err) => console.error("[TraceRAG] listGraphs failed:", err));
+      .catch((err) => console.error("[Graphsight] listGraphs failed:", err));
     return () => {
       cancelled = true;
     };

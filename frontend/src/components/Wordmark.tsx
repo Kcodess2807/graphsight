@@ -11,7 +11,7 @@ export function Wordmark({ className }: { className?: string }) {
       <div className="leading-none">
         <div className="flex items-baseline gap-1">
           <span className="text-[15px] font-bold tracking-tight text-zinc-900">
-            TraceRAG
+            Graphsight
           </span>
           <span className="rounded bg-indigo-50 px-1 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-wider text-indigo-600">
             Studio

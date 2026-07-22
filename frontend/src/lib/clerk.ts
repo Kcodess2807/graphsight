@@ -9,7 +9,7 @@ export const CLERK_PUBLISHABLE_KEY = import.meta.env
 export const clerkEnabled = Boolean(CLERK_PUBLISHABLE_KEY);
 
 /**
- * Shared Clerk appearance, themed to match TraceRAG Studio:
+ * Shared Clerk appearance, themed to match Graphsight Studio:
  *   - colorPrimary = the app's indigo primary (#4F46E5)
  *   - flat: no heavy card shadow, a single hairline border, rounded-xl corners
  *

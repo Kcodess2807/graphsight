@@ -241,7 +241,7 @@ function ConceptCard({
   );
 }
 
-export default function TraceRAGConceptsDoc() {
+export default function GraphsightConceptsDoc() {
   return (
     <div className="min-h-[100dvh] bg-zinc-50">
       {/* top bar */}
@@ -284,7 +284,7 @@ export default function TraceRAGConceptsDoc() {
             </Badge>
             <h1 className="text-balance text-4xl font-extrabold tracking-tight sm:text-5xl">
               <span className="bg-gradient-to-r from-indigo-600 via-violet-600 to-cyan-500 bg-clip-text text-transparent">
-                Understanding TraceRAG
+                Understanding Graphsight
               </span>
             </h1>
             <p className="mt-5 max-w-2xl text-pretty text-lg leading-relaxed text-zinc-500">
@@ -334,7 +334,7 @@ export default function TraceRAGConceptsDoc() {
           <Section index={1}>
             <h2>The Solution: An AI That Shows Its Work</h2>
             <p>
-              TraceRAG changes the rules. Instead of letting the AI guess, it
+              Graphsight changes the rules. Instead of letting the AI guess, it
               makes the AI behave like a <strong>meticulous investigator</strong>.
             </p>
             <p>
@@ -344,7 +344,7 @@ export default function TraceRAGConceptsDoc() {
               doubt them, they can point to every single step.
             </p>
             <p>
-              TraceRAG holds the AI to that same standard. Before it answers, it
+              Graphsight holds the AI to that same standard. Before it answers, it
               must gather real evidence from your own data, connect the dots, and
               then <strong>show you the trail</strong>. You are never asked to
               simply trust the answer — you can see precisely how it was reached.
@@ -356,7 +356,7 @@ export default function TraceRAGConceptsDoc() {
           <Section index={2}>
             <h2>The Two Brains</h2>
             <p>
-              TraceRAG combines two complementary ways of “thinking,” working
+              Graphsight combines two complementary ways of “thinking,” working
               together like two specialists on the same case — the Skimmer and the
               String Board.
             </p>
@@ -413,7 +413,7 @@ export default function TraceRAGConceptsDoc() {
         {/* worked example */}
         <Section index={5}>
           <div className="prose prose-zinc mb-6 max-w-none prose-h2:mb-3 prose-h2:text-2xl prose-p:text-zinc-600">
-            <h2>TraceRAG in Action</h2>
+            <h2>Graphsight in Action</h2>
             <p>
               Here’s the whole machine working end to end on a single, real
               question — the Skimmer to find the starting point, the String Board

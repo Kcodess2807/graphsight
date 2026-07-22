@@ -143,7 +143,7 @@ export function TraceDashboard() {
       .then((rows) => {
         if (!cancelled) setSessionsList(rows);
       })
-      .catch((err) => console.error("[TraceRAG] listSessions failed:", err))
+      .catch((err) => console.error("[Graphsight] listSessions failed:", err))
       .finally(() => {
         if (!cancelled) setSessionsLoading(false);
       });
@@ -176,7 +176,7 @@ export function TraceDashboard() {
             setSessionsList((prev) => [created, ...prev]);
           } catch (err) {
             // persistence is best-effort, never block retrieval on it
-            console.error("[TraceRAG] createSession failed:", err);
+            console.error("[Graphsight] createSession failed:", err);
           }
         }
 
@@ -191,7 +191,7 @@ export function TraceDashboard() {
           description: `${tracedNodes} nodes · ${tracedEdges} traced edges · ${state.metrics.queryTimeSec}s`,
         });
       } catch (err) {
-        console.error("[TraceRAG] live trace failed, falling back to sample:", err);
+        console.error("[Graphsight] live trace failed, falling back to sample:", err);
         setTrace(deriveTrace(q));
         toast.warning("Backend unreachable — showing sample trace", {
           id: toastId,
@@ -239,7 +239,7 @@ export function TraceDashboard() {
         description: `${state.graph.nodes.length} nodes re-rendered (no LLM call).`,
       });
     } catch (err) {
-      console.error("[TraceRAG] hydrate session failed:", err);
+      console.error("[Graphsight] hydrate session failed:", err);
       toast.error("Could not restore session", {
         id: toastId,
         description: API_HINT,

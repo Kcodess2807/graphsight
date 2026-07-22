@@ -1,0 +1,41 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "graphsight-langgraph"
+version = "0.1.2"
+description = "X-ray for LangGraph retrieval: one callback handler captures every retriever call, score, and relational path — rendered as an interactive graph."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "Arush Karnatak" }]
+keywords = ["langgraph", "langchain", "tracing", "observability", "rag", "retrieval", "agents"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Debuggers",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+dependencies = [
+    "langchain-core>=0.3",
+]
+
+[project.urls]
+Repository = "https://github.com/Kcodess2807/graphsight"
+Documentation = "https://github.com/Kcodess2807/graphsight/tree/main/graphsight-langgraph"
+
+[project.optional-dependencies]
+example = ["langgraph>=0.2"]
+
+[project.scripts]
+graphsight-github-trace = "graphsight_langgraph.github_ingest:main"
+
+[tool.setuptools.packages.find]
+include = ["graphsight_langgraph*"]

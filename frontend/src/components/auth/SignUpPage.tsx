@@ -25,7 +25,7 @@ export function SignUpPage() {
               Create your workspace
             </h1>
             <p className="mt-1 text-sm text-zinc-500">
-              Start tracing your GraphRAG queries with TraceRAG Studio.
+              Start tracing your GraphRAG queries with Graphsight Studio.
             </p>
           </div>
           <SignUp

@@ -101,7 +101,7 @@ export function LeftPane({
                   </Link>
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Concepts · how TraceRAG works</TooltipContent>
+              <TooltipContent>Concepts · how Graphsight works</TooltipContent>
             </Tooltip>
             <AuthControls />
           </div>

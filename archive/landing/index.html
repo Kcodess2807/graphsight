@@ -1,0 +1,665 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CodeCortex — Graph memory for AI coding agents</title>
+  <meta name="description" content="CodeCortex maps your GitHub PRs, Jira tickets, and codebase into a live knowledge graph, served to Claude Code and Cursor over MCP. Join the waitlist." />
+  <meta name="theme-color" content="#000000" />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="CodeCortex — Graph memory for AI coding agents" />
+  <meta property="og:description" content="CodeCortex maps your GitHub PRs, Jira tickets, and codebase into a live knowledge graph, served to Claude Code and Cursor over MCP. Join the waitlist." />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="CodeCortex — Graph memory for AI coding agents" />
+  <meta name="twitter:description" content="CodeCortex maps your GitHub PRs, Jira tickets, and codebase into a live knowledge graph, served to Claude Code and Cursor over MCP. Join the waitlist." />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%3E%3Cline%20x1='12'%20y1='12'%20x2='5'%20y2='6'%20stroke='%23444444'/%3E%3Cline%20x1='12'%20y1='12'%20x2='19'%20y2='7'%20stroke='%23444444'/%3E%3Cline%20x1='12'%20y1='12'%20x2='9'%20y2='19'%20stroke='%23444444'/%3E%3Ccircle%20cx='5'%20cy='6'%20r='2'%20fill='%23666666'/%3E%3Ccircle%20cx='19'%20cy='7'%20r='2'%20fill='%23666666'/%3E%3Ccircle%20cx='9'%20cy='19'%20r='2'%20fill='%23666666'/%3E%3Ccircle%20cx='12'%20cy='12'%20r='2.5'%20fill='%23FFFFFF'/%3E%3C/svg%3E" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            base: "#000000",
+            raised: "#0A0A0A",
+            subtle: "#222222",
+            primary: "#F2F2F2",
+            muted: "#9A9AA0",
+            faint: "#5C5C63",
+            live: "#10B981",
+          },
+          fontFamily: {
+            sans: ["Inter", "-apple-system", "sans-serif"],
+          },
+        },
+      },
+    };
+  </script>
+
+  <style>
+    html { scroll-behavior: smooth; }
+    body {
+      background: #000000;
+      letter-spacing: -0.011em;
+      text-rendering: optimizeLegibility;
+      -webkit-font-smoothing: antialiased;
+    }
+    h1, h2, h3 { letter-spacing: -0.02em; }
+
+    /* Visible focus ring on every interactive element */
+    :focus-visible {
+      outline: 2px solid rgba(255, 255, 255, 0.6);
+      outline-offset: 2px;
+      border-radius: 2px;
+    }
+
+    /* Top-center spotlight — the entire "atmosphere". Static, never moves. */
+    .spotlight {
+      background: radial-gradient(ellipse 60% 50% at 50% 0%, rgba(255, 255, 255, 0.05), transparent 70%);
+    }
+    .spotlight-dim {
+      background: radial-gradient(ellipse 50% 60% at 50% 100%, rgba(255, 255, 255, 0.03), transparent 70%);
+    }
+    /* Faint hero dot-grid, masked out toward the fold */
+    .hero-grid {
+      background-image: radial-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+      background-size: 28px 28px;
+      -webkit-mask-image: linear-gradient(to bottom, black 20%, transparent 85%);
+      mask-image: linear-gradient(to bottom, black 20%, transparent 85%);
+    }
+
+    /* Nav scroll state */
+    #nav { transition: background-color 200ms ease, border-color 200ms ease; border-bottom: 1px solid transparent; }
+    #nav.nav-scrolled {
+      background: rgba(10, 10, 10, 0.8);
+      -webkit-backdrop-filter: blur(12px);
+      backdrop-filter: blur(12px);
+      border-bottom-color: #222222;
+    }
+
+    /* Frosted cards — felt, not seen */
+    .card {
+      position: relative;
+      background: rgba(10, 10, 10, 0.6);
+      -webkit-backdrop-filter: blur(12px);
+      backdrop-filter: blur(12px);
+      border: 1px solid #222222;
+      border-radius: 12px;
+      transition: border-color 180ms ease, transform 180ms ease;
+    }
+    .card:hover { border-color: rgba(255, 255, 255, 0.25); transform: translateY(-2px); }
+    /* Diagram nodes reuse the card surface but are not interactive — no lift */
+    .card-static:hover { transform: none; border-color: #222222; }
+
+    /* Cursor-tracking spotlight inside feature cards (greyscale, subtle) */
+    .card-spot::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      opacity: 0;
+      transition: opacity 250ms ease;
+      background: radial-gradient(
+        260px circle at var(--mx, 50%) var(--my, 50%),
+        rgba(255, 255, 255, 0.07),
+        transparent 65%
+      );
+      pointer-events: none;
+    }
+    .card-spot:hover::before { opacity: 1; }
+    .card-spot > * { position: relative; z-index: 1; }
+
+    /* Magnetic buttons — a few px of pull toward the cursor */
+    .magnetic { transition: transform 200ms ease, background-color 150ms ease; will-change: transform; }
+
+    /* Pipeline connectors + traveling dots (the one animation budget spend) */
+    .connector { position: relative; flex: none; }
+    .flow-dot {
+      position: absolute;
+      width: 4px; height: 4px; border-radius: 50%;
+      background: #ffffff;
+    }
+    @media (min-width: 768px) {
+      .connector { flex: 1 1 0%; height: 1px; background: #333333; min-width: 32px; }
+      .flow-dot { top: 50%; transform: translate(-50%, -50%); animation: flow-x 3s linear infinite; }
+    }
+    @media (max-width: 767px) {
+      .connector { width: 1px; height: 40px; background: #333333; margin: 0 auto; }
+      .flow-dot { left: 50%; transform: translate(-50%, -50%); animation: flow-y 3s linear infinite; }
+    }
+    @keyframes flow-x { from { left: 0%; } to { left: 100%; } }
+    @keyframes flow-y { from { top: 0%; } to { top: 100%; } }
+
+    /* Pipeline nodes flash as a traveling dot arrives (delays synced to the
+       dots: connector delays 0/-1/-2s mean arrivals at t≡0, 2, 1 mod 3s) */
+    @media (prefers-reduced-motion: no-preference) {
+      .recv { animation: node-receive 3s linear infinite; }
+      .recv-center { animation: node-receive-center 3s linear infinite; }
+      .recv-d1 { animation-delay: 1s; }
+      .recv-d2 { animation-delay: 2s; }
+    }
+    @keyframes node-receive {
+      0% { border-color: rgba(255, 255, 255, 0.5); box-shadow: 0 0 24px -6px rgba(255, 255, 255, 0.25); }
+      14%, 100% { border-color: #222222; box-shadow: none; }
+    }
+    @keyframes node-receive-center {
+      0% { border-color: rgba(255, 255, 255, 0.75); box-shadow: 0 0 32px -6px rgba(255, 255, 255, 0.3); }
+      14%, 100% { border-color: rgba(255, 255, 255, 0.3); box-shadow: none; }
+    }
+
+    /* Badge status dot — slow 2s pulse, the only permanent animation above the fold */
+    .pulse-ring { animation: pulse-ring 2s ease-in-out infinite; }
+    @keyframes pulse-ring {
+      0%, 100% { opacity: 0.9; transform: scale(1); }
+      50% { opacity: 0.35; transform: scale(1.6); }
+    }
+
+    /* Entrance: hero staggers on load; sections reveal on scroll */
+    @media (prefers-reduced-motion: no-preference) {
+      .enter { opacity: 0; animation: enter 500ms ease-out forwards; }
+      .enter-1 { animation-delay: 0ms; }
+      .enter-2 { animation-delay: 80ms; }
+      .enter-3 { animation-delay: 160ms; }
+      .enter-4 { animation-delay: 240ms; }
+      .enter-5 { animation-delay: 320ms; }
+      @keyframes enter { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+
+      .reveal { opacity: 0; transform: translateY(12px); transition: opacity 500ms ease-out, transform 500ms ease-out; }
+      .reveal.revealed { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Success state pop-in */
+    @media (prefers-reduced-motion: no-preference) {
+      .success-pop { animation: success-pop 350ms cubic-bezier(0.16, 1, 0.3, 1) both; }
+      @keyframes success-pop {
+        from { opacity: 0; transform: scale(0.85); }
+        to { opacity: 1; transform: scale(1); }
+      }
+    }
+
+    /* Invalid-email shake */
+    .shake { animation: shake 300ms ease; }
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-4px); }
+      50% { transform: translateX(4px); }
+      75% { transform: translateX(-4px); }
+    }
+
+    /* Reduced motion: content simply appears, nothing moves on its own */
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      .flow-dot { display: none; }
+      .pulse-ring { animation: none; }
+      .shake { animation: none; }
+      .card:hover { transform: none; }
+    }
+
+    .visually-hidden {
+      position: absolute; width: 1px; height: 1px;
+      padding: 0; margin: -1px; overflow: hidden;
+      clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+    }
+  </style>
+</head>
+
+<body class="bg-base font-sans text-muted">
+
+  <!-- ═══ Nav ═══ -->
+  <nav id="nav" class="fixed inset-x-0 top-0 z-50 h-16">
+    <div class="mx-auto flex h-full max-w-[1120px] items-center justify-between px-4 sm:px-6">
+      <a href="#" class="flex items-center gap-2.5" aria-label="CodeCortex home">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <line x1="12" y1="12" x2="5" y2="6" stroke="#444444" stroke-width="1.5" />
+          <line x1="12" y1="12" x2="19" y2="7" stroke="#444444" stroke-width="1.5" />
+          <line x1="12" y1="12" x2="9" y2="19" stroke="#444444" stroke-width="1.5" />
+          <circle cx="5" cy="6" r="2" fill="#666666" />
+          <circle cx="19" cy="7" r="2" fill="#666666" />
+          <circle cx="9" cy="19" r="2" fill="#666666" />
+          <circle cx="12" cy="12" r="2.5" fill="#FFFFFF" />
+        </svg>
+        <span class="text-[0.9375rem] font-semibold text-primary">CodeCortex</span>
+      </a>
+      <div class="flex items-center gap-2">
+        <a href="#hero-form"
+           class="hidden rounded-lg px-3.5 py-2 text-sm font-medium text-muted transition-colors duration-150 hover:bg-white/5 hover:text-primary sm:inline-block">
+          Log in
+        </a>
+        <a href="#hero-form"
+           class="magnetic rounded-lg bg-white px-3.5 py-2 text-sm font-medium text-black hover:bg-[#E5E5E5]">
+          Join waitlist
+        </a>
+      </div>
+    </div>
+  </nav>
+
+  <main>
+    <!-- ═══ Hero ═══ -->
+    <section class="relative overflow-hidden pb-20 pt-36 sm:pb-24 sm:pt-44">
+      <div class="spotlight pointer-events-none absolute inset-0" aria-hidden="true"></div>
+      <div class="hero-grid pointer-events-none absolute inset-0" aria-hidden="true"></div>
+      <!-- live constellation graph — the product, as ambience; reacts to the cursor -->
+      <canvas id="hero-canvas" class="pointer-events-none absolute inset-0 h-full w-full" aria-hidden="true"></canvas>
+
+      <div class="relative mx-auto max-w-[1120px] px-4 text-center sm:px-6">
+        <div class="enter enter-1 inline-flex items-center gap-2 rounded-full border border-subtle bg-raised px-3.5 py-1.5">
+          <span class="relative flex h-2 w-2" aria-hidden="true">
+            <span class="pulse-ring absolute inline-flex h-full w-full rounded-full bg-live"></span>
+            <span class="relative inline-flex h-2 w-2 rounded-full bg-live"></span>
+          </span>
+          <span class="text-[0.8125rem] font-medium text-muted">Now accepting early enterprise access</span>
+        </div>
+
+        <h1 class="enter enter-2 mx-auto mt-8 max-w-4xl text-[clamp(2.5rem,6vw,4.5rem)] font-semibold leading-[1.05] text-primary">
+          Stop letting your AI agents <span class="text-muted">guess code history.</span>
+        </h1>
+
+        <p class="enter enter-3 mx-auto mt-6 max-w-[600px] text-base leading-[1.6] text-muted sm:text-lg">
+          The cloud-native graph memory tier for Claude Code and Cursor. We map your GitHub PRs,
+          Jira tickets, and codebase into a deterministic knowledge graph &mdash; so your AI never
+          hallucinates context again.
+        </p>
+
+        <!-- Email capture -->
+        <div class="enter enter-4 mx-auto mt-10 max-w-md" id="hero-form">
+          <form class="waitlist-form flex flex-col gap-2 sm:flex-row sm:gap-0" novalidate>
+            <label for="email-hero" class="visually-hidden">Work email</label>
+            <input id="email-hero" name="email" type="email" placeholder="you@company.com"
+                   autocomplete="email" spellcheck="false"
+                   class="w-full rounded-lg border border-subtle bg-raised px-4 py-3 text-sm text-primary placeholder:text-faint transition-colors duration-150 hover:border-white/25 sm:rounded-r-none sm:border-r-0" />
+            <button type="submit"
+                    class="magnetic w-full shrink-0 rounded-lg bg-white px-5 py-3 text-sm font-medium text-black hover:bg-[#E5E5E5] sm:w-auto sm:rounded-l-none">
+              Join the waitlist
+            </button>
+          </form>
+          <div class="form-status mt-3 text-sm" aria-live="polite"></div>
+          <p class="form-microcopy mt-3 text-[0.8125rem] text-faint">
+            Free for early teams &middot; No credit card &middot; Unsubscribe anytime
+          </p>
+        </div>
+
+        <!-- Works with -->
+        <div class="enter enter-5 mt-16">
+          <p class="text-[0.8125rem] font-medium uppercase tracking-[0.1em] text-faint">Works with</p>
+          <ul class="mt-4 flex flex-wrap items-center justify-center gap-2">
+            <li class="rounded-full border border-subtle px-3.5 py-1.5 text-[0.8125rem] font-medium text-muted transition-all duration-150 hover:-translate-y-0.5 hover:border-white/25 hover:text-primary">Claude Code</li>
+            <li class="rounded-full border border-subtle px-3.5 py-1.5 text-[0.8125rem] font-medium text-muted transition-all duration-150 hover:-translate-y-0.5 hover:border-white/25 hover:text-primary">Cursor</li>
+            <li class="rounded-full border border-subtle px-3.5 py-1.5 text-[0.8125rem] font-medium text-muted transition-all duration-150 hover:-translate-y-0.5 hover:border-white/25 hover:text-primary">Windsurf</li>
+            <li class="rounded-full border border-subtle px-3.5 py-1.5 text-[0.8125rem] font-medium text-muted transition-all duration-150 hover:-translate-y-0.5 hover:border-white/25 hover:text-primary">GitHub</li>
+            <li class="rounded-full border border-subtle px-3.5 py-1.5 text-[0.8125rem] font-medium text-muted transition-all duration-150 hover:-translate-y-0.5 hover:border-white/25 hover:text-primary">Jira</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ Positioning banner ═══ -->
+    <section class="reveal border-y border-subtle">
+      <div class="mx-auto max-w-[1120px] px-4 py-14 text-center sm:px-6">
+        <p class="mx-auto max-w-2xl text-lg leading-[1.6]">
+          <span class="text-faint">Local-first memory tools live and die on one laptop.</span>
+          <span class="text-primary"> CodeCortex is cloud-hosted infrastructure your whole engineering team shares.</span>
+        </p>
+      </div>
+    </section>
+
+    <!-- ═══ Features ═══ -->
+    <section class="py-24 sm:py-28">
+      <div class="mx-auto max-w-[1120px] px-4 sm:px-6">
+        <div class="reveal text-center">
+          <p class="text-[0.8125rem] font-medium uppercase tracking-[0.1em] text-faint">Why CodeCortex</p>
+          <h2 class="mx-auto mt-4 max-w-2xl text-[clamp(1.75rem,3vw,2.5rem)] font-semibold leading-tight text-primary">
+            Memory built for how engineering actually works.
+          </h2>
+        </div>
+
+        <div class="mt-14 grid grid-cols-1 gap-4 lg:grid-cols-3">
+          <div class="card card-spot reveal p-6">
+            <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-white/[0.06]">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+                   stroke-linecap="round" stroke-linejoin="round" class="text-primary" aria-hidden="true">
+                <path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 1.98-3A2.5 2.5 0 0 1 9.5 2Z" />
+                <path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-1.98-3A2.5 2.5 0 0 0 14.5 2Z" />
+              </svg>
+            </div>
+            <h3 class="mt-5 text-lg font-semibold text-primary">The External Brain.</h3>
+            <p class="mt-2 text-sm leading-[1.6] text-muted">
+              Exposed as a secure MCP server. Your agents query our graph instead of re-reading
+              your repo &mdash; saving up to 70x on LLM tokens.
+            </p>
+          </div>
+
+          <div class="card card-spot reveal p-6">
+            <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-white/[0.06]">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+                   stroke-linecap="round" stroke-linejoin="round" class="text-primary" aria-hidden="true">
+                <line x1="6" y1="3" x2="6" y2="15" />
+                <circle cx="18" cy="6" r="3" />
+                <circle cx="6" cy="18" r="3" />
+                <path d="M18 9a9 9 0 0 1-9 9" />
+              </svg>
+            </div>
+            <h3 class="mt-5 text-lg font-semibold text-primary">Causal Tracing.</h3>
+            <p class="mt-2 text-sm leading-[1.6] text-muted">
+              We don't just read code. We map the exact Jira ticket to the exact PR to the exact
+              function &mdash; a chain of custody for every change.
+            </p>
+          </div>
+
+          <div class="card card-spot reveal p-6">
+            <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-white/[0.06]">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+                   stroke-linecap="round" stroke-linejoin="round" class="text-primary" aria-hidden="true">
+                <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z" />
+              </svg>
+            </div>
+            <h3 class="mt-5 text-lg font-semibold text-primary">Zero Local Setup.</h3>
+            <p class="mt-2 text-sm leading-[1.6] text-muted">
+              Fully managed, SOC 2-ready cloud cell architecture. No indexing on laptops, no
+              massive JSON files to commit.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ How it works ═══ -->
+    <section class="py-24 sm:py-28">
+      <div class="mx-auto max-w-[1120px] px-4 sm:px-6">
+        <h2 class="reveal mx-auto max-w-2xl text-center text-[clamp(1.75rem,3vw,2.5rem)] font-semibold leading-tight text-primary">
+          From commit to context in milliseconds.
+        </h2>
+
+        <div class="reveal mt-16 flex flex-col items-stretch md:flex-row md:items-center">
+          <!-- Node 1 -->
+          <div class="flex flex-col items-center md:w-[180px] md:shrink-0">
+            <div class="card card-static w-full px-4 py-4 text-center">
+              <p class="text-sm font-medium text-primary">GitHub &middot; Jira webhooks</p>
+            </div>
+            <p class="mt-3 text-[0.8125rem] text-faint">Live events in</p>
+          </div>
+
+          <div class="connector" aria-hidden="true"><span class="flow-dot" style="animation-delay: 0s;"></span></div>
+
+          <!-- Node 2 — centerpiece -->
+          <div class="flex flex-col items-center md:w-[240px] md:shrink-0">
+            <div class="card card-static recv-center w-full px-5 py-5 text-center" style="border-color: rgba(255, 255, 255, 0.3);">
+              <svg width="56" height="28" viewBox="0 0 56 28" fill="none" class="mx-auto" aria-hidden="true">
+                <line x1="28" y1="14" x2="10" y2="6" stroke="#444444" stroke-width="1.5" />
+                <line x1="28" y1="14" x2="46" y2="7" stroke="#444444" stroke-width="1.5" />
+                <line x1="28" y1="14" x2="14" y2="23" stroke="#444444" stroke-width="1.5" />
+                <line x1="28" y1="14" x2="44" y2="22" stroke="#444444" stroke-width="1.5" />
+                <circle cx="10" cy="6" r="2.5" fill="#666666" />
+                <circle cx="46" cy="7" r="2.5" fill="#666666" />
+                <circle cx="14" cy="23" r="2.5" fill="#666666" />
+                <circle cx="44" cy="22" r="2.5" fill="#666666" />
+                <circle cx="28" cy="14" r="3.5" fill="#FFFFFF" />
+              </svg>
+              <p class="mt-3 text-base font-semibold text-primary">CodeCortex cloud graph</p>
+            </div>
+            <p class="mt-3 text-[0.8125rem] text-faint">Deterministic knowledge graph</p>
+          </div>
+
+          <div class="connector" aria-hidden="true"><span class="flow-dot" style="animation-delay: -1s;"></span></div>
+
+          <!-- Node 3 -->
+          <div class="flex flex-col items-center md:w-[180px] md:shrink-0">
+            <div class="card card-static recv recv-d2 w-full px-4 py-4 text-center">
+              <p class="text-sm font-medium text-primary">MCP protocol</p>
+            </div>
+            <p class="mt-3 text-[0.8125rem] text-faint">Standard agent interface</p>
+          </div>
+
+          <div class="connector" aria-hidden="true"><span class="flow-dot" style="animation-delay: -2s;"></span></div>
+
+          <!-- Node 4 -->
+          <div class="flex flex-col items-center md:w-[180px] md:shrink-0">
+            <div class="card card-static recv recv-d1 w-full px-4 py-4 text-center">
+              <p class="text-sm font-medium text-primary">Cursor &middot; Claude Code</p>
+            </div>
+            <p class="mt-3 text-[0.8125rem] text-faint">Your agents, smarter</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ Final CTA ═══ -->
+    <section class="relative overflow-hidden py-24 sm:py-32">
+      <div class="spotlight-dim pointer-events-none absolute inset-0" aria-hidden="true"></div>
+      <div class="relative mx-auto max-w-[1120px] px-4 text-center sm:px-6">
+        <h2 class="reveal mx-auto max-w-2xl text-[clamp(1.75rem,3vw,2.5rem)] font-semibold leading-tight text-primary">
+          Give your AI the context it deserves.
+        </h2>
+        <p class="reveal mx-auto mt-4 max-w-[600px] text-base leading-[1.6] text-muted">
+          Join the waitlist and be first in line when enterprise access opens.
+        </p>
+
+        <div class="reveal mx-auto mt-10 max-w-md" id="cta-form">
+          <form class="waitlist-form flex flex-col gap-2 sm:flex-row sm:gap-0" novalidate>
+            <label for="email-cta" class="visually-hidden">Work email</label>
+            <input id="email-cta" name="email" type="email" placeholder="you@company.com"
+                   autocomplete="email" spellcheck="false"
+                   class="w-full rounded-lg border border-subtle bg-raised px-4 py-3 text-sm text-primary placeholder:text-faint transition-colors duration-150 hover:border-white/25 sm:rounded-r-none sm:border-r-0" />
+            <button type="submit"
+                    class="magnetic w-full shrink-0 rounded-lg bg-white px-5 py-3 text-sm font-medium text-black hover:bg-[#E5E5E5] sm:w-auto sm:rounded-l-none">
+              Join the waitlist
+            </button>
+          </form>
+          <div class="form-status mt-3 text-sm" aria-live="polite"></div>
+          <p class="form-microcopy mt-3 text-[0.8125rem] text-faint">
+            Free for early teams &middot; No credit card &middot; Unsubscribe anytime
+          </p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ═══ Footer ═══ -->
+  <footer class="border-t border-subtle">
+    <div class="mx-auto flex max-w-[1120px] flex-col items-center justify-between gap-4 px-4 py-8 sm:flex-row sm:px-6">
+      <div class="flex items-center gap-2">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <line x1="12" y1="12" x2="5" y2="6" stroke="#444444" stroke-width="1.5" />
+          <line x1="12" y1="12" x2="19" y2="7" stroke="#444444" stroke-width="1.5" />
+          <line x1="12" y1="12" x2="9" y2="19" stroke="#444444" stroke-width="1.5" />
+          <circle cx="5" cy="6" r="2" fill="#666666" />
+          <circle cx="19" cy="7" r="2" fill="#666666" />
+          <circle cx="9" cy="19" r="2" fill="#666666" />
+          <circle cx="12" cy="12" r="2.5" fill="#FFFFFF" />
+        </svg>
+        <span class="text-sm font-semibold text-primary">CodeCortex</span>
+        <span class="ml-2 text-[0.8125rem] text-faint">&copy; 2026 CodeCortex</span>
+      </div>
+      <p class="text-[0.8125rem] text-faint">
+        <a href="#" class="transition-colors duration-150 hover:text-muted">Privacy</a>
+        &middot;
+        <a href="#" class="transition-colors duration-150 hover:text-muted">Terms</a>
+        &middot;
+        <a href="mailto:hello@codecortex.dev" class="transition-colors duration-150 hover:text-muted">hello@codecortex.dev</a>
+      </p>
+    </div>
+  </footer>
+
+  <script>
+    // ── Nav scroll state ─────────────────────────────────────────
+    const nav = document.getElementById("nav");
+    const onScroll = () => nav.classList.toggle("nav-scrolled", window.scrollY > 40);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    onScroll();
+
+    // ── Scroll-triggered reveals ─────────────────────────────────
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const revealEls = document.querySelectorAll(".reveal");
+    if (reduceMotion) {
+      revealEls.forEach((el) => el.classList.add("revealed"));
+    } else {
+      let staggerQueue = 0;
+      const io = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (!entry.isIntersecting) return;
+            const el = entry.target;
+            // stagger cards that arrive in the same frame by 80ms
+            el.style.transitionDelay = `${staggerQueue * 80}ms`;
+            staggerQueue += 1;
+            requestAnimationFrame(() => el.classList.add("revealed"));
+            io.unobserve(el);
+          });
+          // reset the stagger counter once this batch is queued
+          setTimeout(() => { staggerQueue = 0; }, 0);
+        },
+        { threshold: 0.15 }
+      );
+      revealEls.forEach((el) => io.observe(el));
+    }
+
+    // ── Hero constellation graph (greyscale, cursor-aware) ───────
+    (function () {
+      if (reduceMotion) return;
+      const canvas = document.getElementById("hero-canvas");
+      if (!canvas || !canvas.getContext) return;
+      const ctx = canvas.getContext("2d");
+      const hero = canvas.parentElement;
+      let w = 0, h = 0;
+
+      function resize() {
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        const r = canvas.getBoundingClientRect();
+        w = r.width; h = r.height;
+        canvas.width = w * dpr;
+        canvas.height = h * dpr;
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      }
+      resize();
+      window.addEventListener("resize", resize);
+
+      const COUNT = Math.min(56, Math.floor(window.innerWidth / 24));
+      const pts = Array.from({ length: COUNT }, () => ({
+        x: Math.random() * (w || 1200),
+        y: Math.random() * (h || 600),
+        vx: (Math.random() - 0.5) * 0.3,
+        vy: (Math.random() - 0.5) * 0.3,
+      }));
+
+      const mouse = { x: -1e4, y: -1e4 };
+      hero.addEventListener("mousemove", (e) => {
+        const r = canvas.getBoundingClientRect();
+        mouse.x = e.clientX - r.left;
+        mouse.y = e.clientY - r.top;
+      });
+      hero.addEventListener("mouseleave", () => { mouse.x = -1e4; mouse.y = -1e4; });
+
+      // only burn frames while the hero is on screen
+      let visible = true;
+      new IntersectionObserver(([entry]) => { visible = entry.isIntersecting; }).observe(canvas);
+
+      const LINK = 110;   // node↔node connection radius
+      const MLINK = 170;  // cursor connection radius
+
+      function frame() {
+        requestAnimationFrame(frame);
+        if (!visible || !w) return;
+        ctx.clearRect(0, 0, w, h);
+
+        for (const p of pts) {
+          p.x += p.vx; p.y += p.vy;
+          if (p.x < 0 || p.x > w) p.vx *= -1;
+          if (p.y < 0 || p.y > h) p.vy *= -1;
+        }
+
+        for (let i = 0; i < pts.length; i++) {
+          const a = pts[i];
+          for (let j = i + 1; j < pts.length; j++) {
+            const b = pts[j];
+            const d = Math.hypot(a.x - b.x, a.y - b.y);
+            if (d < LINK) {
+              ctx.strokeStyle = `rgba(255,255,255,${(1 - d / LINK) * 0.09})`;
+              ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+            }
+          }
+          // the cursor becomes a temporary hub node
+          const dm = Math.hypot(a.x - mouse.x, a.y - mouse.y);
+          if (dm < MLINK) {
+            ctx.strokeStyle = `rgba(255,255,255,${(1 - dm / MLINK) * 0.22})`;
+            ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(mouse.x, mouse.y); ctx.stroke();
+          }
+          const near = dm < MLINK;
+          ctx.fillStyle = near ? "rgba(255,255,255,0.7)" : "rgba(255,255,255,0.3)";
+          ctx.beginPath(); ctx.arc(a.x, a.y, near ? 1.8 : 1.2, 0, Math.PI * 2); ctx.fill();
+        }
+      }
+      frame();
+    })();
+
+    // ── Card cursor spotlight ────────────────────────────────────
+    document.querySelectorAll(".card-spot").forEach((card) => {
+      card.addEventListener("mousemove", (e) => {
+        const r = card.getBoundingClientRect();
+        card.style.setProperty("--mx", `${e.clientX - r.left}px`);
+        card.style.setProperty("--my", `${e.clientY - r.top}px`);
+      });
+    });
+
+    // ── Magnetic buttons ─────────────────────────────────────────
+    if (!reduceMotion) {
+      document.querySelectorAll(".magnetic").forEach((btn) => {
+        btn.addEventListener("mousemove", (e) => {
+          const r = btn.getBoundingClientRect();
+          const x = (e.clientX - r.left - r.width / 2) / r.width;
+          const y = (e.clientY - r.top - r.height / 2) / r.height;
+          btn.style.transform = `translate(${x * 5}px, ${y * 4}px)`;
+        });
+        btn.addEventListener("mouseleave", () => { btn.style.transform = ""; });
+      });
+    }
+
+    // ── Waitlist forms (shared handler) ──────────────────────────
+    const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    document.querySelectorAll(".waitlist-form").forEach((form) => {
+      const input = form.querySelector("input[type=email]");
+      const status = form.parentElement.querySelector(".form-status");
+      const microcopy = form.parentElement.querySelector(".form-microcopy");
+
+      form.addEventListener("submit", (e) => {
+        e.preventDefault();
+        const email = input.value.trim();
+
+        if (!EMAIL_RE.test(email)) {
+          status.textContent = "Enter a valid work email.";
+          status.style.color = "#F87171";
+          input.classList.remove("shake");
+          // restart the shake animation if it already ran
+          void input.offsetWidth;
+          input.classList.add("shake");
+          return;
+        }
+
+        // TODO: POST to your form backend here.
+        // Wire in Formspree, Loops, Tally, or ConvertKit by replacing the
+        // placeholder URL below and removing the console.log:
+        //
+        // fetch("https://formspree.io/f/YOUR_FORM_ID", {
+        //   method: "POST",
+        //   headers: { "Content-Type": "application/json", Accept: "application/json" },
+        //   body: JSON.stringify({ email }),
+        // }).catch(() => { /* optionally surface a retry message */ });
+        console.log("[CodeCortex waitlist]", email);
+
+        // Success: swap the form for the confirmation, in place
+        form.hidden = true;
+        if (microcopy) microcopy.hidden = true;
+        status.style.color = "#9A9AA0";
+        status.innerHTML =
+          '<span class="success-pop" style="display:inline-flex;align-items:center;gap:8px;">' +
+          '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+          '<circle cx="12" cy="12" r="9"></circle><path d="m8.5 12.5 2.5 2.5 4.5-5"></path></svg>' +
+          "<span>You're on the list. We'll be in touch soon.</span></span>";
+      });
+    });
+  </script>
+</body>
+</html>

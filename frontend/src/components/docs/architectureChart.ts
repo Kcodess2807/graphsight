@@ -1,4 +1,4 @@
-// The full TraceRAG architecture diagram — kept verbatim from the README's
+// The full Graphsight architecture diagram — kept verbatim from the README's
 // §II "Architecture & Stack" Mermaid so the two never drift. Rendered + animated
 // by <MermaidDiagram>. Swap this string to show a different diagram.
 export const ARCHITECTURE_CHART = `flowchart TB

@@ -1,4 +1,10 @@
-"""SQLModel tables for the Postgres history store (users, sessions, traces)."""
+"""SQLModel tables for the Postgres history store (users, sessions, traces).
+
+Moved verbatim from the former flat ``models.py`` when ``models`` became a
+package (to add ``models/control_plane.py``). Import surface is unchanged:
+``from models import ChatSession, TraceLog, User`` still resolves via
+``models/__init__.py``.
+"""
 
 # no `from __future__ import annotations`: it breaks SQLModel relationship targets
 

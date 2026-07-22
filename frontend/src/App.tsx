@@ -4,7 +4,11 @@ import { ClerkProvider, useAuth } from "@clerk/clerk-react";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "sonner";
 import { TraceDashboard } from "@/components/TraceDashboard";
-import TraceRAGConceptsDoc from "@/components/docs/TraceRAGConceptsDoc";
+import { LandingPage } from "@/components/landing/LandingPage";
+import { MemoryImport } from "@/components/memory/MemoryImport";
+import { MemoryPreview } from "@/components/memory/MemoryPreview";
+import { MemoryStudio } from "@/components/memory/MemoryStudio";
+import GraphsightConceptsDoc from "@/components/docs/GraphsightConceptsDoc";
 import { SignInPage } from "@/components/auth/SignInPage";
 import { SignUpPage } from "@/components/auth/SignUpPage";
 import {
@@ -32,8 +36,18 @@ function AuthTokenBridge() {
 function AppRoutes() {
   return (
     <Routes>
-      <Route path="/" element={<TraceDashboard />} />
-      <Route path="/docs/concepts" element={<TraceRAGConceptsDoc />} />
+      {/* root: the monochrome waitlist landing page */}
+      <Route path="/" element={<LandingPage />} />
+      {/* the studio: same monochrome theme, live backend with sample fallback */}
+      <Route path="/studio" element={<MemoryStudio />} />
+      <Route path="/memory" element={<MemoryStudio />} />
+      {/* same UI on mock data with simulated tracing, no backend needed */}
+      <Route path="/memory/preview" element={<MemoryPreview />} />
+      {/* render an external trace (graphsight-langgraph) — drop/paste JSON */}
+      <Route path="/memory/import" element={<MemoryImport />} />
+      {/* previous light dashboard, kept for reference */}
+      <Route path="/classic" element={<TraceDashboard />} />
+      <Route path="/docs/concepts" element={<GraphsightConceptsDoc />} />
       {clerkEnabled && (
         <>
           <Route path="/sign-in/*" element={<SignInPage />} />

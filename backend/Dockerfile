@@ -32,6 +32,10 @@ RUN python -m spacy download en_core_web_sm && \
 # App code + the baked-in, read-only demo graphs.
 COPY --chown=user . .
 
+# Pre-create the tenant-data dir owned by uid 1000 so a mounted named volume
+# (the shared local artifact store in docker-compose) inherits writable ownership.
+RUN mkdir -p /home/user/app/tenant_data
+
 EXPOSE 7860
 # One worker: the in-memory rate limiter + single-file LadybugDB require it.
 CMD ["uvicorn", "api:app", "--host", "0.0.0.0", "--port", "7860", "--workers", "1"]

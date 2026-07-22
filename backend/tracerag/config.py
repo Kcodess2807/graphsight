@@ -46,6 +46,57 @@ CORS_ORIGINS = [
     o.strip() for o in os.getenv("CORS_ORIGINS", "*").split(",") if o.strip()
 ] or ["*"]
 
+# MCP (Model Context Protocol) server — exposes the retrieval engine to IDE
+# agents (Cursor, Claude Desktop) as typed, read-only semantic tools, never raw
+# Cypher. Mounted as an ASGI sub-app on the FastAPI instance. Disable by setting
+# TRACERAG_MCP_ENABLED=0. The knobs below bound each tool's payload/cost so an
+# agent can't walk the whole graph or dump every document in one call.
+MCP_ENABLED = os.getenv("TRACERAG_MCP_ENABLED", "1") not in ("0", "false", "False")
+MCP_MOUNT_PATH = os.getenv("TRACERAG_MCP_MOUNT_PATH", "/mcp")
+MCP_MAX_HOPS = int(os.getenv("TRACERAG_MCP_MAX_HOPS", "4"))       # trace_impact depth ceiling
+MCP_MAX_IMPACT = int(os.getenv("TRACERAG_MCP_MAX_IMPACT", "50"))  # blast-radius payload cap
+MCP_MAX_CANDIDATES = int(os.getenv("TRACERAG_MCP_MAX_CANDIDATES", "10"))  # find_entity cap
+MCP_CITATIONS_PER_NODE = int(os.getenv("TRACERAG_MCP_CITATIONS_PER_NODE", "2"))
+MCP_SNIPPET_CHARS = int(os.getenv("TRACERAG_MCP_SNIPPET_CHARS", "280"))
+# Impact-trace fan-out. Unlike the RAG graph arm (small K, aggressive hub
+# suppression for latency), an impact query WANTS the full neighborhood of the
+# entity asked about. So the seed is expanded with a generous degree cap + wider
+# K; deeper hops keep the normal MAX_DEGREE so a *downstream* super-hub still
+# can't explode the traversal. MCP_MAX_IMPACT bounds the final payload regardless.
+MCP_NEIGHBOR_K = int(os.getenv("TRACERAG_MCP_NEIGHBOR_K", "25"))
+MCP_SEED_MAX_DEGREE = int(os.getenv("TRACERAG_MCP_SEED_MAX_DEGREE", "200"))
+# Floor for the semantic fallback when auto-resolving a seed name: below this
+# cosine similarity, treat the name as unresolved (tell the agent to use
+# find_entity) rather than tracing a spurious weak match.
+MCP_RESOLVE_MIN_SIM = float(os.getenv("TRACERAG_MCP_RESOLVE_MIN_SIM", "0.40"))
+
+# --- Multi-tenancy (SaaS Cell Model) ---
+# OFF by default: the API resolves every request to DEFAULT_TENANT_ORG_ID and
+# serves the single warm local graph, so local/dev and the HF demo are untouched.
+# ON: requests carry a per-org API key, the graph is chosen per tenant from the
+# registry, and the routing middleware enforces pod assignment.
+MULTI_TENANCY_ENABLED = os.getenv("MULTI_TENANCY_ENABLED", "0") in ("1", "true", "True")
+# The synthetic org every request maps to in single-tenant mode.
+DEFAULT_TENANT_ORG_ID = os.getenv("DEFAULT_TENANT_ORG_ID", "org_local_dev")
+# This serving instance's identity — the gateway routes org_id -> POD_ID, and the
+# pod agent claims assignments for it. Stable per pod; injected by the orchestrator.
+POD_ID = os.getenv("POD_ID", "pod-local-dev")
+
+# Server-side secret guarding the admin onboarding endpoint. Unset => the endpoint
+# refuses all requests (503), so it can never be provisioned open by accident.
+ADMIN_SECRET_KEY = os.getenv("ADMIN_SECRET_KEY")
+
+# --- GitHub App: OAuth handshake + webhook verification ---
+GITHUB_CLIENT_ID = os.getenv("GITHUB_CLIENT_ID")
+GITHUB_CLIENT_SECRET = os.getenv("GITHUB_CLIENT_SECRET")
+GITHUB_OAUTH_REDIRECT_URI = os.getenv(
+    "GITHUB_OAUTH_REDIRECT_URI", "http://localhost:8000/api/github/callback")
+GITHUB_OAUTH_SCOPES = os.getenv("GITHUB_OAUTH_SCOPES", "repo read:org")
+# Signs the OAuth `state` (CSRF + which-org binding). Falls back to ADMIN_SECRET_KEY.
+GITHUB_OAUTH_STATE_SECRET = os.getenv("GITHUB_OAUTH_STATE_SECRET") or ADMIN_SECRET_KEY
+# Shared secret configured on the GitHub webhook; verifies X-Hub-Signature-256.
+GITHUB_WEBHOOK_SECRET = os.getenv("GITHUB_WEBHOOK_SECRET")
+
 # Sentry error tracking + performance monitoring. Fully optional: unset DSN =
 # disabled, so local/dev runs are untouched. traces_sample_rate is 1.0 (trace
 # everything) in dev; scale down in production (e.g. 0.1) to cap overhead/cost.
@@ -59,7 +110,7 @@ OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 OPENROUTER_BASE_URL = os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1")
 OPENROUTER_MODEL = os.getenv("OPENROUTER_MODEL", "anthropic/claude-3-haiku")
 OPENROUTER_SITE_URL = os.getenv("OPENROUTER_SITE_URL",
-                                "https://github.com/Kcodess2807/TraceRAG")
+                                "https://github.com/Kcodess2807/graphsight")
 OPENROUTER_APP_TITLE = os.getenv("OPENROUTER_APP_TITLE", "TraceRAG")
 
 # groq for the latency-critical router intent call; falls back to openrouter if unset

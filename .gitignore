@@ -31,10 +31,26 @@ backend/datasets/*.csv
 *.sqlite
 *.sqlite3
 
+# --- Python packaging (graphsight, graphsight-langgraph) ---
+build/
+dist_pkg/
+graphsight_out/
+graphsight-langgraph/example/out/
+graphsight-langgraph/example/out_github/
+
+# --- Separate deploy repo (has its own .git) ---
+hf-space/
+
+# --- Local agent settings ---
+.claude/
+
 # --- Frontend (Vite / Node) ---
 node_modules/
 dist/
 dist-ssr/
+# the viewer package ships the built UI — keep it in git
+!graphsight/graphsight/dist/
+!graphsight/graphsight/dist/**
 *.local
 .vite/
 .next/
@@ -47,8 +63,6 @@ yarn-error.log*
 .idea/
 .vscode/*
 !.vscode/extensions.json
-DEMO_SCRIPT.md
-DEMO.md
-STRESS_RESULTS.md
-DEMO.md
-DEPLOY.md
+docs/DEMO_SCRIPT.md
+docs/STRESS_RESULTS.md
+docs/DEPLOY.md
