@@ -33,21 +33,30 @@ function AuthTokenBridge() {
   return null;
 }
 
+// the live Studio needs the backend; deployed static builds hide it so
+// visitors never hit a broken page. dev builds (or the flag) show it.
+const SHOW_STUDIO =
+  import.meta.env.DEV || import.meta.env.VITE_ENABLE_STUDIO === "1";
+
 function AppRoutes() {
   return (
     <Routes>
-      {/* root: the monochrome waitlist landing page */}
+      {/* root: the landing page — pip packages + hosted engine pitch */}
       <Route path="/" element={<LandingPage />} />
-      {/* the studio: same monochrome theme, live backend with sample fallback */}
-      <Route path="/studio" element={<MemoryStudio />} />
-      <Route path="/memory" element={<MemoryStudio />} />
-      {/* same UI on mock data with simulated tracing, no backend needed */}
+      {/* mock data with simulated tracing, no backend needed */}
       <Route path="/memory/preview" element={<MemoryPreview />} />
       {/* render an external trace (graphsight-langgraph) — drop/paste JSON */}
       <Route path="/memory/import" element={<MemoryImport />} />
-      {/* previous light dashboard, kept for reference */}
-      <Route path="/classic" element={<TraceDashboard />} />
       <Route path="/docs/concepts" element={<GraphsightConceptsDoc />} />
+      {SHOW_STUDIO && (
+        <>
+          {/* the live studio: backend-wired, sample fallback */}
+          <Route path="/studio" element={<MemoryStudio />} />
+          <Route path="/memory" element={<MemoryStudio />} />
+          {/* previous dashboard, kept for reference */}
+          <Route path="/classic" element={<TraceDashboard />} />
+        </>
+      )}
       {clerkEnabled && (
         <>
           <Route path="/sign-in/*" element={<SignInPage />} />
