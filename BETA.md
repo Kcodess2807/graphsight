@@ -45,10 +45,15 @@ graphsight-github-trace yourusername/yourrepo "who changed authentication recent
 graphsight graphsight_out/trace_state.json
 ```
 
-Now the graph is *your* PRs, *your* issues, *your* people — which PRs
-matched the question, who authored them, which issues they resolve.
+Now the graph is *your* PRs, *your* issues, *your* commits, *your* people —
+what matched the question, who authored it, which issues it resolves.
 
 Works on public repos with no token. Private repos need `GITHUB_TOKEN`.
+Repos with no PRs or issues still work — recent commits carry the history.
+
+Tip: ask *who / what / when* questions ("who touched auth recently?"), not
+*how-does-it-work* questions — commit history describes changes, not
+architecture, and the tool won't pretend otherwise.
 
 **If you already build with LangGraph**, wiring the tracer into your own
 agent is one callback handler:

@@ -67,14 +67,20 @@ graphsight-github-trace REPO [QUESTION] [options]
 | `--token` | `$GITHUB_TOKEN` | GitHub token. Required for private repositories; raises the rate limit on public ones. |
 | `--prs` | `25` | Recent pull requests to fetch. |
 | `--issues` | `25` | Recent issues to fetch. |
+| `--commits` | `25` | Recent commits to fetch — solo repos with no PRs/issues still produce a full graph. |
 | `--top` | `10` | Items the retrieval keeps. |
 | `--out` | `graphsight_out/` | Output directory for `agent_trace.json` and `trace_state.json`. |
 
 Method note: the CLI builds a corpus with relational edges
-(`person AUTHORED pr`, `pr RESOLVES issue`, `pr TOUCHES repo`) and ranks by
-**lexical overlap with 1-hop graph expansion** — deliberately simple, and
-reported as such. The scores you see are exactly the scores computed;
-nothing is presented as semantic similarity.
+(`person AUTHORED pr/commit`, `pr RESOLVES issue`, `pr TOUCHES repo`) and
+ranks by **lexical overlap with 1-hop graph expansion** — deliberately
+simple, and reported as such. The scores you see are exactly the scores
+computed; nothing is presented as semantic similarity.
+
+Ask it *who / what / when* questions ("who touched auth recently?", "which
+issue needed two attempts?") — that's what commit and PR history can answer.
+*How-does-it-work* questions need semantic retrieval over code and docs,
+which this deliberately simple demo does not pretend to do.
 
 ## Tracing your own agent
 
