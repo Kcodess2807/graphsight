@@ -5,6 +5,53 @@ memorize the shape, speak it naturally.
 
 ---
 
+## The builder pitch (90 seconds, spoken — this is YOUR story)
+
+> A few months ago I was building agents, and I kept hitting the same wall.
+> My agent would give a wrong answer, and I'd have no idea *why*. It
+> retrieved ten documents — which one misled it? Which one did it ignore?
+> The logs don't tell you. You're basically debugging blind.
+>
+> So I built the tool I wanted: Graphsight. One callback handler records
+> everything your agent retrieves — the scores, the relationships between
+> the results, and what the answer actually used. One command opens it as
+> an interactive graph in your browser. You can watch an agent trust a
+> stale pull request with a 0.91 similarity score while the real cause —
+> yesterday's SDK bump — sits right there at 0.34, connected to the
+> incident through the graph. Similarity isn't causality. Now you can *see*
+> that.
+>
+> Three principles I won't break. It never paraphrases your data with an
+> LLM — every node is verifiable at its source, because an observability
+> tool you have to fact-check is worthless. It never invents a number — no
+> score computed, no score shown. And it runs entirely on your machine —
+> pip install, no account, nothing leaves localhost.
+>
+> Full disclosure: the first version of this was a whole GraphRAG platform.
+> A reviewer with fifteen years in infra called it infra theater — and he
+> was right. I killed it, kept the one piece with a real moment of need,
+> and shipped it to PyPI in two weeks. The wedge is retrieval debugging
+> for LangGraph. The arc is the observability tier for agent memory —
+> every framework, every store, one neutral lens.
+>
+> It's live. `pip install graphsight`. Let me show you a run.
+
+**The 20-second version** (hallway / intro):
+
+> Agents retrieve context, and when the answer's wrong nobody can see why.
+> Graphsight records what your agent retrieved and renders it as a graph —
+> scores, relationships, and what the answer actually used. Two pip
+> packages, runs fully local, live on PyPI now. Debugging agents by
+> evidence instead of vibes.
+
+Delivery notes: don't rush the "0.91 vs 0.34" beat — it's the whole
+product in one sentence. The "he was right, I killed it" line earns more
+trust with this crowd than any feature list; say it plainly, not as a
+confession. End every version by *showing*, not describing — the graph is
+the close.
+
+---
+
 ## The 30-second pitch
 
 > When an AI agent answers from retrieved context, nobody can see *why it
