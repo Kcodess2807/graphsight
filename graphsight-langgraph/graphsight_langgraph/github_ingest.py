@@ -19,15 +19,16 @@ from langchain_core.callbacks import CallbackManagerForRetrieverRun
 from langchain_core.documents import Document
 from langchain_core.retrievers import BaseRetriever
 
+from ._text import STOP, tokens as _base_tokens
 from .mapper import to_tracestate
 from .tracer import LangGraphTracer
 
 _API = "https://api.github.com"
 _RESOLVE_RE = re.compile(r"(?:fix(?:es|ed)?|close[sd]?|resolve[sd]?)\s+#(\d+)", re.IGNORECASE)
+# looser than _text.WORD_RE on purpose: short tokens like "pr"/"db" matter here
 _WORD_RE = re.compile(r"[a-z0-9_#-]+")
-_STOP = {
-    "the", "a", "an", "and", "or", "of", "in", "on", "to", "for", "is", "are",
-    "was", "were", "it", "this", "that", "with", "by", "at", "from", "what",
+_STOP = STOP | {
+    "a", "an", "or", "of", "in", "on", "to", "is", "it", "by", "at", "what",
     "who", "which", "how", "why", "when", "did", "do", "does", "recently",
     "recent", "latest", "github", "user", "author",
 }
@@ -155,7 +156,7 @@ def build_corpus(
 
 # retrieval
 def _tokens(text: str) -> set[str]:
-    return {w for w in _WORD_RE.findall(text.lower()) if w not in _STOP}
+    return _base_tokens(text, stop=_STOP, pattern=_WORD_RE)
 
 
 class LexicalGraphRetriever(BaseRetriever):

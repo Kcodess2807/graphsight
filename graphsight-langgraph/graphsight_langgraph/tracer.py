@@ -7,7 +7,6 @@ won't reach the tracer (see README).
 from __future__ import annotations
 
 import hashlib
-import re
 import time
 from typing import Any, Optional
 from uuid import UUID
@@ -15,22 +14,12 @@ from uuid import UUID
 from langchain_core.callbacks import BaseCallbackHandler
 from langchain_core.documents import Document
 
+from ._text import tokens as _tokens
 from .schema import AgentTrace, Retrieval, RetrievedItem, Span, TraceEdge
 
 _SCORE_KEYS = ("score", "relevance_score", "similarity", "_score", "vector_score")
 # LangGraph internals that fire chain events but aren't user nodes
 _NOISE_NAMES = {"LangGraph", "RunnableSequence", "RunnableCallable", "ChannelWrite", "__start__", "__end__"}
-
-_WORD_RE = re.compile(r"[a-z0-9][a-z0-9_#-]{2,}")
-_STOP = {
-    "the", "and", "for", "that", "this", "with", "from", "was", "were", "are",
-    "has", "have", "not", "but", "its", "also", "into", "over", "after",
-}
-
-
-def _tokens(text: str) -> set[str]:
-    return {w for w in _WORD_RE.findall(text.lower()) if w not in _STOP}
-
 
 def _answer_overlap(answer_tokens: set[str], content: Optional[str]) -> Optional[float]:
     # lexical heuristic: how much of the item's vocabulary reached the answer
