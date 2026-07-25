@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field, asdict
 from typing import Any, Literal, Optional
 
-SCHEMA_VERSION = "0.1"
+SCHEMA_VERSION = "0.2"  # 0.2 adds RetrievedItem.answer_overlap (additive)
 
 SpanKind = Literal["node", "retriever", "llm", "tool"]
 Arm = Literal["vector", "graph", "hybrid", "unknown"]
@@ -37,6 +37,9 @@ class RetrievedItem:
     content: Optional[str] = None
     source_uri: Optional[str] = None
     metadata: dict[str, Any] = field(default_factory=dict)
+    # lexical overlap between this item and the final answer (0..1);
+    # None when no answer was given. A heuristic, labeled as such.
+    answer_overlap: Optional[float] = None
 
 
 @dataclass

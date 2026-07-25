@@ -40,25 +40,44 @@ def to_tracestate(trace: AgentTrace) -> dict[str, Any]:
     """Return a TraceState-shaped dict ready for the Studio."""
     has_edges = any(r.edges for r in trace.retrievals)
 
+    # retrieved vs used: only meaningful when an answer + overlaps exist
+    has_usage = trace.answer is not None and any(
+        item.answer_overlap is not None for r in trace.retrievals for item in r.items
+    )
+    _USED = 0.2  # lexical-overlap threshold for "surfaced in the answer"
+
     # nodes
     nodes: list[dict[str, Any]] = []
     seen_nodes: set[str] = set()
+    used_ids: set[str] = set()
     for retrieval in trace.retrievals:
         for item in retrieval.items:
             if item.id in seen_nodes:
                 continue
             seen_nodes.add(item.id)
+            if has_usage:
+                used = (item.answer_overlap or 0.0) >= _USED
+                subtitle = (
+                    f"in the answer · via {trace.framework}"
+                    if used
+                    else f"retrieved, unused · via {trace.framework}"
+                )
+            else:
+                used = True  # no answer to compare against — show everything plain
+                subtitle = f"via {trace.framework} · {retrieval.arm} arm"
+            if used:
+                used_ids.add(item.id)
             nodes.append(
                 {
                     "id": item.id,
                     "label": item.label,
                     "type": _KIND_TO_ENTITY.get(item.kind.lower().strip(), "Document"),
-                    "active": True,  # everything retrieved was selected
+                    "active": used,  # unused retrievals render dimmed
                     "position": {"x": 0, "y": 0},  # Studio re-layouts with dagre
                     "similarity": item.vector_score,
                     "score": item.score,
                     "meta": {
-                        "subtitle": f"via {trace.framework} · {retrieval.arm} arm",
+                        "subtitle": subtitle,
                         "snippet": (item.content or "")[:600] or None,
                         "scoreGraph": item.graph_score,
                         "sourceUrl": item.source_uri,
@@ -78,7 +97,7 @@ def to_tracestate(trace: AgentTrace) -> dict[str, Any]:
                     "source": edge.source,
                     "target": edge.target,
                     "confidence": edge.weight if edge.weight is not None else 0.7,
-                    "active": True,
+                    "active": edge.source in used_ids and edge.target in used_ids,
                     "relation": edge.relation,
                 }
             )

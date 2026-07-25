@@ -1,12 +1,14 @@
 """graphsight-langgraph — capture LangGraph runs as Graphsight traces.
 
-    from graphsight_langgraph import LangGraphTracer, to_tracestate
+    from graphsight_langgraph import LangGraphTracer, capture
 
     tracer = LangGraphTracer()
     result = graph.invoke(inputs, config={"callbacks": [tracer]})
-    trace = tracer.finish(query="...", answer=result.get("answer"))
-    studio_json = to_tracestate(trace)   # render in Graphsight Studio
+    capture(tracer, query="...", answer=result.get("answer"))  # -> .graphsight/
+
+Then browse every run: `graphsight .graphsight/`
 """
+from .capture import capture, save_trace
 from .mapper import to_tracestate
 from .schema import (
     SCHEMA_VERSION,
@@ -26,5 +28,7 @@ __all__ = [
     "RetrievedItem",
     "Span",
     "TraceEdge",
+    "capture",
+    "save_trace",
     "to_tracestate",
 ]

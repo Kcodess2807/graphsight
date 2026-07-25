@@ -87,14 +87,37 @@ which this deliberately simple demo does not pretend to do.
 The complete integration:
 
 ```python
-from graphsight_langgraph import LangGraphTracer, to_tracestate
+from graphsight_langgraph import LangGraphTracer, capture
 
 tracer = LangGraphTracer()
 result = graph.invoke(inputs, config={"callbacks": [tracer]})
 
-trace = tracer.finish(query="why is checkout failing?", answer=result["answer"])
-to_tracestate(trace)     # viewer-ready dict — json.dump it, then: graphsight trace.json
+capture(tracer, query="why is checkout failing?", answer=result["answer"])
+# -> .graphsight/20260725T071558_why-is-checkout-failing.json
 ```
+
+`capture()` finishes the trace and appends it to a local history directory
+(`./.graphsight/` by default, `$GRAPHSIGHT_DIR` to override) — browse every
+run with `graphsight .graphsight/`. For manual control use
+`tracer.finish()` + `to_tracestate()` / `save_trace()`; `trace.to_dict()`
+gives the framework-neutral `AgentTrace` for your own tooling.
+
+### Retrieved vs. used
+
+When you pass `answer=`, each retrieved item gets an `answer_overlap`
+score — the lexical overlap between the item's content and the final
+answer. In the viewer, items that surfaced in the answer render
+highlighted; items retrieved but unused render dimmed with the label
+*"retrieved, unused."* That splits the two classic retrieval failures at a
+glance:
+
+- **right doc retrieved, ignored by the model** → dimmed node with a high
+  retrieval score
+- **wrong doc trusted** → highlighted node that shouldn't be
+
+The overlap is a lexical heuristic (labeled as such, threshold 0.2) — it is
+never presented as a model-computed relevance judgment. No `answer=` → no
+usage claims; everything renders plain.
 
 ### Configuration propagation (read this once)
 
@@ -117,7 +140,9 @@ retrievals.
 | Name | Description |
 |---|---|
 | `LangGraphTracer()` | `BaseCallbackHandler` subclass. Pass via `config={"callbacks": [tracer]}` to `invoke` / `stream`. Reusable within a single run; create a fresh instance per run. |
-| `tracer.finish(query=None, answer=None) -> AgentTrace` | Assembles the trace after the run: closes dangling spans, computes total latency. `query` falls back to the first retriever query seen. |
+| `tracer.finish(query=None, answer=None) -> AgentTrace` | Assembles the trace after the run: closes dangling spans, computes total latency and per-item `answer_overlap`. `query` falls back to the first retriever query seen. |
+| `capture(tracer, query=None, answer=None, dir=None) -> Path` | `finish()` + save to the history directory in one call. |
+| `save_trace(trace, dir=None) -> Path` | Writes a finished trace to the history directory (`./.graphsight/` or `$GRAPHSIGHT_DIR`). |
 | `to_tracestate(trace) -> dict` | Maps an `AgentTrace` to the viewer's JSON contract. Serialize with `json.dump`. |
 | `trace.to_dict() -> dict` | The framework-neutral `AgentTrace` (schema v0.1) for your own tooling. |
 | `AgentTrace`, `Span`, `Retrieval`, `RetrievedItem`, `TraceEdge` | Plain dataclasses defining the schema; importable for custom emitters. |
@@ -133,6 +158,7 @@ retrievals.
 | `Document.metadata["edges"]` | relational edges, deduplicated per retrieval |
 | LLM / tool calls | plain spans in the execution timeline |
 | Edges present in a retrieval | `arm = "graph"`, else `"vector"` — detected automatically |
+| The final answer (when passed to `finish`/`capture`) | per-item `answer_overlap` — the retrieved-vs-used signal |
 
 ### Making your retriever graph-aware
 
@@ -171,14 +197,15 @@ else renders as `Document`).
   retriever and were not recomputed — an imported trace never masquerades
   as an engine-computed one.
 
-## Schema (v0.1)
+## Schema (v0.2)
 
 `AgentTrace` is the stable contract. Future adapters (LlamaIndex, raw
-OpenTelemetry) emit the same shape and render in the same viewer.
+OpenTelemetry) emit the same shape and render in the same viewer. v0.2 adds
+`RetrievedItem.answer_overlap` (additive — v0.1 traces stay valid).
 
 ```jsonc
 {
-  "schema_version": "0.1",
+  "schema_version": "0.2",
   "framework": "langgraph",
   "query": "…",
   "spans": [
@@ -192,6 +219,7 @@ OpenTelemetry) emit the same shape and render in the same viewer.
       "items": [
         { "id": "pr_4821", "label": "PR #4821", "kind": "pull_request",
           "score": 0.94, "vector_score": null, "graph_score": null,
+          "answer_overlap": 0.41,                             // null when no answer given
           "content": "…", "source_uri": "https://…", "metadata": {} }
       ],
       "edges": [                                            // optional — the relational view

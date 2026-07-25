@@ -45,11 +45,42 @@ graphsight [trace] [--port PORT] [--no-browser]
 
 | Argument | Default | Description |
 |---|---|---|
-| `trace` | — | Path to a `trace_state.json`. Optional — omit to open the import page and drag-and-drop or paste JSON instead. |
+| `trace` | — | A `trace_state.json` file, **or a directory of them** (e.g. `.graphsight/`) to browse run history. Optional — omit to open the import page and drag-and-drop or paste JSON instead. |
 | `--port` | `4630` | Local port to serve on. |
 | `--no-browser` | off | Start the server without opening a browser window. |
 
 The server binds to `127.0.0.1` only and runs until you press `Ctrl+C`.
+
+## Run history
+
+Point `graphsight` at a directory and it becomes a run browser — every
+trace listed by query and time, one click to open:
+
+```bash
+graphsight .graphsight/
+```
+
+The [graphsight-langgraph](https://pypi.org/project/graphsight-langgraph/)
+`capture()` helper appends every agent run there automatically, so your
+debugging history accumulates with zero ceremony. Traces render with the
+**retrieved vs. used** split: items that surfaced in the answer highlighted,
+items retrieved but ignored dimmed — the two classic retrieval failures,
+visible at a glance.
+
+## Sharing traces with your team
+
+A trace is one self-contained JSON file — no account or backend needed to
+share it:
+
+- **Send the file.** A teammate with `graphsight` installed runs
+  `graphsight trace.json`. Works in a DM, a ticket attachment, a CI
+  artifact.
+- **Link it.** A deployed Graphsight frontend opens any publicly reachable
+  trace via `…/memory/import?src=<url-to-json>` — host the JSON on a gist
+  or artifact store and share the link. (The host must allow cross-origin
+  GETs; raw gists do.)
+- **Commit it.** Trace files in the repo next to the incident or PR they
+  explain make retrieval debugging part of the review record.
 
 ## Producing traces
 

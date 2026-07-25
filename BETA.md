@@ -18,30 +18,15 @@ You get full visibility into the retrieval reasoning instead of a black box.
 
 Two pip packages. No backend, no account, nothing leaves your machine.
 
-## Quick try — instant demo (2 minutes)
+## Try it on your own repo (5 minutes)
 
 ```bash
 pip install graphsight "graphsight-langgraph[example]"
 
-git clone https://github.com/Kcodess2807/graphsight
-cd graphsight/graphsight-langgraph
-python example/demo_agent.py          # runs a small LangGraph agent + tracer
-graphsight example/out/trace_state.json
-```
-
-Browser opens → you'll see 4 entities, the traced retrieval path, scores,
-and the execution timeline.
-
-> Not on PyPI yet? From the repo root:
-> `pip install ./graphsight "./graphsight-langgraph[example]"`
-
-## Try it on your own repo (5–8 minutes)
-
-```bash
 # ingest + trace a query against your GitHub repo
 graphsight-github-trace yourusername/yourrepo "who changed authentication recently?"
 
-# open it in the Studio
+# open the graph in your browser
 graphsight graphsight_out/trace_state.json
 ```
 
@@ -84,5 +69,5 @@ Drop feedback as a GitHub issue on this repo, or DM me directly.
 - Scores come directly from your retriever — nothing is invented. Missing
   scores render as missing.
 - Async LangGraph (`ainvoke`/`astream`) support is next; sync is verified.
-- The full `/studio` route expects the complete TraceRAG backend — this
-  beta focuses on `/memory/import`, which needs nothing.
+- The hosted Graphsight engine (live graph memory over MCP) is still in
+  development — this beta is the local viewer + tracer, which need nothing.

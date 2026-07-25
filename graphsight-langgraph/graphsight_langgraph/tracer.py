@@ -7,6 +7,7 @@ won't reach the tracer (see README).
 from __future__ import annotations
 
 import hashlib
+import re
 import time
 from typing import Any, Optional
 from uuid import UUID
@@ -19,6 +20,27 @@ from .schema import AgentTrace, Retrieval, RetrievedItem, Span, TraceEdge
 _SCORE_KEYS = ("score", "relevance_score", "similarity", "_score", "vector_score")
 # LangGraph internals that fire chain events but aren't user nodes
 _NOISE_NAMES = {"LangGraph", "RunnableSequence", "RunnableCallable", "ChannelWrite", "__start__", "__end__"}
+
+_WORD_RE = re.compile(r"[a-z0-9][a-z0-9_#-]{2,}")
+_STOP = {
+    "the", "and", "for", "that", "this", "with", "from", "was", "were", "are",
+    "has", "have", "not", "but", "its", "also", "into", "over", "after",
+}
+
+
+def _tokens(text: str) -> set[str]:
+    return {w for w in _WORD_RE.findall(text.lower()) if w not in _STOP}
+
+
+def _answer_overlap(answer_tokens: set[str], content: Optional[str]) -> Optional[float]:
+    # lexical heuristic: how much of the item's vocabulary reached the answer
+    if not answer_tokens or not content:
+        return None
+    item_tokens = _tokens(content)
+    if not item_tokens:
+        return None
+    shared = len(answer_tokens & item_tokens)
+    return round(shared / min(len(item_tokens), len(answer_tokens)), 3)
 
 
 def _doc_id(doc: Document) -> str:
@@ -233,6 +255,12 @@ class LangGraphTracer(BaseCallbackHandler):
                 span.end_ms = self._now_ms()
                 span.status = "ok" if span.status == "running" else span.status
         latency = max((s.end_ms or 0.0) for s in spans) if spans else None
+        if answer:
+            # retrieved vs used: which items actually surfaced in the answer
+            answer_tokens = _tokens(answer)
+            for retrieval in self._retrievals:
+                for item in retrieval.items:
+                    item.answer_overlap = _answer_overlap(answer_tokens, item.content)
         return AgentTrace(
             query=query or self._first_query or "",
             spans=spans,

@@ -14,7 +14,7 @@ from langchain_core.runnables import RunnableConfig
 from langgraph.graph import END, START, StateGraph
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from graphsight_langgraph import LangGraphTracer, to_tracestate  # noqa: E402
+from graphsight_langgraph import LangGraphTracer, save_trace, to_tracestate  # noqa: E402
 
 # a tiny "codebase memory" corpus with scores + relational edges
 CORPUS = [
@@ -146,6 +146,7 @@ def main() -> None:
     (out / "trace_state.json").write_text(
         json.dumps(to_tracestate(trace), indent=2), encoding="utf-8"
     )
+    save_trace(trace)  # also lands in ./.graphsight/ — browse with: graphsight .graphsight/
 
     retrieved = sum(len(r.items) for r in trace.retrievals)
     edges = sum(len(r.edges) for r in trace.retrievals)

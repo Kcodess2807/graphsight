@@ -37,6 +37,8 @@ dist_pkg/
 graphsight_out/
 graphsight-langgraph/example/out/
 graphsight-langgraph/example/out_github/
+graphsight-langgraph/example/out_failure/
+.graphsight/
 
 # --- Separate deploy repo (has its own .git) ---
 hf-space/
