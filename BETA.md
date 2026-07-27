@@ -68,6 +68,6 @@ Drop feedback as a GitHub issue on this repo, or DM me directly.
   now — labeled as such in the output, and sometimes dumb.
 - Scores come directly from your retriever — nothing is invented. Missing
   scores render as missing.
-- Async LangGraph (`ainvoke`/`astream`) support is next; sync is verified.
+- Sync and async LangGraph runs are both verified by the test suite.
 - The hosted Graphsight engine (live graph memory over MCP) is still in
   development — this beta is the local viewer + tracer, which need nothing.
