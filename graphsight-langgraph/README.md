@@ -37,8 +37,8 @@ pip install graphsight                      # the local viewer (recommended)
 | Python | ≥ 3.10 |
 | `langchain-core` | ≥ 0.3 (verified against 1.5.0) |
 | `langgraph` | any recent version; only needed for the `[example]` extra |
-| Sync (`invoke` / `stream`) | verified |
-| Async (`ainvoke` / `astream`) | same callback events; not yet covered by the verification run |
+| Sync (`invoke` / `stream`) | verified, covered by the test suite |
+| Async (`ainvoke` / `astream`) | verified, covered by the test suite |
 
 ## Quickstart: trace a GitHub repo in 60 seconds
 

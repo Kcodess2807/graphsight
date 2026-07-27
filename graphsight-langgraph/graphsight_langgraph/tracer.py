@@ -59,6 +59,7 @@ class LangGraphTracer(BaseCallbackHandler):
         self._order: list[str] = []
         self._retrievals: list[Retrieval] = []
         self._first_query: Optional[str] = None
+        self._last_llm_text: Optional[str] = None
 
     # span bookkeeping
     def _now_ms(self) -> float:
@@ -210,6 +211,11 @@ class LangGraphTracer(BaseCallbackHandler):
 
     def on_llm_end(self, response: Any, *, run_id: UUID, **kwargs: Any) -> None:
         self._close_span(run_id)
+        # remember the last generation so finish() can default the answer
+        try:
+            self._last_llm_text = response.generations[-1][-1].text or self._last_llm_text
+        except (AttributeError, IndexError, TypeError):
+            pass
 
     def on_llm_error(self, error: BaseException, *, run_id: UUID, **kwargs: Any) -> None:
         self._close_span(run_id, status="error")
@@ -237,13 +243,19 @@ class LangGraphTracer(BaseCallbackHandler):
 
     # result
     def finish(self, query: Optional[str] = None, answer: Optional[str] = None) -> AgentTrace:
-        """Assemble the AgentTrace after the run completes."""
+        """Assemble the AgentTrace after the run completes.
+
+        query falls back to the first retriever query; answer falls back to
+        the last LLM generation the tracer saw.
+        """
         spans = [self._spans[sid] for sid in self._order]
         for span in spans:  # close anything left dangling
             if span.end_ms is None:
                 span.end_ms = self._now_ms()
                 span.status = "ok" if span.status == "running" else span.status
         latency = max((s.end_ms or 0.0) for s in spans) if spans else None
+        if answer is None:
+            answer = self._last_llm_text
         if answer:
             # retrieved vs used: which items actually surfaced in the answer
             answer_tokens = _tokens(answer)

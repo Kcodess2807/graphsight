@@ -8,4 +8,4 @@ Serves the bundled Graphsight Studio UI locally and opens the trace in the
 browser. No backend, no accounts, no network calls beyond localhost.
 """
 
-__version__ = "0.2.0"
+__version__ = "0.3.0"
