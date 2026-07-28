@@ -244,7 +244,7 @@ function Hero() {
               style={{ backgroundColor: LIME }}
             >
               <Zap className="h-4 w-4" strokeWidth={2.5} />
-              49ms recall
+              71ms recall
             </span>
           </Sticker>
 
@@ -436,7 +436,7 @@ function CodeShowcase() {
               <span className="text-[#7DD3FC]">JIRA-982</span>
             </p>
             <p className="pl-4 text-zinc-500">
-              traced in <span className="text-emerald-400">49ms</span> · 3 hops · confidence 0.94
+              traced in <span className="text-emerald-400">71ms</span> · 3 hops · confidence 0.94
             </p>
           </div>
         </div>
@@ -449,7 +449,7 @@ function CodeShowcase() {
 
 function Stats() {
   const stats = [
-    { value: "49ms", label: "Median trace latency" },
+    { value: "71ms", label: "Median local query, real embeddings" },
     { value: "2", label: "pip installs to full retrieval visibility" },
     { value: "0", label: "Bytes leave your machine" },
   ];

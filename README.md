@@ -343,7 +343,20 @@ relation labels on edges and an age chip on nodes, so you can see *why* somethin
 
 ## Measured behaviour
 
-Live ingest of `fastapi/fastapi` (100 PRs + 100 issues + 100 commits, with files and reviews):
+**End to end, real embeddings.** `pallets/click`, 50 PRs + 50 issues + 50 commits with files
+and reviews, `all-MiniLM-L6-v2` on CPU, warm:
+
+```
+p50 71ms · p95 90ms · mean 71ms · min/max 56/92ms   (n=32, 274-node graph)
+ingest 78.2s   cold start: 46s import + 8.4s model load
+```
+
+That p50 is the whole `route()` path: query embedding, HNSW search, graph traversal, fusion,
+document attach. The cold start is paid once per process and is entirely `torch` plus the
+model, which is the strongest argument for an ONNX or hosted embedding option.
+
+**Scale and concurrency.** `fastapi/fastapi`, 100 PRs + 100 issues + 100 commits, with a
+stubbed embedder so the numbers isolate the store rather than the model:
 
 ```
 graph        1274 nodes, 1633 typed edges
@@ -352,7 +365,7 @@ concurrency  115 q/s across 32 threads, 0 errors (read pool = 10)
 ingest       98.4s wall (concurrent per-PR detail fetch)
 ```
 
-`pallets/click`, 50 PRs → 274 nodes, 572 typed edges in ~60s.
+The gap between 18ms and 71ms is the embedder: roughly 50ms per query to encode.
 
 **Hostile input.** No crash on: null user, null body, malformed dates, emoji logins, a
 5000-repeat body, a self-referencing PR, or a 2000-file diff. Empty / whitespace / 50k-char /
@@ -433,6 +446,11 @@ graphsight .graphsight/
 See [BETA.md](BETA.md) for a 10-minute test script.
 
 ### The engine (local, single-tenant)
+
+> **Windows: install from a short path.** `torch` ships header files deep enough to exceed
+> the 260-character path limit, so a venv under a long nested directory fails with
+> `OSError: [Errno 2] No such file or directory: ...predicated_tile_access_iterator_residual_last.h`.
+> Either enable Long Path support or put the venv somewhere short like `C:\venv`.
 
 ```powershell
 cd backend
