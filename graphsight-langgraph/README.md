@@ -30,6 +30,13 @@ nothing leaves your machine.
 *A real run. `PR #101` scored **0.910** — the highest of anything retrieved — and the answer
 never used it. `PR #412` scored **0.340** and is the one that answered.*
 
+**Jump to:** [60-second demo](#quickstart-trace-a-github-repo-in-60-seconds) ·
+[trace your own agent](#tracing-your-own-agent) ·
+[retrieved vs. used](#retrieved-vs-used) ·
+[API reference](#api-reference) ·
+[schema](#schema-v02) ·
+[troubleshooting](#troubleshooting)
+
 ## Installation
 
 ```bash
@@ -91,6 +98,11 @@ issue needed two attempts?") — that's what commit and PR history can answer.
 which this deliberately simple demo does not pretend to do.
 
 ## Tracing your own agent
+
+**Before you start:** inside a LangGraph node, pass the node's `config` through to whatever
+you call. Skip it and the trace records your nodes but *zero retrievals* — the single most
+common thing to get wrong. See
+[Configuration propagation](#configuration-propagation-read-this-once).
 
 The complete integration:
 

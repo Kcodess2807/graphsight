@@ -17,10 +17,39 @@ nothing leaves your machine.
 *A real run. `PR #101` scored **0.910** — the highest of anything retrieved — and the answer
 never used it. `PR #412` scored **0.340** and is the one that answered.*
 
+**Jump to:** [start here](#start-here) ·
+[retrieved vs. used](#retrieved-vs-used) ·
+[usage](#usage) ·
+[producing traces](#producing-traces) ·
+[troubleshooting](#troubleshooting)
+
+## Start here
+
+`graphsight` is the **viewer**. It needs a trace to open, and the tracer is a separate
+package — so the full path from nothing is three steps:
+
 ```bash
-pip install graphsight
-graphsight path/to/trace_state.json
+pip install graphsight graphsight-langgraph
 ```
+
+```python
+from graphsight_langgraph import LangGraphTracer, capture
+
+tracer = LangGraphTracer()
+result = graph.invoke(inputs, config={"callbacks": [tracer]})
+capture(tracer, query="why is checkout failing?", answer=result["answer"])
+```
+
+```bash
+graphsight .graphsight/          # opens every run you've captured
+```
+
+Passing `answer=` is what unlocks the used/ignored split below — without it, every item
+renders plain and no usage is claimed.
+
+**Already have a trace file?** `graphsight path/to/trace_state.json` opens it directly.
+**Want to see it work before writing any code?** `graphsight-github-trace` builds a real
+trace from any public GitHub repo — see [Producing traces](#producing-traces).
 
 ## Retrieved vs. used
 
