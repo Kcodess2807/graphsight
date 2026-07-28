@@ -356,15 +356,13 @@ function MarqueeRow({ reverse }: { reverse?: boolean }) {
 }
 
 function Marquee() {
-  // bars run wider than the section so their rotated ends clip off-screen
+  // both bars tilt as one block so they stay parallel; -mx-12 clips their ends off-screen
   return (
     <section className="relative overflow-hidden py-12" aria-label="Works with">
-      <div className="-mx-12 -rotate-2">
+      <div className="-mx-12 -rotate-2 space-y-3">
         <div className="overflow-hidden border-y border-[#131316] bg-white">
           <MarqueeRow />
         </div>
-      </div>
-      <div className="-mx-12 -mt-1 rotate-1">
         <div className="overflow-hidden border-y border-[#131316] bg-white">
           <MarqueeRow reverse />
         </div>
@@ -720,108 +718,11 @@ function Benefits() {
   );
 }
 
-/* ═══════════════════════ pricing ═════════════════════════════════ */
-
-const PLANS = [
-  {
-    name: "Free",
-    price: "$0",
-    period: "/mo",
-    blurb: "For evaluating on a single repo.",
-    features: ["100k graph nodes", "5 repositories", "1 MCP client", "Community support"],
-    cta: "Get started",
-    popular: false,
-    onClick: scrollToForm,
-  },
-  {
-    name: "Pro",
-    price: "$49",
-    period: "/mo",
-    blurb: "For teams shipping every day.",
-    features: ["1M graph nodes", "Unlimited repositories", "Priority webhook lanes", "SSO & audit log", "Email support"],
-    cta: "Get started",
-    popular: true,
-    onClick: scrollToForm,
-  },
-  {
-    name: "Enterprise",
-    price: "Custom",
-    period: "",
-    blurb: "For orgs with compliance needs.",
-    features: ["Dedicated graph cells", "On-prem deployment", "99.9% SLA", "White-glove onboarding"],
-    cta: "Contact sales",
-    popular: false,
-    onClick: () => {
-      window.location.href = "mailto:hello@graphsight.dev";
-    },
-  },
-];
-
-function Pricing() {
-  return (
-    <section className="mx-auto max-w-6xl px-5 py-20">
-      <SectionHead
-        eyebrow="Pricing"
-        title="Start free. Scale when your graph does."
-        sub="The tracer and viewer are open source and free forever. Paid tiers cover the hosted graph engine — join the waitlist and we'll tell you the day it opens."
-      />
-      <div className="mt-14 grid grid-cols-1 items-start gap-5 md:grid-cols-3">
-        {PLANS.map((p, i) => (
-          <Reveal key={p.name} delay={i * 0.07}>
-            <div
-              className={cn(
-                CARD,
-                "relative flex flex-col p-6",
-                p.popular && "shadow-[5px_6px_0_0_#059669] md:-mt-4"
-              )}
-            >
-              {p.popular && (
-                <span
-                  className="absolute -top-3.5 right-5 rounded-full border border-[#131316] px-3 py-1 text-[11px] font-bold text-[#131316]"
-                  style={{ backgroundColor: LIME }}
-                >
-                  Most popular
-                </span>
-              )}
-              <p className="text-sm font-bold text-zinc-600">{p.name}</p>
-              <p className="mt-2 text-4xl font-bold tracking-tight text-[#131316]">
-                {p.price}
-                <span className="ml-1 text-base font-medium text-zinc-500">{p.period}</span>
-              </p>
-              <p className="mt-2 text-[13.5px] text-zinc-600">{p.blurb}</p>
-              <ul className="mt-5 flex-1 space-y-2.5 border-t border-zinc-200 pt-5">
-                {p.features.map((f) => (
-                  <li key={f} className="flex items-center gap-2.5 text-[13.5px] font-medium text-zinc-700">
-                    <Check className="h-4 w-4 shrink-0 text-emerald-600" strokeWidth={2.5} />
-                    {f}
-                  </li>
-                ))}
-              </ul>
-              <button
-                type="button"
-                onClick={p.onClick}
-                className={cn(
-                  "mt-6 w-full rounded-lg py-2.5 text-sm font-bold transition-colors duration-150",
-                  p.popular
-                    ? cn(BTN_PRIMARY, "shadow-[3px_4px_0_0_#C8F169]")
-                    : "border border-[#131316] bg-white text-[#131316] hover:bg-zinc-50"
-                )}
-              >
-                {p.cta}
-              </button>
-            </div>
-          </Reveal>
-        ))}
-      </div>
-    </section>
-  );
-}
-
 /* ═══════════════════════ final CTA ═══════════════════════════════ */
 
 function FinalCta() {
   return (
-    <section className="border-t border-zinc-200 bg-[#FAFAFB]">
+    <section className="border-t border-zinc-200 bg-white">
       <div className="mx-auto max-w-2xl px-5 py-20 text-center">
         <Reveal>
           <span className="mx-auto flex h-11 w-11 items-center justify-center rounded-xl bg-[#131316] shadow-[2px_3px_0_0_#C8F169]">
@@ -831,7 +732,8 @@ function FinalCta() {
             Ready to give your agents a memory?
           </h2>
           <p className="mx-auto mt-3 max-w-md text-[15px] leading-relaxed text-zinc-600">
-            Join the waitlist and be first in line when enterprise access opens.
+            The tracer and viewer are free on PyPI today. Join the waitlist to
+            hear when the hosted graph engine opens.
           </p>
         </Reveal>
         <Reveal delay={0.08} className="mt-8 flex justify-center">
@@ -1007,7 +909,6 @@ export function LandingPage() {
         <Stats />
         <UseCases />
         <Benefits />
-        <Pricing />
         <FinalCta />
       </main>
 
