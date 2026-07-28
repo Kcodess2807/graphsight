@@ -241,7 +241,7 @@ def test_vector_search_carries_ts(db):
 PULL = {
     "number": 412, "title": "Fix token refresh", "merged_at": "2026-07-27T10:00:00Z",
     "user": {"login": "vishal"},
-    "requested_reviewers": [{"login": "arush"}],
+    "reviews": [{"user": {"login": "arush"}}],
     "body": "Fixes #77",
     "files": [{"filename": "auth/session.py"}],
 }

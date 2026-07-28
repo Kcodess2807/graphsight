@@ -21,6 +21,7 @@ import logging
 import os
 import re
 import sys
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
 import requests
@@ -40,7 +41,10 @@ from ingest import ingest_text                     # noqa: E402
 logger = logging.getLogger("tracerag.github")
 
 GITHUB_API = "https://api.github.com"
-_PER_PAGE = 100  # GitHub's max page size
+_PER_PAGE = 100          # GitHub's max page size
+_MAX_PR_FILES = 3000     # GitHub's own hard cap on a PR's file list
+_MAX_PR_REVIEWS = 200
+_DETAIL_WORKERS = 8      # concurrent per-PR detail fetches
 
 
 _MD_IMAGE = re.compile(r"!\[[^\]]*\]\([^)]*\)")
@@ -95,6 +99,10 @@ def _paged(url: str, limit: int, token: str | None, params: dict,
         if not batch:
             break
         out.extend(item for item in batch if keep(item))
+        # a short page is the last page — checking this saves one request per
+        # call, which matters when it runs once per PR
+        if len(batch) < _PER_PAGE:
+            break
         page += 1
     return out[:limit]
 
@@ -123,16 +131,40 @@ def fetch_commits(repo: str, limit: int, token: str | None) -> list[dict]:
     return _paged(f"{GITHUB_API}/repos/{repo}/commits", limit, token, {})
 
 
-def attach_pr_files(repo: str, prs: list[dict], token: str | None) -> None:
-    """Fill each PR's `files` in place — one extra request per PR, so opt-in."""
-    for pr in tqdm(prs, desc=f"{repo} files", unit="pr", leave=False):
-        try:
-            pr["files"] = _get(
-                f"{GITHUB_API}/repos/{repo}/pulls/{pr['number']}/files",
-                token, {"per_page": _PER_PAGE},
-            )
-        except Exception as exc:  # noqa: BLE001 — a missing file list isn't fatal
-            logger.debug("[%s] files for #%s failed: %s", repo, pr.get("number"), exc)
+def attach_pr_details(
+    repo: str, prs: list[dict], token: str | None, *,
+    files: bool = False, reviews: bool = False, workers: int = _DETAIL_WORKERS,
+) -> None:
+    """Fill each PR's `files` / `reviews` in place — one request per PR per kind.
+
+    Fetched concurrently: serially this dominated ingest wall time (100 PRs took
+    ~110s of the 143s total). GitHub allows this comfortably inside 5000/hr.
+    """
+    if not (files or reviews):
+        return
+
+    def fetch_one(pr: dict) -> None:
+        number = pr.get("number")
+        if number is None:
+            return
+        base = f"{GITHUB_API}/repos/{repo}/pulls/{number}"
+        if files:
+            # paged: the endpoint caps at 100 per page, so a wide PR would
+            # otherwise be silently truncated at its first hundred files
+            pr["files"] = _paged(f"{base}/files", _MAX_PR_FILES, token, {})
+        if reviews:
+            pr["reviews"] = _paged(f"{base}/reviews", _MAX_PR_REVIEWS, token, {})
+
+    kinds = "+".join(k for k, on in (("files", files), ("reviews", reviews)) if on)
+    with ThreadPoolExecutor(max_workers=workers) as pool:
+        futures = {pool.submit(fetch_one, pr): pr for pr in prs}
+        for fut in tqdm(as_completed(futures), total=len(futures),
+                        desc=f"{repo} {kinds}", unit="pr", leave=False):
+            try:
+                fut.result()
+            except Exception as exc:  # noqa: BLE001 — one bad PR isn't fatal
+                logger.debug("[%s] detail fetch for #%s failed: %s",
+                             repo, futures[fut].get("number"), exc)
 
 
 def repo_db_path(repo: str, graphs_dir: Path) -> Path:
@@ -154,6 +186,11 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     p.add_argument("--files", action="store_true",
                    help="Fetch each PR's changed files for TOUCHES edges. "
                         "Costs one extra API request per PR.")
+    p.add_argument("--reviews", action="store_true",
+                   help="Fetch each PR's reviews for REVIEWED edges. Costs one "
+                        "extra API request per PR. Without this there are no "
+                        "REVIEWED edges — the PR listing only reports pending "
+                        "review requests, not who actually reviewed.")
     p.add_argument("--no-text", action="store_true",
                    help="Skip the prose/curation pass; write structured edges only.")
     p.add_argument("--db", type=Path, default=None,
@@ -182,8 +219,7 @@ def ingest_repo(
     prs = fetch_merged_prs(repo, args.limit, token)
     issues = fetch_issues(repo, args.issues, token)
     commits = fetch_commits(repo, args.commits, token)
-    if args.files:
-        attach_pr_files(repo, prs, token)
+    attach_pr_details(repo, prs, token, files=args.files, reviews=args.reviews)
     logger.info(
         "[%s] fetched %d PRs, %d issues, %d commits -> %s",
         repo, len(prs), len(issues), len(commits), db_path.name,
@@ -225,9 +261,11 @@ def ingest_repo(
             repo, graph.nodes, graph.edges,
             dict(sorted(graph.by_relation.items(), key=lambda kv: -kv[1])),
         )
-        if not args.files:
-            logger.info("[%s] no TOUCHES edges from files — rerun with --files "
-                        "to link PRs to the code they changed.", repo)
+        for flag, enabled, relation in (("--files", args.files, "TOUCHES"),
+                                        ("--reviews", args.reviews, "REVIEWED")):
+            if not enabled:
+                logger.info("[%s] no %s edges — rerun with %s (one extra "
+                            "request per PR).", repo, relation, flag)
     finally:
         db.close()
 

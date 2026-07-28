@@ -291,7 +291,10 @@ across all entity labels. `Document` nodes store one **sliding-window chunk** ea
 Entity`, carrying `confidence, relation, ts`.
 
 `relation` is one of `AUTHORED · RESOLVES · REVIEWED · TOUCHES · PART_OF · REPORTED ·
-CO_OCCURS`, each with its own weight (`config.RELATION_WEIGHTS`). Text ingestion can only
+CO_OCCURS`, each with its own weight (`config.RELATION_WEIGHTS`). `REVIEWED` comes from
+`/pulls/N/reviews` — **not** from `requested_reviewers`, which is a pending ask that empties
+once someone actually reviews, so reading it both misses real reviewers and credits people who
+never opened the code. Text ingestion can only
 produce `CO_OCCURS` — same-window proximity, weighted lowest. Structured ingestion reads the
 rest from the source API, so a two-hop `AUTHORED → RESOLVES` chain outranks a one-hop guess.
 An edge **upgrades** if structure later proves a guess right; it never downgrades.
@@ -945,9 +948,11 @@ python scripts/ingest.py --datasets ./datasets --reset
 # 2b. or ingest a GitHub repo. Two passes land in one graph: PR prose through
 #     extraction, and the same payloads through GitHubGraphBuilder, which reads
 #     authorship, reviews, "Fixes #N" and touched files as typed, dated edges.
-python scripts/ingest_github.py --repo pallets/click --issues 50 --commits 50 --files
-#     --files costs one extra API request per PR; without it there are no
-#     TOUCHES edges. --no-text skips extraction and writes structure only.
+python scripts/ingest_github.py --repo pallets/click --issues 50 --commits 50 --files --reviews
+#     --files and --reviews each cost one extra request per PR (fetched
+#     concurrently). Without them there are no TOUCHES / REVIEWED edges.
+#     --no-text skips extraction and writes structure only.
+#     50 PRs of pallets/click -> 274 nodes, 572 typed edges in ~60s.
 
 # 3. evaluate (optional)
 python scripts/benchmark.py            # -> results.csv + summary table

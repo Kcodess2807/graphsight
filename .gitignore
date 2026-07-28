@@ -68,3 +68,4 @@ yarn-error.log*
 docs/DEMO_SCRIPT.md
 docs/STRESS_RESULTS.md
 docs/DEPLOY.md
+dist_release/
