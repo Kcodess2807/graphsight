@@ -50,7 +50,7 @@ function Reveal({
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, amount: 0.15 }}
+      viewport={{ once: true, amount: 0.1 }}
       transition={{ duration: 0.45, delay, ease: "easeOut" }}
       className={className}
     >
@@ -183,7 +183,8 @@ function CopyCommand({ command, compact }: { command: string; compact?: boolean 
         compact ? "px-3.5 py-2 text-[12.5px]" : "px-4 py-3 text-[13px]"
       )}
     >
-      <span className="truncate">
+      {/* min-w-0 lets the flex child shrink; wrapping keeps the command readable on phones */}
+      <span className="min-w-0 flex-1 break-words">
         <span className="text-zinc-500">$ </span>
         {command}
       </span>
@@ -355,14 +356,15 @@ function MarqueeRow({ reverse }: { reverse?: boolean }) {
 }
 
 function Marquee() {
+  // bars run wider than the section so their rotated ends clip off-screen
   return (
-    <section className="relative -mx-2 overflow-hidden py-10" aria-label="Works with">
-      <div className="-rotate-2">
+    <section className="relative overflow-hidden py-12" aria-label="Works with">
+      <div className="-mx-12 -rotate-2">
         <div className="overflow-hidden border-y border-[#131316] bg-white">
           <MarqueeRow />
         </div>
       </div>
-      <div className="-mt-1 rotate-1">
+      <div className="-mx-12 -mt-1 rotate-1">
         <div className="overflow-hidden border-y border-[#131316] bg-white">
           <MarqueeRow reverse />
         </div>
@@ -450,8 +452,8 @@ function CodeShowcase() {
 function Stats() {
   const stats = [
     { value: "49ms", label: "Median trace latency" },
-    { value: "70×", label: "Fewer LLM tokens per query" },
-    { value: "100%", label: "Deterministic recall paths" },
+    { value: "2", label: "pip installs to full retrieval visibility" },
+    { value: "0", label: "Bytes leave your machine" },
   ];
   return (
     <section className="border-y border-zinc-200 bg-[#FAFAFB]">
@@ -677,8 +679,8 @@ const BENEFITS = [
   { icon: GitBranch, tint: "text-sky-500", title: "Causal Tracing", body: "Exact ticket → PR → function chains for every change." },
   { icon: Cloud, tint: "text-orange-500", title: "Zero Local Setup", body: "Managed cloud graph. Nothing to index on laptops." },
   { icon: Webhook, tint: "text-pink-500", title: "Live Webhooks", body: "Events land in the graph seconds after they happen." },
-  { icon: Route, tint: "text-teal-500", title: "Deterministic Recall", body: "Every answer ships with its traced path and confidence." },
-  { icon: Coins, tint: "text-amber-500", title: "70× Token Savings", body: "Graph queries replace full-repo context stuffing." },
+  { icon: Route, tint: "text-teal-500", title: "Traced Recall", body: "Every answer ships with its traced path and scores." },
+  { icon: Coins, tint: "text-amber-500", title: "Retrieved vs. Used", body: "See which context the answer actually leaned on — and what it ignored." },
 ];
 
 function Benefits() {
@@ -758,7 +760,11 @@ const PLANS = [
 function Pricing() {
   return (
     <section className="mx-auto max-w-6xl px-5 py-20">
-      <SectionHead eyebrow="Pricing" title="Start free. Scale when your graph does." />
+      <SectionHead
+        eyebrow="Pricing"
+        title="Start free. Scale when your graph does."
+        sub="The tracer and viewer are open source and free forever. Paid tiers cover the hosted graph engine — join the waitlist and we'll tell you the day it opens."
+      />
       <div className="mt-14 grid grid-cols-1 items-start gap-5 md:grid-cols-3">
         {PLANS.map((p, i) => (
           <Reveal key={p.name} delay={i * 0.07}>
@@ -862,8 +868,9 @@ function Install() {
         />
 
         <div className="mt-12 grid items-start gap-6 lg:grid-cols-[1.2fr_1fr]">
-          {/* terminal walkthrough */}
-          <Reveal>
+          {/* terminal walkthrough — min-w-0 lets the grid track shrink below the
+              commands' min-content width so they truncate instead of overflowing */}
+          <Reveal className="min-w-0">
             <div className="rounded-xl border border-[#131316] bg-[#131316] p-4 shadow-[4px_5px_0_0_#C8F169] sm:p-5">
               <div className="mb-4 flex items-center gap-1.5" aria-hidden="true">
                 <span className="h-2.5 w-2.5 rounded-full bg-red-400" />
@@ -956,7 +963,7 @@ export function LandingPage() {
       <nav
         className={cn(
           "fixed inset-x-0 top-0 z-50 h-16 border-b transition-colors duration-200",
-          scrolled ? "border-zinc-200 bg-white/85 backdrop-blur-xl" : "border-transparent"
+          scrolled ? "border-zinc-200 bg-white/95 backdrop-blur-sm" : "border-transparent"
         )}
       >
         <div className="mx-auto flex h-full max-w-6xl items-center justify-between px-5">
