@@ -38,7 +38,7 @@ PR = {
     "merged_at": "2026-07-24T09:12:31Z",
     "created_at": "2026-07-23T10:00:00Z",
     "user": {"login": "lena"},
-    "requested_reviewers": [{"login": "marco"}],
+    "reviews": [{"user": {"login": "marco"}}, {"user": {"login": "marco"}}],
     "body": "Routine upgrade. Fixes #2291 and closes #2280.",
     "files": [{"filename": "services/payment/auth.py"}],
 }
@@ -129,3 +129,39 @@ def test_structural_edges_outweigh_proximity():
 
 if __name__ == "__main__":
     pytest.main([__file__, "-q"])
+
+
+def test_requested_reviewers_are_not_counted_as_reviews(build):
+    """`requested_reviewers` is a pending ask, not a completed review — crediting
+    it would claim someone reviewed code they never opened."""
+    db, b = build
+    from tracerag.github_graph import GraphStats
+    b.add_pull_request(
+        {"number": 1, "user": {"login": "lena"},
+         "requested_reviewers": [{"login": "nobody"}]}, GraphStats())
+    assert db.rel(config.RELATION_REVIEWED) == []
+
+
+def test_self_approval_is_not_a_review(build):
+    db, b = build
+    from tracerag.github_graph import GraphStats
+    b.add_pull_request(
+        {"number": 2, "user": {"login": "lena"},
+         "reviews": [{"user": {"login": "lena"}}]}, GraphStats())
+    assert db.rel(config.RELATION_REVIEWED) == []
+
+
+def test_repeat_reviews_collapse_to_one_edge(build):
+    db, b = build
+    from tracerag.github_graph import GraphStats
+    stats = GraphStats()
+    b.add_pull_request(
+        {"number": 3, "user": {"login": "lena"},
+         "reviews": [{"user": {"login": "marco"}}] * 4}, stats)
+    assert len(db.rel(config.RELATION_REVIEWED)) == 1
+    assert stats.by_relation[config.RELATION_REVIEWED] == 1
+
+
+def test_naive_timestamps_are_read_as_utc():
+    """A tz-less string would otherwise take the machine's offset and shift ages."""
+    assert parse_ts("2026-01-01T00:00:00") == parse_ts("2026-01-01T00:00:00Z")

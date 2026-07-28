@@ -29,7 +29,7 @@ PULL = {
     "number": 412, "title": "Fix token refresh", "merged_at": "2026-07-27T10:00:00Z",
     "html_url": "https://github.com/acme/api/pull/412",
     "user": {"login": "vishal"},
-    "requested_reviewers": [{"login": "arush"}],
+
     "body": "Fixes #77",
 }
 ISSUE = {"number": 77, "title": "Sessions drop", "created_at": "2026-07-20T08:00:00Z",
@@ -38,6 +38,7 @@ COMMIT = {"sha": "abc1234def", "author": {"login": "vishal"},
           "commit": {"message": "hotfix, closes #77",
                      "author": {"date": "2026-07-27T09:00:00Z"}}}
 FILES = [{"filename": "auth/session.py"}]
+REVIEWS = [{"user": {"login": "arush"}}]
 
 
 # --- fetch filters --------------------------------------------------------
@@ -70,7 +71,7 @@ def test_a_failed_file_fetch_does_not_abort_the_run(monkeypatch):
 
     monkeypatch.setattr(gh, "_get", boom)
     prs = [dict(PULL)]
-    gh.attach_pr_files("acme/api", prs, None)  # must not raise
+    gh.attach_pr_details("acme/api", prs, None, files=True)  # must not raise
     assert "files" not in prs[0]
 
 
@@ -81,14 +82,17 @@ def ingested(tmp_path, monkeypatch):
     monkeypatch.setattr(gh, "fetch_merged_prs", lambda *a, **k: [dict(PULL)])
     monkeypatch.setattr(gh, "fetch_issues", lambda *a, **k: [ISSUE])
     monkeypatch.setattr(gh, "fetch_commits", lambda *a, **k: [COMMIT])
-    monkeypatch.setattr(gh, "attach_pr_files",
-                        lambda repo, prs, token: [pr.update(files=FILES) for pr in prs])
+    monkeypatch.setattr(
+        gh, "attach_pr_details",
+        lambda repo, prs, token, **kw: [pr.update(files=FILES, reviews=REVIEWS)
+                                        for pr in prs])
     # stub the embedder — this test is about wiring, not vectors
     monkeypatch.setattr(gh.CurationEngine, "embed", lambda self, text: list(EMBED))
 
     db_path = tmp_path / "acme.lbug"
     args = gh.parse_args(["--repo", "acme/api", "--no-text",
-                          "--issues", "5", "--commits", "5", "--files"])
+                          "--issues", "5", "--commits", "5",
+                          "--files", "--reviews"])
     gh.ingest_repo("acme/api", db_path, args, None, None)
 
     db = TraceDB(db_path, pool_size=1)
@@ -134,3 +138,30 @@ def test_no_relation_is_left_untyped(ingested):
 
 if __name__ == "__main__":
     pytest.main([__file__, "-q"])
+
+
+def test_paging_stops_on_a_short_page(monkeypatch):
+    """A short page is the last one. Without this every per-PR fetch paid for an
+    extra round trip just to see an empty list."""
+    calls = []
+
+    def fake_get(url, token, params=None):
+        calls.append(params["page"])
+        return [{"number": i} for i in range(30)]  # < per_page
+
+    monkeypatch.setattr(gh, "_get", fake_get)
+    assert len(gh.fetch_commits("acme/api", 500, None)) == 30
+    assert calls == [1]
+
+
+def test_a_wide_pr_file_list_is_not_truncated_at_one_page(monkeypatch):
+    """The files endpoint caps at 100 per page; a big refactor must still be
+    fully read rather than silently losing everything past the first hundred."""
+    pages = {1: [{"filename": f"a{i}.py"} for i in range(100)],
+             2: [{"filename": f"b{i}.py"} for i in range(40)]}
+
+    monkeypatch.setattr(gh, "_get",
+                        lambda url, token, params=None: pages.get(params["page"], []))
+    prs = [dict(PULL)]
+    gh.attach_pr_details("acme/api", prs, None, files=True)
+    assert len(prs[0]["files"]) == 140

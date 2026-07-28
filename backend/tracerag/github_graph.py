@@ -14,7 +14,7 @@ from __future__ import annotations
 import logging
 import re
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any, Iterable
 
 from . import config
@@ -46,9 +46,14 @@ def parse_ts(value: str | None) -> int:
     if not value:
         return 0
     try:
-        return int(datetime.fromisoformat(value.replace("Z", "+00:00")).timestamp())
+        dt = datetime.fromisoformat(value.replace("Z", "+00:00"))
     except (ValueError, AttributeError):
         return 0
+    if dt.tzinfo is None:
+        # GitHub always sends Z, but a naive string would otherwise be read as
+        # local time and shift the age by the machine's UTC offset.
+        dt = dt.replace(tzinfo=timezone.utc)
+    return int(dt.timestamp())
 
 
 def _login(actor: dict[str, Any] | None) -> str | None:
@@ -118,13 +123,20 @@ class GitHubGraphBuilder:
             )
             stats.count(config.RELATION_AUTHORED)
 
-        for reviewer in pr.get("requested_reviewers") or []:
-            login = _login(reviewer)
-            if login:
-                self.db.add_relationship(
-                    self.person(login), pr_id, relation=config.RELATION_REVIEWED, ts=ts
-                )
-                stats.count(config.RELATION_REVIEWED)
+        # Reviews come from /pulls/N/reviews (attached as `reviews`). NOT from
+        # requested_reviewers — that field is pending *requests*, which empties
+        # out once someone actually reviews, so reading it both misses real
+        # reviewers and credits people who never looked.
+        reviewers = set()
+        for review in pr.get("reviews") or []:
+            login = _login(review.get("user"))
+            if login and login != author:  # self-approval isn't a review
+                reviewers.add(login)
+        for login in sorted(reviewers):
+            self.db.add_relationship(
+                self.person(login), pr_id, relation=config.RELATION_REVIEWED, ts=ts
+            )
+            stats.count(config.RELATION_REVIEWED)
 
         # closes/fixes references — the causal link that makes tracing possible
         for ref in set(_CLOSES_RE.findall(pr.get("body") or "")):
