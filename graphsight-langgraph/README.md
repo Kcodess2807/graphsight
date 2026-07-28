@@ -190,6 +190,15 @@ Document(
 `repo → Repo`, `library → Library`, `team → Team`, `tool → Tool`; anything
 else renders as `Document`).
 
+> **Both endpoints must be retrieved items.** The viewer can only draw an edge
+> between two nodes it has, so an edge pointing at something you didn't return
+> — `{"source": "person_vishal", "target": "pr_412"}` when no document has
+> `id: "person_vishal"` — is dropped from the rendered graph. (It is preserved
+> in `AgentTrace`, so your own tooling still sees it.) If you want people,
+> services or tickets on the canvas, **return them as documents too**, each
+> with its own `id`, `label` and `kind`. A retriever that emits only PRs and
+> then links them to authors will render a flat graph with no edges at all.
+
 ### Degradation behavior
 
 - **No edges in metadata** → a flat scored-retrieval view instead of
@@ -241,7 +250,7 @@ OpenTelemetry) emit the same shape and render in the same viewer. v0.2 adds
 |---|---|
 | Node spans but no retrievals | Config not propagated into the node's sub-runnables — see [Configuration propagation](#configuration-propagation-read-this-once). |
 | Items without scores | Your retriever doesn't write a recognized score key to `Document.metadata` — add one (`score` is simplest). |
-| Flat graph, no edges | Your retriever doesn't emit `metadata["edges"]` — see [Making your retriever graph-aware](#making-your-retriever-graph-aware). |
+| Flat graph, no edges | Either your retriever doesn't emit `metadata["edges"]`, or the edges point at ids you never returned as documents — both endpoints must be retrieved items. See [Making your retriever graph-aware](#making-your-retriever-graph-aware). |
 | `GitHub API 403` from the CLI | Rate limit (60 requests/hour unauthenticated) — pass `--token` or set `GITHUB_TOKEN`. |
 | Garbled output on Windows consoles | Fixed in ≥ 0.1.1; upgrade. |
 
