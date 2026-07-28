@@ -20,7 +20,8 @@ invented, and nothing leaves localhost.
 *A real run. `PR #101` scored **0.910** — the highest of anything retrieved — and the answer
 never used it. `PR #412` scored **0.340** and is the one that answered.*
 
-**New here?** [60-second start](#60-second-start) → [what this is](#what-this-actually-is).
+**New here?** [Your first trace](docs/FIRST_TRACE.md) — a 10-minute walkthrough — or the
+[60-second start](#60-second-start) → [what this is](#what-this-actually-is).
 **Evaluating it?** [For reviewers](#for-reviewers--start-here) →
 [benchmarks](#benchmarks--known-constraints).
 **Building on it?** [Architecture](#architecture) · [routing](#hybrid-routing) ·

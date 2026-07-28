@@ -30,6 +30,9 @@ nothing leaves your machine.
 *A real run. `PR #101` scored **0.910** — the highest of anything retrieved — and the answer
 never used it. `PR #412` scored **0.340** and is the one that answered.*
 
+**New to Graphsight? Read [Your first trace](https://github.com/Kcodess2807/graphsight/blob/main/docs/FIRST_TRACE.md)** —
+a 10-minute walkthrough with a complete runnable example. This README is the reference.
+
 **Jump to:** [60-second demo](#quickstart-trace-a-github-repo-in-60-seconds) ·
 [trace your own agent](#tracing-your-own-agent) ·
 [retrieved vs. used](#retrieved-vs-used) ·

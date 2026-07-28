@@ -25,6 +25,9 @@ never used it. `PR #412` scored **0.340** and is the one that answered.*
 
 ## Start here
 
+**New to Graphsight? Read [Your first trace](https://github.com/Kcodess2807/graphsight/blob/main/docs/FIRST_TRACE.md)** —
+a 10-minute walkthrough with a complete runnable example.
+
 `graphsight` is the **viewer**. It needs a trace to open, and the tracer is a separate
 package — so the full path from nothing is three steps:
 
