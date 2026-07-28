@@ -69,6 +69,11 @@ class CurationEngine:
         vec = self._get_embedder().encode(text, normalize_embeddings=True)
         return [float(x) for x in vec]
 
+    def embed(self, text: str) -> list[float]:
+        """Public handle on the shared vector space. The GitHub graph builder
+        writes structured nodes through this, so both paths land in one index."""
+        return self._embed(text)
+
     def _get_llm(self):
         if self._llm is None:
             from .llm import make_client
@@ -213,5 +218,7 @@ class CurationEngine:
                 if a == b or (a, b) in seen_pairs:
                     continue
                 seen_pairs.add((a, b))
-                self.db.add_relationship(a, b)
+                # proximity only — tagged CO_OCCURS so traversal weights it far
+                # below a structural edge, and upgrades it if one arrives later
+                self.db.add_relationship(a, b, relation=config.RELATION_CO_OCCURS)
                 stats.relates_edges += 1

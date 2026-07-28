@@ -8,8 +8,13 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 
+from typing import TYPE_CHECKING
+
 from . import config
-from .db import TraceDB
+from .recency import age_days, decay_factor
+
+if TYPE_CHECKING:  # keeps the scoring logic importable without the DB driver
+    from .db import TraceDB
 
 logger = logging.getLogger(__name__)
 
@@ -39,6 +44,8 @@ class RoutedNode:
     score_total: float
     score_vector: float
     score_graph: float
+    recency: float = 1.0          # age multiplier applied to score_total
+    age_days: float | None = None  # None when the node carries no timestamp
     documents: list[dict] = field(default_factory=list)
 
 
@@ -52,7 +59,7 @@ class RouterResponse:
 class TraceRouter:
     """Hybrid retriever: vector + graph, fused by query intent."""
 
-    def __init__(self, db: TraceDB, embed_model: str = config.EMBED_MODEL) -> None:
+    def __init__(self, db: "TraceDB", embed_model: str = config.EMBED_MODEL) -> None:
         self.db = db
         self.embed_model = embed_model
         self._embedder = None
@@ -190,7 +197,8 @@ class TraceRouter:
             nid = h["id"]
             if nid is None:
                 continue
-            meta.setdefault(nid, {"label": h.get("label"), "type": h.get("type")})
+            meta.setdefault(nid, {"label": h.get("label"), "type": h.get("type"),
+                                  "ts": h.get("ts", 0)})
             out.append((nid, float(h["similarity"])))
         return out
 
@@ -200,7 +208,9 @@ class TraceRouter:
         s_g: dict[str, float] = {seed: 1.0 for seed in seeds}
         hops: list[dict] = []
 
-        # multiplicative BFS: path score = product of edge confidences
+        # multiplicative BFS: path score = product of edge weights. A hop's weight
+        # is the relation's own strength (AUTHORED 0.95 vs CO_OCCURS 0.35), so a
+        # structural two-hop path beats a proximity guess one hop away.
         frontier: dict[str, float] = {seed: 1.0 for seed in seeds}
         visited: set[str] = set(seeds)
         for _ in range(config.GRAPH_MAX_HOPS):
@@ -213,10 +223,15 @@ class TraceRouter:
             for node_id, acc in frontier.items():
                 for nb in expanded.get(node_id, []):
                     to_id = nb["id"]
+                    relation = nb.get("relation") or config.RELATION_CO_OCCURS
                     conf = nb["confidence"]
                     path_score = acc * conf
-                    hops.append({"from_id": node_id, "to_id": to_id, "confidence": conf})
-                    meta.setdefault(to_id, {"label": nb["label"], "type": nb["type"]})
+                    hops.append({
+                        "from_id": node_id, "to_id": to_id,
+                        "confidence": conf, "relation": relation,
+                    })
+                    meta.setdefault(to_id, {"label": nb["label"], "type": nb["type"],
+                                            "ts": nb.get("ts", 0)})
                     if path_score > s_g.get(to_id, 0.0):
                         s_g[to_id] = path_score
                     if to_id not in visited:
@@ -302,13 +317,20 @@ class TraceRouter:
             sv = vector_scores.get(nid, 0.0)
             sg = graph_scores.get(nid, 0.0)
             info = meta.get(nid, {})
+            ts = info.get("ts") or 0
+            ntype = info.get("type")
+            # recency multiplies the fused score: yesterday's change outranks a
+            # stale one that merely reads like the query
+            decay = decay_factor(ts, ntype)
             results.append(RoutedNode(
                 id=nid,
                 label=info.get("label"),
-                type=info.get("type"),
-                score_total=alpha * sv + beta * sg,
+                type=ntype,
+                score_total=(alpha * sv + beta * sg) * decay,
                 score_vector=sv,
                 score_graph=sg,
+                recency=round(decay, 4),
+                age_days=(lambda a: round(a, 1) if a is not None else None)(age_days(ts)),
             ))
         results.sort(key=lambda r: r.score_total, reverse=True)
         results = results[:total_k]
@@ -330,7 +352,16 @@ class TraceRouter:
             "execution_path": {
                 "linked_seeds": linked_seeds,
                 "vector_seeds": seeds,
-                "graph_hops": hops,
+                "graph_hops": hops,          # each hop carries its relation
+            },
+            "recency": {
+                "enabled": config.RECENCY_ENABLED,
+                "floor": config.RECENCY_FLOOR,
+                # per-node age + multiplier, so the viewer can show *why* something ranked
+                "applied": [
+                    {"id": r.id, "age_days": r.age_days, "factor": r.recency}
+                    for r in results if r.age_days is not None
+                ],
             },
             "metrics": {
                 "graph_hits": graph_hits,

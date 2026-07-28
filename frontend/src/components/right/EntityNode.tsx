@@ -16,11 +16,24 @@ import type { TraceNode } from "@/types/trace";
 
 export type EntityNodeData = TraceNode;
 
+// compact age for the node chip: 4d, 3w, 8mo, 2y
+function formatAge(days: number): string {
+  if (days < 1) return "today";
+  if (days < 14) return `${Math.round(days)}d`;
+  if (days < 60) return `${Math.round(days / 7)}w`;
+  if (days < 365) return `${Math.round(days / 30)}mo`;
+  return `${(days / 365).toFixed(1)}y`;
+}
+
 function EntityNodeComponent({ data, selected }: NodeProps<EntityNodeData>) {
   const style = ENTITY_STYLES[data.type];
   const Icon = style.icon;
   const active = data.active;
   const snippet = data.meta?.snippet;
+  const ageDays = data.meta?.ageDays;
+  const recency = data.meta?.recency;
+  // only surface age once decay actually moved the score — below that it's noise
+  const decayed = recency != null && recency < 0.95 && ageDays != null;
 
   // fetched lazily when the hover card opens (server-cached)
   const [summary, setSummary] = useState<string | null>(null);
@@ -78,6 +91,18 @@ function EntityNodeComponent({ data, selected }: NodeProps<EntityNodeData>) {
             </p>
             <p className="truncate text-[10px] font-medium uppercase tracking-wide text-zinc-400">
               {style.label}
+              {decayed && (
+                <span
+                  className={cn(
+                    "ml-1.5 rounded px-1 py-px font-mono normal-case tracking-normal",
+                    recency! < 0.5
+                      ? "bg-amber-50 text-amber-600"
+                      : "bg-zinc-100 text-zinc-500"
+                  )}
+                >
+                  {formatAge(ageDays!)}
+                </span>
+              )}
             </p>
           </div>
 
@@ -129,6 +154,7 @@ function EntityNodeComponent({ data, selected }: NodeProps<EntityNodeData>) {
           {(data.score != null ||
             data.similarity != null ||
             (data.meta?.scoreGraph ?? 0) > 0 ||
+            recency != null ||
             data.meta?.connections != null) && (
             <>
               <Separator />
@@ -143,6 +169,17 @@ function EntityNodeComponent({ data, selected }: NodeProps<EntityNodeData>) {
                   <Row
                     label="Graph score"
                     value={data.meta!.scoreGraph!.toFixed(3)}
+                    mono
+                  />
+                )}
+                {recency != null && (
+                  <Row
+                    label="Recency"
+                    value={
+                      ageDays == null
+                        ? "undated — not decayed"
+                        : `×${recency.toFixed(2)} · ${formatAge(ageDays)} old`
+                    }
                     mono
                   />
                 )}
