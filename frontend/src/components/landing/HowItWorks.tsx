@@ -12,23 +12,23 @@ const MECHANICS = [
   {
     icon: Radio,
     title: "One span per node, zero framework noise",
-    body: "LangChain emits lifecycle events carrying run_id and parent_run_id. LangGraph wraps your nodes in its own machinery that fires the same events — so a 2-node graph would log ~10 spans of garbage.",
+    body: "LangChain emits lifecycle events carrying run_id and parent_run_id. LangGraph wraps your nodes in its own machinery that fires the same events, so a 2-node graph logs about 10 spans of garbage.",
     detail: "keep span only when\nname === metadata.langgraph_node",
     note: "One node, one span. RunnableSequence, ChannelWrite, __start__ never reach the trace.",
   },
   {
     icon: Waypoints,
     title: "Two arms: lexical seeds, then 1-hop expansion",
-    body: "Half the budget goes to items that match the query directly. The rest is pulled in structurally — the author of a matched PR, the issue it resolves, the service it touches.",
+    body: "Half the budget goes to items matching the query directly. The rest comes in structurally: the author of a matched PR, the issue it resolves, the service it touches.",
     detail: "seeds = topK(score, k/2)\nrest  = neighbors(seeds.edges)",
-    note: "Structural neighbors keep their own (often lower) score — nothing inherits relevance it didn't earn.",
+    note: "Structural neighbors keep their own score, usually lower. Nothing inherits relevance it did not earn.",
   },
   {
     icon: Scan,
-    title: "Retrieved vs. used — where the budget actually goes",
+    title: "Retrieved vs used: where the budget goes",
     body: "After the run, each retrieved item is compared against the final answer. Items that surfaced render highlighted; items retrieved and ignored render dimmed.",
     detail: "overlap = |item ∩ answer|\n          / min(|item|, |answer|)",
-    note: "A lexical heuristic, labeled as one — threshold 0.2. It is never presented as a model-computed relevance judgment.",
+    note: "A lexical heuristic, labeled as one. Threshold 0.2. It is never presented as a model-computed relevance judgment.",
   },
 ];
 
@@ -131,8 +131,8 @@ export function HowItWorks() {
             </h3>
             <p className="mt-3 text-[13.5px] leading-relaxed text-zinc-600">
               Whole-repo stuffing sends every plausible file and hopes. Graph retrieval sends a
-              scoped set of items plus the edges between them — and Graphsight shows you which of
-              those the answer actually leaned on.
+              scoped set of items plus the edges between them, and Graphsight shows you which of
+              those the answer used.
             </p>
             <p className="mt-3 text-[13.5px] leading-relaxed text-zinc-600">
               In the trace above, five items were retrieved and{" "}
@@ -141,9 +141,9 @@ export function HowItWorks() {
               compression ratio, but visible waste you can cut on your own data.
             </p>
             <p className="mt-4 rounded-lg border border-zinc-200 bg-[#FAFAFB] p-3 text-[12px] leading-relaxed text-zinc-500">
-              We publish what we measure. Our own benchmark did not show a token reduction on the
-              corpus we tested — so we do not claim one. What Graphsight gives you is the
-              measurement itself, per run.
+              We publish what we measure. Our benchmark showed no token reduction on the corpus
+              we tested, so we do not claim one. What Graphsight gives you is the measurement
+              itself, per run.
             </p>
           </div>
           <div className="min-w-0">

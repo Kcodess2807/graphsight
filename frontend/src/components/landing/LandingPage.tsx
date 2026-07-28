@@ -89,7 +89,7 @@ function WaitlistForm({ inputId, center }: { inputId: string; center?: boolean }
           <span className="flex h-[18px] w-[18px] items-center justify-center rounded-full bg-emerald-500">
             <Check className="h-3 w-3 text-white" strokeWidth={2.5} />
           </span>
-          Done. We&apos;ll email you once — when the MCP server ships.
+          Done. One email when the MCP server ships.
         </motion.span>
       </div>
     );
@@ -286,10 +286,9 @@ function Hero() {
 
           <Reveal delay={0.12}>
             <p className="mx-auto mt-6 max-w-xl text-[16px] leading-[1.65] text-zinc-600">
-              {BRAND} maps your GitHub PRs, tickets, and codebase into a live knowledge
-              graph — then shows you exactly which of it your agent retrieved, and which
-              it actually used. Free and local today; MCP access for Claude Code and
-              Cursor is next.
+              {BRAND} turns your GitHub PRs, tickets, and commits into a queryable
+              graph, then shows which of it your agent retrieved and which it actually
+              used. Runs locally. MCP access for Claude Code and Cursor is next.
             </p>
           </Reveal>
 
@@ -312,9 +311,9 @@ function Hero() {
           <Reveal delay={0.24} className="mt-10 flex justify-center">
             <div id="waitlist" className="w-full max-w-md scroll-mt-28">
               <p className="mb-3 text-[14px] font-medium text-zinc-600">
-                Want it inside your editor?{" "}
+                Want this inside Cursor or Claude Code?{" "}
                 <span className="font-bold text-[#131316]">
-                  Get notified when the MCP server ships.
+                  We&apos;ll email you when the MCP server ships.
                 </span>
               </p>
               <WaitlistForm inputId="email-hero" center />
@@ -378,7 +377,7 @@ const USE_CASE_ITEMS = [
   { title: "Causal bug tracing", body: "Which PR caused this regression, and who reviewed it?" },
   { title: "Ownership queries", body: "Who owns checkout-service and what changed last week?" },
   { title: "Impact analysis", body: "What breaks if we bump the stripe SDK?" },
-  { title: "Session recall", body: "Pick any past trace back up with zero re-indexing." },
+  { title: "Session recall", body: "Reopen any past trace. Nothing to re-index." },
 ];
 
 function CodeShowcase() {
@@ -501,8 +500,8 @@ function LogFeed() {
   return (
     <div className="space-y-3">
       {[
-        { time: "14:23:45", tag: "INFO", tint: "bg-sky-500", text: "Webhook received — PR #4821 merged into main." },
-        { time: "14:23:47", tag: "TRACE", tint: "bg-emerald-500", text: "Graph updated — 12 new edges, 3 entities linked." },
+        { time: "14:23:45", tag: "INFO", tint: "bg-sky-500", text: "Webhook received. PR #4821 merged into main." },
+        { time: "14:23:47", tag: "TRACE", tint: "bg-emerald-500", text: "Graph updated. 12 new edges, 3 entities linked." },
       ].map((l) => (
         <div key={l.time} className="flex gap-2.5 rounded-lg border border-zinc-200 bg-[#FAFAFB] p-3">
           <span className={cn("mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full", l.tint)}>
@@ -557,17 +556,17 @@ function AgentRadar() {
 const USE_CASES = [
   {
     title: "Connect your sources",
-    body: "GitHub and Jira stream PRs, tickets, and commits into the graph in real time.",
+    body: "GitHub and Jira push PRs, tickets, and commits into the graph as they land.",
     art: <SourceCards />,
   },
   {
-    title: "Watch memory form",
-    body: "Every event becomes entities and edges — inspect exactly what your agents will see.",
+    title: "Inspect what landed",
+    body: "Every event becomes typed entities and edges. Check what your agents will read before they read it.",
     art: <LogFeed />,
   },
   {
     title: "One graph, every agent",
-    body: "Claude Code, Cursor, and Windsurf tap the same shared memory over MCP.",
+    body: "Claude Code, Cursor, and Windsurf read the same graph over MCP.",
     art: <AgentRadar />,
   },
 ];
@@ -610,8 +609,8 @@ function IntegrateCard() {
       <div className="p-6 pb-4">
         <h3 className="font-display text-xl font-bold text-[#131316]">Integrate with everything</h3>
         <p className="mt-2 max-w-lg text-[13.5px] leading-relaxed text-zinc-600">
-          GitHub, Jira, and every MCP-compatible agent out of the box. One graph,
-          zero glue code — new sources land as first-class graph entities.
+          GitHub, Jira, and any MCP-compatible agent. New sources land as typed
+          entities and edges. No adapters to write.
         </p>
       </div>
       <div className="mt-auto grid grid-cols-3 border-t border-[#131316] sm:grid-cols-6">
@@ -665,7 +664,7 @@ function CollabCard() {
       <div className="p-6">
         <h3 className="font-display text-xl font-bold text-[#131316]">One memory, whole team</h3>
         <p className="mt-2 text-[13.5px] leading-relaxed text-zinc-600">
-          Everyone&apos;s agents share the same graph — no per-laptop indexes drifting
+          Everyone&apos;s agents read the same graph. No per-laptop indexes drifting
           out of sync.
         </p>
       </div>
@@ -674,12 +673,12 @@ function CollabCard() {
 }
 
 const BENEFITS = [
-  { icon: Brain, tint: "text-emerald-500", title: "The External Brain", body: "Agents query the graph instead of re-reading your repo." },
-  { icon: GitBranch, tint: "text-sky-500", title: "Causal Tracing", body: "Exact ticket → PR → function chains for every change." },
-  { icon: Cloud, tint: "text-orange-500", title: "Zero Local Setup", body: "Managed cloud graph. Nothing to index on laptops." },
-  { icon: Webhook, tint: "text-pink-500", title: "Live Webhooks", body: "Events land in the graph seconds after they happen." },
-  { icon: Route, tint: "text-teal-500", title: "Traced Recall", body: "Every answer ships with its traced path and scores." },
-  { icon: Coins, tint: "text-amber-500", title: "Retrieved vs. Used", body: "See which context the answer actually leaned on — and what it ignored." },
+  { icon: Brain, tint: "text-emerald-500", title: "Query, don't re-read", body: "Agents hit the graph instead of grepping the repo again." },
+  { icon: GitBranch, tint: "text-sky-500", title: "Causal chains", body: "ticket → PR → file, read from the API rather than guessed." },
+  { icon: Cloud, tint: "text-orange-500", title: "No local index", body: "One graph per team. Nothing to build on every laptop." },
+  { icon: Webhook, tint: "text-pink-500", title: "Webhook ingest", body: "PRs and tickets reach the graph seconds after they merge." },
+  { icon: Route, tint: "text-teal-500", title: "Traced answers", body: "Every answer ships the path and the scores that produced it." },
+  { icon: Coins, tint: "text-amber-500", title: "Retrieved vs used", body: "See which context the answer used, and what it ignored." },
 ];
 
 function Benefits() {
@@ -688,8 +687,8 @@ function Benefits() {
       <div className="mx-auto max-w-6xl px-5 py-20">
         <SectionHead
           eyebrow="Why Graphsight"
-          title="The clear benefits of a memory layer."
-          sub="Features are good — a team whose agents stop hallucinating is better."
+          title="What changes with a shared graph"
+          sub="Six things that stop being your problem once retrieval is traceable."
         />
 
         {/* row 1: wide integrate card + tall collab card */}
@@ -730,10 +729,10 @@ function FinalCta() {
             <Terminal className="h-5 w-5 text-white" strokeWidth={2} />
           </span>
           <h2 className="mt-5 font-display text-3xl font-bold tracking-[-0.02em] text-[#131316] sm:text-4xl">
-            Ready to give your agents a memory?
+            Start with the tracer
           </h2>
           <p className="mx-auto mt-3 max-w-md text-[15px] leading-relaxed text-zinc-600">
-            The tracer and viewer are free on PyPI right now — nothing to wait for.
+            Both packages are on PyPI. Nothing to wait for, nothing to sign up for.
             Leave your email only if you want to hear when the MCP server lands in
             Claude Code and Cursor.
           </p>
@@ -751,7 +750,7 @@ function FinalCta() {
 const PACKAGES = [
   {
     name: "graphsight",
-    desc: "The viewer. Opens any trace as an interactive graph in your browser — zero dependencies, nothing leaves your machine.",
+    desc: "The viewer. Opens any trace as an interactive graph in your browser. Zero dependencies. Nothing leaves your machine.",
     href: "https://pypi.org/project/graphsight/",
   },
   {
@@ -768,7 +767,7 @@ function Install() {
         <SectionHead
           eyebrow="Open source · available today"
           title="See your agent's memory in three commands"
-          sub="The hosted graph engine is coming — but the tracer and the viewer ship now, as two small pip packages. Trace any repo or any LangGraph agent, locally."
+          sub="The hosted engine is not ready yet. The tracer and the viewer are. Two pip packages, no account, no backend."
         />
 
         <div className="mt-12 grid items-start gap-6 lg:grid-cols-[1.2fr_1fr]">
@@ -796,8 +795,8 @@ function Install() {
                 <CopyCommand command="graphsight graphsight_out/trace_state.json" />
               </div>
               <p className="mt-4 text-[12.5px] leading-relaxed text-zinc-400">
-                Public repos need no token. Your browser opens on the PRs that matched, who
-                authored them, and the issues they resolve — every node inspectable.
+                Public repos need no token. Your browser opens on the PRs that matched,
+                who authored them, and the issues they resolve. Click any node.
               </p>
             </div>
           </Reveal>
@@ -852,7 +851,7 @@ export function LandingPage() {
   const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
-    document.title = `${BRAND} — Graph memory for AI coding agents`;
+    document.title = `${BRAND} · Graph memory for AI coding agents`;
     const onScroll = () => setScrolled(window.scrollY > 24);
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });

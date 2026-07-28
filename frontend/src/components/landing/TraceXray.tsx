@@ -37,7 +37,7 @@ const NODES: XrayNode[] = [
     x: 82,
     y: 78,
     snippet:
-      "fix: checkout payment failures under load — add retry with timeout. Merged 8 months ago by Marco T.",
+      "fix: checkout payment failures under load, add retry with timeout. Merged 8 months ago by Marco T.",
     verdict: "trap",
   },
   {
@@ -152,12 +152,12 @@ function RankedView({ onPick }: { onPick: (n: XrayNode) => void }) {
               <span className="block truncate text-[13px] font-bold text-[#131316]">{n.label}</span>
               {n.verdict === "trap" && (
                 <span className="block text-[11px] font-medium text-red-600">
-                  the model trusted this — it shipped 8 months ago
+                  the model trusted this. it shipped 8 months ago
                 </span>
               )}
               {n.verdict === "cause" && (
                 <span className="block text-[11px] font-medium text-emerald-700">
-                  the actual cause — ranked 4th
+                  the actual cause. ranked 4th
                 </span>
               )}
             </span>
@@ -257,7 +257,7 @@ export function TraceXray() {
         <SectionHead
           eyebrow="Retrieval x-ray"
           title="The agent was confident. It was also wrong."
-          sub="A real trace from the demo agent. It blamed an 8-month-old PR for today's outage — because that PR reads like the question. Here's the evidence that shows why."
+          sub="A real trace from the demo agent. It blamed an 8-month-old PR for today's outage, because that PR reads like the question. Here is the evidence."
         />
 
         <Reveal delay={0.06} className="mt-10">
@@ -277,7 +277,7 @@ export function TraceXray() {
                 <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0 text-red-400" strokeWidth={2.25} />
                 <span>
                   &quot;The failures look like the timeout issue addressed in{" "}
-                  <span className="font-bold text-red-300">PR #4102</span> — retry logic in the
+                  <span className="font-bold text-red-300">PR #4102</span>, retry logic in the
                   checkout payment authorizer. Consider re-applying that fix.&quot;
                 </span>
               </p>
@@ -318,16 +318,16 @@ export function TraceXray() {
                   <p className="text-[13px] leading-relaxed text-zinc-700">
                     <span className="font-bold text-[#131316]">Similarity is not causality.</span>{" "}
                     The stale PR scored <span className="font-mono font-bold">0.91</span> because it
-                    shares the question&apos;s vocabulary. Yesterday&apos;s SDK bump — the real
-                    cause — scored <span className="font-mono font-bold">0.34</span>, because a
+                    shares the question&apos;s vocabulary. Yesterday&apos;s SDK bump, the real
+                    cause, scored <span className="font-mono font-bold">0.34</span>, because a
                     dependency diff shares almost no words with &quot;checkout failing&quot;.
                   </p>
                 ) : (
                   <p className="text-[13px] leading-relaxed text-zinc-700">
                     <span className="font-bold text-[#131316]">The path finds what ranking missed.</span>{" "}
                     The incident reports on <span className="font-mono font-bold">payment-service</span>,
-                    and PR #4977 touches it. Two hops connect the outage to its cause — a flat ranked
-                    list can never show that edge.
+                    and PR #4977 touches it. Two hops connect the outage to its cause. A flat
+                    ranked list can never show that edge.
                   </p>
                 )}
               </div>
