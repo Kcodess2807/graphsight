@@ -32,6 +32,10 @@ export interface TraceNode {
     connections?: number;
     scoreGraph?: number;
     sourceUrl?: string;
+    // age decay applied to the fused score: 1 = untouched, lower = older
+    recency?: number;
+    // null when the entity carries no timestamp, so it was never decayed
+    ageDays?: number | null;
   };
   // disconnected nodes hidden behind the "Show Orphans" toggle
   orphan?: boolean;

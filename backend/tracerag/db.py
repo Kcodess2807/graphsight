@@ -15,6 +15,25 @@ from . import config
 
 logger = logging.getLogger(__name__)
 
+_TS = "CAST($ts AS INT64)"  # see upsert_node — small ints infer as INT8
+
+
+def _added_columns() -> dict[str, list[tuple[str, str, str]]]:
+    """Columns that arrived after the first schema shipped: (name, type, default).
+
+    CREATE TABLE IF NOT EXISTS is a no-op on a store that already exists, so a
+    pre-0.3 .lbug keeps the old shape and only fails later, at query time, on
+    e.ts / r.relation. ALTER ... ADD backfills existing rows with the default,
+    so migrating is lossless — no reingest.
+    """
+    return {
+        config.NODE_TABLE: [("ts", "INT64", "0")],
+        config.REL_TABLE: [
+            ("relation", "STRING", f"'{config.RELATION_CO_OCCURS}'"),
+            ("ts", "INT64", "0"),
+        ],
+    }
+
 
 class TraceDB:
     """Wrapper over LadybugDB with a read-connection pool.
@@ -128,9 +147,64 @@ class TraceDB:
             f"CREATE REL TABLE IF NOT EXISTS {config.MENTIONS_TABLE} ("
             f"FROM {config.DOC_TABLE} TO {config.NODE_TABLE});"
         )
+        self.migrate_schema()
         # HNSW index built later via build_vector_index(); a live index blocks embedding writes
         logger.info("Schema ready (node=%s, rel=%s)",
                     config.NODE_TABLE, config.REL_TABLE)
+
+    def table_columns(self, table: str) -> set[str]:
+        """Column names on a table; empty set when the table doesn't exist."""
+        try:
+            rows = self._fetch(f"CALL TABLE_INFO('{table}') RETURN *;")
+        except Exception as exc:  # noqa: BLE001 — table absent, or older engine
+            logger.debug("TABLE_INFO('%s') unavailable: %s", table, exc)
+            return set()
+        return {r["name"] for r in rows}
+
+    def migrate_schema(self) -> list[str]:
+        """Bring an older store up to the current shape. Returns what it added."""
+        added: list[str] = []
+        for table, columns in _added_columns().items():
+            existing = self.table_columns(table)
+            if not existing:
+                continue  # freshly created above, already correct
+            for name, sql_type, default in columns:
+                if name in existing:
+                    continue
+                self.execute(
+                    f"ALTER TABLE {table} ADD {name} {sql_type} DEFAULT {default};"
+                )
+                added.append(f"{table}.{name}")
+                if (table, name) == (config.REL_TABLE, "relation"):
+                    self._downgrade_legacy_confidence()
+        if added:
+            logger.warning(
+                "Migrated %s to the 0.3 schema: added %s. Existing rows use the "
+                "column default — reingest to populate real timestamps and relations.",
+                self.db_path, ", ".join(added),
+            )
+        return added
+
+    def _downgrade_legacy_confidence(self) -> None:
+        """Reprice pre-0.3 edges as what they actually are: proximity guesses.
+
+        The old writer stored every edge at 1.0, which made traversal flat. Left
+        alone those edges would also outrank every typed relation (max 0.95) and
+        could never be upgraded, since the ON MATCH guard needs a strictly higher
+        confidence. The ALTER just labelled them all CO_OCCURS — so give them the
+        CO_OCCURS weight to match.
+        """
+        weight = config.RELATION_WEIGHTS[config.RELATION_CO_OCCURS]
+        self.execute(
+            f"MATCH ()-[r:{config.REL_TABLE}]->() "
+            f"WHERE r.confidence > $weight SET r.confidence = $weight;",
+            {"weight": float(weight)},
+        )
+        logger.warning(
+            "Repriced legacy edges to the %s weight (%.2f) so structured "
+            "relations can outrank and upgrade them.",
+            config.RELATION_CO_OCCURS, weight,
+        )
 
     def build_vector_index(self) -> None:
         """(Re)build the HNSW index over current embeddings; call after ingestion."""
@@ -163,7 +237,9 @@ class TraceDB:
             f"MERGE (e:{config.NODE_TABLE} {{id: $id}}) "
             f"ON CREATE SET e.label = $label, e.type = $type, e.ts = $ts, "
             f"e.embedding = $embedding "
-            f"ON MATCH SET e.ts = CASE WHEN $ts > e.ts THEN $ts ELSE e.ts END",
+            # CAST is load-bearing: the driver infers a small $ts (0 for undated
+            # items) as INT8, and the CASE then overflows on a real epoch value.
+            f"ON MATCH SET e.ts = CASE WHEN {_TS} > e.ts THEN {_TS} ELSE e.ts END",
             {"id": node_id, "label": label, "type": node_type, "ts": int(ts),
              "embedding": list(embedding)},
         )
@@ -187,11 +263,15 @@ class TraceDB:
             f"(b:{config.NODE_TABLE} {{id: $to_id}}) "
             f"MERGE (a)-[r:{config.REL_TABLE}]->(b) "
             f"ON CREATE SET r.confidence = $confidence, r.relation = $relation, r.ts = $ts "
-            # a stronger relation later (CO_OCCURS then AUTHORED) upgrades the edge
-            f"ON MATCH SET r.confidence = CASE WHEN $confidence > r.confidence "
-            f"THEN $confidence ELSE r.confidence END, "
-            f"r.relation = CASE WHEN $confidence > r.confidence THEN $relation "
-            f"ELSE r.relation END",
+            # a stronger relation later (CO_OCCURS then AUTHORED) upgrades the edge.
+            # SET items apply left to right, so relation must be decided BEFORE
+            # confidence is overwritten — otherwise its guard compares the new
+            # value against itself and the label never moves.
+            f"ON MATCH SET r.relation = CASE WHEN $confidence > r.confidence "
+            f"THEN $relation ELSE r.relation END, "
+            f"r.ts = CASE WHEN {_TS} > r.ts THEN {_TS} ELSE r.ts END, "
+            f"r.confidence = CASE WHEN $confidence > r.confidence "
+            f"THEN $confidence ELSE r.confidence END",
             {"from_id": from_id, "to_id": to_id, "confidence": float(confidence),
              "relation": relation, "ts": int(ts)},
         )
@@ -360,12 +440,14 @@ class TraceDB:
             f"MATCH (a:{config.NODE_TABLE})-[r:{config.REL_TABLE}]->"
             f"(b:{config.NODE_TABLE}) "
             f"WHERE a.id IN $ids AND b.id IN $ids "
-            f"RETURN a.id AS source, b.id AS target, r.confidence AS confidence;",
+            f"RETURN a.id AS source, b.id AS target, r.confidence AS confidence, "
+            f"r.relation AS relation;",
             {"ids": all_ids},
         ) if all_ids else []
         edges = [
             {"source": r["source"], "target": r["target"],
-             "confidence": r["confidence"]}
+             "confidence": r["confidence"],
+             "relation": r.get("relation") or config.RELATION_CO_OCCURS}
             for r in edge_rows
         ]
         return {"nodes": list(nodes.values()), "edges": edges}

@@ -69,6 +69,11 @@ class CurationEngine:
         vec = self._get_embedder().encode(text, normalize_embeddings=True)
         return [float(x) for x in vec]
 
+    def embed(self, text: str) -> list[float]:
+        """Public handle on the shared vector space. The GitHub graph builder
+        writes structured nodes through this, so both paths land in one index."""
+        return self._embed(text)
+
     def _get_llm(self):
         if self._llm is None:
             from .llm import make_client

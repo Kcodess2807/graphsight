@@ -28,6 +28,14 @@ export interface TraceGraphHop {
   from_id: string;
   to_id: string;
   confidence: number;
+  // AUTHORED, RESOLVES, CO_OCCURS, ... — why the traversal took this hop
+  relation?: string;
+}
+
+export interface TraceRecency {
+  enabled: boolean;
+  floor: number;
+  applied: { id: string; age_days: number | null; factor: number }[];
 }
 
 export interface TraceLog {
@@ -37,6 +45,7 @@ export interface TraceLog {
     linked_seeds?: string[];
     graph_hops: TraceGraphHop[];
   };
+  recency?: TraceRecency;
   metrics: { total_nodes_evaluated: number } & Record<string, number>;
 }
 
@@ -47,6 +56,8 @@ export interface TraceResult {
   score_total?: number;
   score_vector?: number;
   score_graph?: number;
+  recency?: number;
+  age_days?: number | null;
   documents?: { doc_id?: string; content?: string; path?: string }[];
   page_content?: string;
 }
@@ -347,6 +358,24 @@ function buildSteps(log: TraceLog): ExecutionStep[] {
   const seeds = log.execution_path.vector_seeds.length;
   const hops = log.execution_path.graph_hops.length;
   const evaluated = log.metrics.total_nodes_evaluated;
+
+  // name the relations actually walked — "3 edges" says nothing about why
+  const byRelation = new Map<string, number>();
+  for (const h of log.execution_path.graph_hops) {
+    if (h.relation) byRelation.set(h.relation, (byRelation.get(h.relation) ?? 0) + 1);
+  }
+  const relations = [...byRelation.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .map(([rel, n]) => `${n}× ${rel}`)
+    .join(", ");
+
+  // recency only matters when it actually moved something
+  const decayed = (log.recency?.applied ?? []).filter((a) => a.factor < 0.95);
+  const oldest = decayed.reduce(
+    (worst, a) => ((a.age_days ?? 0) > (worst?.age_days ?? 0) ? a : worst),
+    decayed[0]
+  );
+
   return [
     {
       id: "step-1",
@@ -361,7 +390,9 @@ function buildSteps(log: TraceLog): ExecutionStep[] {
       id: "step-2",
       index: 2,
       title: "Graph Traversal",
-      detail: `Walked ${hops} edge${hops === 1 ? "" : "s"} across the relationship graph.`,
+      detail: relations
+        ? `Walked ${hops} edge${hops === 1 ? "" : "s"}: ${relations}.`
+        : `Walked ${hops} edge${hops === 1 ? "" : "s"} across the relationship graph.`,
       status: "complete",
       badge: `${hops} hop${hops === 1 ? "" : "s"}`,
       arm: "graph",
@@ -370,9 +401,15 @@ function buildSteps(log: TraceLog): ExecutionStep[] {
       id: "step-3",
       index: 3,
       title: "Context Assembly",
-      detail: `Evaluated ${evaluated} node${evaluated === 1 ? "" : "s"} to assemble the grounded context.`,
+      detail:
+        decayed.length > 0
+          ? `Evaluated ${evaluated} node${evaluated === 1 ? "" : "s"}; age decay demoted ${
+              decayed.length
+            } of them (oldest ${Math.round(oldest.age_days ?? 0)} days, ×${oldest.factor.toFixed(2)}).`
+          : `Evaluated ${evaluated} node${evaluated === 1 ? "" : "s"} to assemble the grounded context.`,
       status: "complete",
-      badge: `${evaluated} nodes`,
+      badge:
+        decayed.length > 0 ? `${decayed.length} aged` : `${evaluated} nodes`,
     },
   ];
 }
@@ -421,6 +458,8 @@ export function adaptToTraceState(
         snippet: r ? resultSnippet(r) : undefined,
         scoreGraph: r?.score_graph,
         sourceUrl: r ? resultSourceUrl(r) : undefined,
+        recency: r?.recency,
+        ageDays: r?.age_days ?? null,
       },
     });
   }
@@ -442,6 +481,8 @@ export function adaptToTraceState(
           snippet: r ? resultSnippet(r) : undefined,
           scoreGraph: r?.score_graph,
           sourceUrl: r ? resultSourceUrl(r) : undefined,
+          recency: r?.recency,
+          ageDays: r?.age_days ?? null,
         },
       });
     }
@@ -479,6 +520,7 @@ export function adaptToTraceState(
         target: h.to_id,
         confidence: h.confidence,
         active: true,
+        relation: h.relation,
       });
     }
   });

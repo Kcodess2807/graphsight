@@ -285,10 +285,25 @@ hf-space/                   # HuggingFace Space deployment (own git remote)
 
 ### Data model
 
-A single generic `Entity` node table (`id, label, type, embedding`) keeps the schema dynamic
+A single generic `Entity` node table (`id, label, type, ts, embedding`) keeps the schema dynamic
 across all entity labels. `Document` nodes store one **sliding-window chunk** each (with raw
 `content` for generation). Edges: `Document -[MENTIONS]-> Entity` and `Entity -[RELATES_TO]->
-Entity` (only between entities co-occurring in the *same* window — no document-wide hairball).
+Entity`, carrying `confidence, relation, ts`.
+
+`relation` is one of `AUTHORED · RESOLVES · REVIEWED · TOUCHES · PART_OF · REPORTED ·
+CO_OCCURS`, each with its own weight (`config.RELATION_WEIGHTS`). Text ingestion can only
+produce `CO_OCCURS` — same-window proximity, weighted lowest. Structured ingestion reads the
+rest from the source API, so a two-hop `AUTHORED → RESOLVES` chain outranks a one-hop guess.
+An edge **upgrades** if structure later proves a guess right; it never downgrades.
+
+`ts` is the underlying event time (0 when unknown), which drives recency decay:
+`score *= 0.5 ** (age_days / half_life)`, floored at `RECENCY_FLOOR`. Undated entities are
+left alone rather than penalised.
+
+**Opening an older store migrates it in place.** `init_schema()` adds the missing columns via
+`ALTER TABLE ... ADD ... DEFAULT`, keeping every existing row, and reprices legacy edges —
+the pre-0.3 writer stored them all at a degenerate `1.0`, which both flattened traversal and
+would have outranked every typed relation. Reingest to populate real timestamps and relations.
 
 ### High-Level Design (HLD)
 
@@ -926,6 +941,13 @@ python -m spacy download en_core_web_sm        # fallback NER
 
 # 2. ingest your datasets/ (writes memory.lbug, builds the HNSW index)
 python scripts/ingest.py --datasets ./datasets --reset
+
+# 2b. or ingest a GitHub repo. Two passes land in one graph: PR prose through
+#     extraction, and the same payloads through GitHubGraphBuilder, which reads
+#     authorship, reviews, "Fixes #N" and touched files as typed, dated edges.
+python scripts/ingest_github.py --repo pallets/click --issues 50 --commits 50 --files
+#     --files costs one extra API request per PR; without it there are no
+#     TOUCHES edges. --no-text skips extraction and writes structure only.
 
 # 3. evaluate (optional)
 python scripts/benchmark.py            # -> results.csv + summary table
