@@ -153,7 +153,7 @@ flowchart TB
     SEEDL --> SD["seed set · dedup"]
     SEEDF --> SD
     SD --> EF["expand_frontier<br/>ONE query per hop · no N+1"]
-    EF --> HUB["hub throttle<br/>skip degree above MAX_DEGREE"]
+    EF --> HUB["hub throttle<br/>drop a relation fanning out<br/>past MAX_DEGREE from one node"]
     HUB --> PS["path_score =<br/>product of edge confidences"]
     PS --> HOPQ{"hop below MAX_HOPS<br/>and frontier left?"}
     HOPQ -->|yes| EF
@@ -416,7 +416,7 @@ flowchart TB
 
   subgraph BFS["graph_stream — multiplicative BFS, per hop"]
     direction TB
-    B1["expand_frontier(frontier)<br/>ONE query per hop (no N+1)"] --> B2["hub throttle:<br/>skip nodes with degree above MAX_DEGREE"]
+    B1["expand_frontier(frontier)<br/>ONE query per hop (no N+1)"] --> B2["hub throttle: drop a relation<br/>fanning out past MAX_DEGREE<br/>(repo TOUCHES everything);<br/>the node's other edges survive"]
     B2 --> B3["path_score = product of edge confidences<br/>keep max score per node"]
     B3 --> B4{"more hops left<br/>and frontier not empty?"}
     B4 -->|yes| B1

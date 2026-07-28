@@ -194,6 +194,32 @@ def test_expand_frontier_carries_relation_and_ts(db):
     assert nbrs[0]["ts"] == NOW - 3 * DAY
 
 
+def test_a_wide_diff_does_not_hide_a_pr_from_traversal(db):
+    """Regression: --files gave real PRs enough TOUCHES edges to trip the hub
+    filter, so 47% of pallets/click's PRs became untraversable."""
+    add(db, "pr", "PR #1", "PR")
+    add(db, "author", "vishal", "Person")
+    db.add_relationship("author", "pr", relation=config.RELATION_AUTHORED)
+    for i in range(30):  # a wide refactor
+        add(db, f"f{i}", f"src/mod{i}.py", "File")
+        db.add_relationship("pr", f"f{i}", relation=config.RELATION_TOUCHES)
+
+    nbrs = db.expand_frontier(["pr"], k=5, max_degree=10).get("pr", [])
+    relations = {n["relation"] for n in nbrs}
+    assert relations == {config.RELATION_AUTHORED}, (
+        "the over-wide TOUCHES fan-out should drop, the author link should not")
+
+
+def test_a_true_hub_is_still_skipped(db):
+    """Every relation fanning out too wide means the node carries no signal."""
+    add(db, "repo", "acme/api", "Repo")
+    for i in range(30):
+        add(db, f"p{i}", f"PR #{i}", "PR")
+        db.add_relationship(f"p{i}", "repo", relation=config.RELATION_TOUCHES)
+        db.add_relationship(f"p{i}", "repo", relation=config.RELATION_PART_OF)
+    assert db.expand_frontier(["repo"], k=5, max_degree=10) == {}
+
+
 def test_subgraph_carries_relation_for_the_canvas(db):
     add(db, "a", "A", "Person")
     add(db, "b", "B", "PR")

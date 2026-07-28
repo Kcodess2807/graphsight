@@ -383,10 +383,23 @@ class TraceDB:
             })
         out: dict[str, list[dict[str, Any]]] = {}
         for from_id, nbrs in grouped.items():
-            if len({n["id"] for n in nbrs}) > max_degree:
-                continue  # hub: reached but not traversed through
-            nbrs.sort(key=lambda n: (-n["confidence"], n["id"]))
-            out[from_id] = nbrs[:k]
+            # Hubness is per relation, not per node. A repo TOUCHES everything,
+            # so that relation says nothing specific and is dropped — but the
+            # repo's other edges still work. Judging the node as a whole would
+            # hide any PR with a wide diff, which is the opposite of the point.
+            by_relation: dict[str, list[dict[str, Any]]] = {}
+            for n in nbrs:
+                by_relation.setdefault(n["relation"], []).append(n)
+            kept = [
+                n
+                for group in by_relation.values()
+                if len({x["id"] for x in group}) <= max_degree
+                for n in group
+            ]
+            if not kept:
+                continue  # every relation fans out too wide: a true hub
+            kept.sort(key=lambda n: (-n["confidence"], n["id"]))
+            out[from_id] = kept[:k]
         return out
 
     def documents_for_entities(self, entity_ids: list[str]) -> dict[str, list[dict]]:
