@@ -19,6 +19,7 @@ import {
   Zap,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { FALLBACK_EMAIL, joinWaitlist, type WaitlistError } from "@/lib/waitlist";
 import { BTN_PRIMARY, CARD, EMERALD, LIME, Reveal, SectionHead } from "./_shared";
 import { HowItWorks } from "./HowItWorks";
 import { TraceXray } from "./TraceXray";
@@ -35,20 +36,36 @@ function scrollToForm() {
 function WaitlistForm({ inputId, center }: { inputId: string; center?: boolean }) {
   const [email, setEmail] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [offerMailto, setOfferMailto] = useState(false);
+  const [sending, setSending] = useState(false);
   const [done, setDone] = useState(false);
   const [shakeNonce, setShakeNonce] = useState(0);
 
-  const submit = (e: FormEvent) => {
+  const submit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!EMAIL_RE.test(email.trim())) {
+    if (sending) return;
+    const value = email.trim();
+    if (!EMAIL_RE.test(value)) {
       setError("Enter a valid work email.");
+      setOfferMailto(false);
       setShakeNonce((n) => n + 1);
       return;
     }
-    // TODO: POST to your form backend (Formspree/Loops/Tally) here
-    console.log(`[${BRAND} waitlist]`, email.trim());
     setError(null);
-    setDone(true);
+    setOfferMailto(false);
+    setSending(true);
+    try {
+      await joinWaitlist(value, inputId);
+      setDone(true);
+    } catch (err) {
+      // keep the address in the field so a retry costs nothing
+      const failure = err as WaitlistError;
+      setError(failure?.message ?? "Something went wrong. Try again.");
+      setOfferMailto(Boolean(failure?.unconfigured) && Boolean(FALLBACK_EMAIL));
+      setShakeNonce((n) => n + 1);
+    } finally {
+      setSending(false);
+    }
   };
 
   if (done) {
@@ -87,22 +104,43 @@ function WaitlistForm({ inputId, center }: { inputId: string; center?: boolean }
           placeholder="you@company.com"
           autoComplete="email"
           spellCheck={false}
+          disabled={sending}
           className={cn(
             "w-full flex-1 rounded-lg border border-[#131316] bg-white px-3.5 py-2.5 text-sm text-[#131316]",
             "placeholder:text-zinc-400 transition-shadow duration-150",
             "focus:outline-none focus:shadow-[3px_4px_0_0_#059669]",
+            sending && "opacity-60",
             shakeNonce > 0 && error && "lp-shake"
           )}
         />
         <button
           type="submit"
-          className={cn(BTN_PRIMARY, "shrink-0 px-4 py-2.5 text-sm shadow-[3px_4px_0_0_#C8F169]")}
+          disabled={sending}
+          className={cn(
+            BTN_PRIMARY,
+            "shrink-0 px-4 py-2.5 text-sm shadow-[3px_4px_0_0_#C8F169]",
+            sending && "cursor-wait opacity-70"
+          )}
         >
-          Join the waitlist
+          {sending ? "Joining…" : "Join the waitlist"}
         </button>
       </form>
       <div aria-live="polite" className="mt-2 text-[13px] font-medium text-red-500">
         {error}
+        {offerMailto && FALLBACK_EMAIL && (
+          <>
+            {" "}
+            <a
+              href={`mailto:${FALLBACK_EMAIL}?subject=${encodeURIComponent(
+                `${BRAND} waitlist`
+              )}&body=${encodeURIComponent(email.trim())}`}
+              className="underline underline-offset-2 hover:text-red-600"
+            >
+              Email us instead
+            </a>
+            .
+          </>
+        )}
       </div>
       <p className={cn("mt-2 text-xs text-zinc-500", center && "text-center")}>
         Free for early teams · No credit card · Unsubscribe anytime
