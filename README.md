@@ -28,12 +28,17 @@ pip install graphsight graphsight-langgraph
 Add one callback handler to any LangGraph agent:
 
 ```python
-from graphsight_langgraph import GraphsightTracer
+from graphsight_langgraph import LangGraphTracer, capture
 
-tracer = GraphsightTracer()
-result = app.invoke({"messages": [...]}, config={"callbacks": [tracer]})
-tracer.capture()          # writes .graphsight/<run>.json
+tracer = LangGraphTracer()
+result = graph.invoke(inputs, config={"callbacks": [tracer]})
+
+capture(tracer, query="why is checkout failing?", answer=result["answer"])
+# -> .graphsight/20260728T184600_why-is-checkout-failing.json
 ```
+
+Passing `answer=` is what unlocks the retrieved-vs-used split — without it,
+everything renders plain and no usage is claimed.
 
 Then open it:
 
@@ -410,7 +415,7 @@ it.
 
 ```bash
 pip install graphsight graphsight-langgraph
-# add GraphsightTracer to your agent, call tracer.capture(), then:
+# add LangGraphTracer to your agent, call capture(tracer, answer=...), then:
 graphsight .graphsight/
 ```
 

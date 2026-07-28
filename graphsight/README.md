@@ -4,12 +4,12 @@
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://pypi.org/project/graphsight/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-yellow.svg)](https://github.com/Kcodess2807/graphsight/blob/main/graphsight/LICENSE)
 
-**See exactly why your AI agent retrieved what it did.**
+**See which retrieved documents your agent actually used — and which it ignored.**
 
-Your agent answered a question. Which documents did it actually pull? What
-scores did they get? How are they connected to each other? Most stacks make
-you dig through logs to answer that. Graphsight renders the run as an
-**interactive graph in your browser** — one command, zero dependencies,
+Your agent answered a question. Which documents did it actually pull? Which
+of those did the answer come from? What scores did they get, and how are they
+connected? Most stacks make you dig through logs. Graphsight renders the run
+as an **interactive graph in your browser** — one command, zero dependencies,
 nothing leaves your machine.
 
 ```bash
@@ -17,7 +17,24 @@ pip install graphsight
 graphsight path/to/trace_state.json
 ```
 
-## What you get
+## Retrieved vs. used
+
+The signal that isn't in your logs. When a trace carries the final answer,
+every retrieved item is scored by lexical overlap against it and rendered
+either **highlighted** (surfaced in the answer) or **dimmed** with the label
+*"retrieved, unused."* That splits the two classic retrieval failures at a
+glance:
+
+- **Right document retrieved, ignored by the model** → a dimmed node with a
+  high retrieval score. Your retriever worked; your prompt or context order
+  didn't.
+- **Wrong document trusted** → a highlighted node that shouldn't be.
+
+The overlap is a lexical heuristic, labeled as such (threshold 0.2). No LLM
+re-reads your evidence, and no score is invented — a trace with no answer
+attached makes no usage claims at all.
+
+## What else you get
 
 - **Every retrieved item as a typed node** — PR, Service, Person, Ticket,
   Document, Repo, Library, Team, Tool — with its retrieval score.
@@ -62,10 +79,13 @@ graphsight .graphsight/
 
 The [graphsight-langgraph](https://pypi.org/project/graphsight-langgraph/)
 `capture()` helper appends every agent run there automatically, so your
-debugging history accumulates with zero ceremony. Traces render with the
-**retrieved vs. used** split: items that surfaced in the answer highlighted,
-items retrieved but ignored dimmed — the two classic retrieval failures,
-visible at a glance.
+debugging history accumulates with zero ceremony — no setup, no database.
+
+Because the history is a directory of plain files, you can **compare two
+runs side by side**: what the retrieval returned before a prompt change and
+after it, which items appeared or vanished, and which flipped between used
+and ignored. That is usually the fastest way to answer "what did my edit
+actually do to retrieval?"
 
 ## Sharing traces with your team
 
@@ -98,8 +118,11 @@ producers:
   graphsight graphsight_out/trace_state.json
   ```
 
-- **The TraceRAG engine** — the graph-memory backend this project grew out
-  of; its `/api/trace` responses are the same shape.
+- **The Graphsight graph-memory engine** — the backend this project grew out
+  of: GitHub events become a live knowledge graph with typed, timestamped
+  edges (`AUTHORED`, `RESOLVES`, `TOUCHES`), queried by a hybrid
+  vector + graph router. Its `/api/trace` responses are the same shape. See
+  the [main repository](https://github.com/Kcodess2807/graphsight).
 
 Adapters for LlamaIndex and raw OpenTelemetry spans are planned; all
 producers emit the same schema and render in this same viewer.

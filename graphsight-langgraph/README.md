@@ -4,10 +4,13 @@
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://pypi.org/project/graphsight-langgraph/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-yellow.svg)](https://github.com/Kcodess2807/graphsight/blob/main/graphsight-langgraph/LICENSE)
 
-**See exactly why your LangGraph agent picked the context it picked.**
+**See which retrieved documents your agent actually used — and which it ignored.**
 
-Retrieval in an agent is a black box: documents go in, an answer comes out,
-and when the answer is wrong you're left guessing which context misled it.
+Retrieval in an agent is a black box: twelve documents go in, an answer comes
+out, and when the answer is wrong you're left guessing which context misled
+it. The nine documents the model ignored still cost you tokens, latency, and
+a wider surface to go wrong on — and nothing tells you which nine.
+
 This package opens the box. One callback handler records a
 [LangGraph](https://github.com/langchain-ai/langgraph) run — every node,
 every retriever call, per-document scores, and (for graph-aware retrievers)
@@ -15,7 +18,7 @@ the relational paths between retrieved entities — and one command renders it
 as an interactive graph in your browser.
 
 ```
-your LangGraph agent ──▶ LangGraphTracer ──▶ AgentTrace (v0.1) ──▶ graphsight viewer
+your LangGraph agent ──▶ LangGraphTracer ──▶ AgentTrace (v0.2) ──▶ graphsight viewer
                           (callbacks)         neutral JSON          interactive graph
 ```
 
@@ -144,7 +147,7 @@ retrievals.
 | `capture(tracer, query=None, answer=None, dir=None) -> Path` | `finish()` + save to the history directory in one call. |
 | `save_trace(trace, dir=None) -> Path` | Writes a finished trace to the history directory (`./.graphsight/` or `$GRAPHSIGHT_DIR`). |
 | `to_tracestate(trace) -> dict` | Maps an `AgentTrace` to the viewer's JSON contract. Serialize with `json.dump`. |
-| `trace.to_dict() -> dict` | The framework-neutral `AgentTrace` (schema v0.1) for your own tooling. |
+| `trace.to_dict() -> dict` | The framework-neutral `AgentTrace` (schema v0.2) for your own tooling. |
 | `AgentTrace`, `Span`, `Retrieval`, `RetrievedItem`, `TraceEdge` | Plain dataclasses defining the schema; importable for custom emitters. |
 
 ## What gets captured
