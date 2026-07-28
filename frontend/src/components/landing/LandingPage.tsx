@@ -33,6 +33,12 @@ function scrollToForm() {
   document.getElementById("waitlist")?.scrollIntoView({ behavior: "smooth", block: "center" });
 }
 
+// "Get started" means the install command, not the MCP notify form — that one is
+// for a thing that doesn't exist yet.
+function scrollToInstall() {
+  document.getElementById("install")?.scrollIntoView({ behavior: "smooth", block: "center" });
+}
+
 function WaitlistForm({ inputId, center }: { inputId: string; center?: boolean }) {
   const [email, setEmail] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -83,7 +89,7 @@ function WaitlistForm({ inputId, center }: { inputId: string; center?: boolean }
           <span className="flex h-[18px] w-[18px] items-center justify-center rounded-full bg-emerald-500">
             <Check className="h-3 w-3 text-white" strokeWidth={2.5} />
           </span>
-          You&apos;re on the list. We&apos;ll be in touch soon.
+          Done. We&apos;ll email you once — when the MCP server ships.
         </motion.span>
       </div>
     );
@@ -122,7 +128,7 @@ function WaitlistForm({ inputId, center }: { inputId: string; center?: boolean }
             sending && "cursor-wait opacity-70"
           )}
         >
-          {sending ? "Joining…" : "Join the waitlist"}
+          {sending ? "Adding you…" : "Notify me"}
         </button>
       </form>
       <div aria-live="polite" className="mt-2 text-[13px] font-medium text-red-500">
@@ -143,7 +149,7 @@ function WaitlistForm({ inputId, center }: { inputId: string; center?: boolean }
         )}
       </div>
       <p className={cn("mt-2 text-xs text-zinc-500", center && "text-center")}>
-        Free for early teams · No credit card · Unsubscribe anytime
+        One email when the MCP server ships · Nothing else · Unsubscribe anytime
       </p>
     </div>
   );
@@ -260,9 +266,9 @@ function Hero() {
                 className="rounded-full px-2 py-0.5 text-[11px] font-bold text-[#131316]"
                 style={{ backgroundColor: LIME }}
               >
-                NEW
+                SOON
               </span>
-              Introducing the {BRAND} memory graph
+              MCP server for Claude Code &amp; Cursor
             </span>
           </Reveal>
 
@@ -280,20 +286,18 @@ function Hero() {
 
           <Reveal delay={0.12}>
             <p className="mx-auto mt-6 max-w-xl text-[16px] leading-[1.65] text-zinc-600">
-              {BRAND} maps your GitHub PRs, Jira tickets, and codebase into a live
-              knowledge graph — served to Claude Code and Cursor over MCP, so your
-              agents stop guessing code history.
+              {BRAND} maps your GitHub PRs, tickets, and codebase into a live knowledge
+              graph — then shows you exactly which of it your agent retrieved, and which
+              it actually used. Free and local today; MCP access for Claude Code and
+              Cursor is next.
             </p>
           </Reveal>
 
-          <Reveal delay={0.18} className="mt-9 flex justify-center">
-            <div id="waitlist" className="w-full max-w-md scroll-mt-28">
-              <WaitlistForm inputId="email-hero" center />
+          {/* what works today leads; the waitlist is for what doesn't exist yet */}
+          <Reveal delay={0.18} className="mx-auto mt-9 flex max-w-md flex-col items-center gap-2.5">
+            <div id="install" className="w-full scroll-mt-28">
+              <CopyCommand command="pip install graphsight graphsight-langgraph" />
             </div>
-          </Reveal>
-
-          <Reveal delay={0.24} className="mx-auto mt-6 flex max-w-md flex-col items-center gap-2.5">
-            <CopyCommand compact command="pip install graphsight" />
             <p className="text-[13px] font-medium text-zinc-500">
               already on PyPI ·{" "}
               <Link
@@ -303,6 +307,18 @@ function Hero() {
                 try the live demo →
               </Link>
             </p>
+          </Reveal>
+
+          <Reveal delay={0.24} className="mt-10 flex justify-center">
+            <div id="waitlist" className="w-full max-w-md scroll-mt-28">
+              <p className="mb-3 text-[14px] font-medium text-zinc-600">
+                Want it inside your editor?{" "}
+                <span className="font-bold text-[#131316]">
+                  Get notified when the MCP server ships.
+                </span>
+              </p>
+              <WaitlistForm inputId="email-hero" center />
+            </div>
           </Reveal>
         </div>
       </div>
@@ -717,8 +733,9 @@ function FinalCta() {
             Ready to give your agents a memory?
           </h2>
           <p className="mx-auto mt-3 max-w-md text-[15px] leading-relaxed text-zinc-600">
-            The tracer and viewer are free on PyPI today. Join the waitlist to
-            hear when the hosted graph engine opens.
+            The tracer and viewer are free on PyPI right now — nothing to wait for.
+            Leave your email only if you want to hear when the MCP server lands in
+            Claude Code and Cursor.
           </p>
         </Reveal>
         <Reveal delay={0.08} className="mt-8 flex justify-center">
@@ -842,7 +859,7 @@ export function LandingPage() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  const goToForm = useCallback(scrollToForm, []);
+  const goToInstall = useCallback(scrollToInstall, []);
 
   return (
     <div className="min-h-dvh overflow-x-hidden bg-white font-sans text-zinc-700 antialiased [letter-spacing:-0.011em]">
@@ -877,7 +894,7 @@ export function LandingPage() {
             </a>
             <button
               type="button"
-              onClick={goToForm}
+              onClick={goToInstall}
               className={cn(BTN_PRIMARY, "px-4 py-2 text-sm shadow-[2px_3px_0_0_#C8F169]")}
             >
               Get started
