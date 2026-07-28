@@ -1,893 +1,374 @@
-# TraceRAG — The Observable GraphRAG Engine
+# Graphsight
 
+**See what your agent retrieved — and what it actually used.**
+
+[![PyPI](https://img.shields.io/pypi/v/graphsight.svg)](https://pypi.org/project/graphsight/)
+[![PyPI](https://img.shields.io/pypi/v/graphsight-langgraph.svg?label=graphsight-langgraph)](https://pypi.org/project/graphsight-langgraph/)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
-[![FastAPI](https://img.shields.io/badge/API-FastAPI-009688.svg)](https://fastapi.tiangolo.com/)
-[![React + Vite](https://img.shields.io/badge/UI-React%20%2B%20Vite-61DAFB.svg)](https://vitejs.dev/)
-[![LadybugDB](https://img.shields.io/badge/storage-LadybugDB-red.svg)](https://github.com/ladybugdb/ladybug)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-> A local-first, observability-driven GraphRAG pipeline. Vectors **and** graph live in a single
-> `.lbug` file — no dual-store sync — behind a two-tier entity-resolution engine, an
-> intent-weighted hybrid router, and a visual tracer that lets you *see* why the retriever chose
-> what it chose.
+Your agent retrieved twelve documents and answered from three. The other nine cost you tokens,
+latency, and a wider surface for the model to go wrong on — and nothing in your stack tells you
+which nine.
+
+Graphsight traces a run, then shows every retrieved item marked **used** or **ignored**, scored
+by lexical overlap against the final answer. No LLM re-reads your evidence, no scores are
+invented, and nothing leaves localhost.
+
+<!-- TODO: 30-second GIF of the failure demo — retrieved-vs-used catching the stale PR -->
 
 ---
 
-## I. Overview
+## 60-second start
 
-Multi-hop retrieval for agents tends to fail for three infrastructural reasons:
+```bash
+pip install graphsight graphsight-langgraph
+```
 
-1. **Dual-store sync hell** — keeping a graph database and a vector database consistent.
-2. **Entity drift** — the *"Janitor Problem"*: unconstrained LLM extraction turns
-   `PaymentService`, `payments-v2`, and `pay_svc` into three separate nodes.
-3. **Black-box routing** — no insight into why a hybrid retriever weighted a graph edge over a
-   semantic chunk.
+Add one callback handler to any LangGraph agent:
 
-**TraceRAG** is an orchestration and observability layer (not a new database) that addresses all
-three:
+```python
+from graphsight_langgraph import GraphsightTracer
 
-- **Zero-sync storage** — semantic vectors (`FLOAT[384]`) and the relational graph live natively
-  in one embedded **LadybugDB** file.
-- **Two-tier curation** — a cheap vector pass auto-merges obvious duplicates; a local-LLM pass
-  (Groq) adjudicates only the ambiguous "grey zone," keeping the graph clean without a human
-  janitor.
-- **Traceable routing** — every query returns a structured `trace_log` (intent weights, vector
-  seeds, graph hops) that **Graphsight Studio** renders so stakeholders can watch the reasoning path.
+tracer = GraphsightTracer()
+result = app.invoke({"messages": [...]}, config={"callbacks": [tracer]})
+tracer.capture()          # writes .graphsight/<run>.json
+```
 
-On top of the retrieval core sits a secured application layer: streamed, grounded answers with
-clickable citations, multi-graph hot-swapping, persistent session history, and end-to-end
-authentication and rate limiting.
+Then open it:
 
-**And a multi-tenant SaaS mode.** Beyond the single-tenant engine, TraceRAG runs as a B2B
-platform where each customer org gets a *physically isolated, per-tenant graph* — durable graph
-truth in Postgres, compiled into per-org `.lbug` read-artifacts that serving pods pull and
-**hot-swap atomically**, fed by a Celery ingestion pipeline (**GitHub → NLP → Postgres → compile →
-S3**), with API-key tenancy, gateway-style pod routing, an **MCP agent surface**, and one-call
-tenant onboarding. See **§VII**. It is **off by default** (`MULTI_TENANCY_ENABLED` unset); with it
-off the engine documented above is completely unchanged.
+```bash
+graphsight .graphsight/
+```
 
-This document reports what was built **and how it actually performs** — including a candid
-benchmark section (§VIII) where the headline thesis did *not* hold on the current data, and why.
+A local server on `127.0.0.1:4630` renders the run: the node graph, the retrieval steps, and
+the retrieved-vs-used verdict per item. The viewer has **zero dependencies** — stdlib
+`http.server` plus a bundled UI build. The tracer depends only on `langchain-core`.
+
+No account, no API key, no telemetry, no cloud.
 
 ---
 
-## For Reviewers — Start Here
+## What this actually is
 
-**One-sentence pitch:** a graph-backed causal memory tier for AI coding agents — GitHub/Jira
-events become a live knowledge graph (vectors + edges in one embedded store), agents query it
-over **MCP** instead of re-reading repos, and every answer ships with the exact traced path that
-produced it.
+Two halves, deliberately separable.
 
-**Suggested 15-minute review path:**
+### 1. The tracer + viewer — shipped, use it today
 
-1. **The core idea** — §II *Architecture* (one hybrid store, two retrieval arms, intent-fused) and
-   §IV *Routing*. The interesting engineering decisions live here and in §III (two-tier entity
-   resolution).
-2. **Run it** — §IX Quickstart, single-tenant path. Open `http://localhost:5173/studio`, run a
-   suggested trace, click a citation chip in the answer, watch the camera pan to the cited node.
-   That loop — *claim → traced evidence* — is the product.
-3. **The SaaS layer** — §VII (per-tenant compiled artifacts, atomic hot-swap, Celery ingestion,
-   MCP surface). `backend/tests/` contains e2e proofs for each stage.
-4. **The honest part** — §VIII. The token-reduction thesis did **not** hold on the current
-   benchmark data; the section explains why and what the fix is. Read it before forming a verdict.
-5. **The standalone packages** — the Studio decoupled from the engine, pip-installable:
-   [`graphsight-langgraph`](graphsight-langgraph/README.md) traces *any* LangGraph agent (one
-   callback handler) and ships `graphsight-github-trace` (repo → traced run in one command);
-   [`graphsight`](graphsight/README.md) serves the bundled UI locally and opens a
-   trace with `graphsight trace_state.json` — zero dependencies, no backend.
-   Testing this? Start at [BETA.md](BETA.md).
+| Package | What it does | Dependencies |
+|---|---|---|
+| [`graphsight-langgraph`](graphsight-langgraph/README.md) | One `BaseCallbackHandler` → framework-neutral `AgentTrace`. Also ships `graphsight-github-trace` (repo → traced run in one command) | `langchain-core` |
+| [`graphsight`](graphsight/README.md) | Local viewer — bundled Studio UI + stdlib server. `graphsight trace.json` or `graphsight .graphsight/` | none |
 
-**What's real vs. what's mocked (current state):**
+This half works on **flat traces**. No graph, no database, no ingestion. If your agent does
+plain vector RAG, you still get the retrieved-vs-used signal, run history, and run diffing.
+
+### 2. The graph memory engine — the moat, heavier
+
+A local-first hybrid store where **vectors and the relationship graph live in one `.lbug`
+file** — no graph-DB ↔ vector-DB sync problem — behind a two-tier entity resolver and an
+intent-weighted router that emits a full `trace_log` for every query.
+
+This is what makes retrieval *causal* rather than merely similar: an agent asking "what broke
+the session flow?" should reach yesterday's PR through `AUTHORED → RESOLVES`, not an
+eight-month-old PR that happens to read like the question.
+
+**The engine is not the thing you install first.** It needs `torch` for embeddings, a spaCy
+model, and two API keys. Start with the tracer.
+
+> **Naming note:** the product is Graphsight. The internal Python package is still
+> `backend/tracerag/` — renaming it is churn we haven't paid for yet.
+
+---
+
+## The one idea
+
+**One hybrid store, queried by two arms (vector + graph), fused by intent, and every step is
+recorded.**
+
+Multi-hop retrieval for agents fails for three infrastructural reasons, and Graphsight
+addresses each:
+
+| Failure | Fix |
+|---|---|
+| **Dual-store sync hell** — keeping a graph DB and a vector DB consistent | Both live natively in one embedded LadybugDB file |
+| **Entity drift** — unconstrained extraction turns `PaymentService`, `payments-v2`, `pay_svc` into three nodes | Two-tier curation: cheap vector auto-merge, LLM adjudicates only the grey zone |
+| **Black-box routing** — no insight into why a hybrid retriever chose a graph edge over a chunk | Every query returns a structured `trace_log` the Studio renders |
+
+The anti-slop principle throughout: **evidence is never paraphrased by an LLM, and scores are
+never invented.** Overlap is lexical and reproducible. If we can't measure something, we don't
+claim it.
+
+---
+
+## For reviewers — start here
+
+**One-sentence pitch:** a graph-backed causal memory tier for AI coding agents — GitHub events
+become a live knowledge graph (vectors + typed edges in one embedded store), agents query it
+over MCP instead of re-reading repos, and every answer ships with the traced path that produced
+it.
+
+**15-minute path:**
+
+1. **The product** — install the two packages above, trace one agent run, look at the
+   retrieved-vs-used column. That loop is the whole pitch.
+2. **The engine** — [Architecture](#architecture) and [Hybrid routing](#hybrid-routing). The
+   interesting decisions are typed edge weights, recency decay, and per-relation hub throttling.
+3. **The honest part** — [Benchmarks & known constraints](#benchmarks--known-constraints). The
+   original token-reduction thesis did **not** hold. Read it before forming a verdict.
+4. **The SaaS layer** — [Multi-tenant mode](#multi-tenant-mode). Off by default.
+
+### What's real vs. what's mocked
 
 | Layer | Status |
 |---|---|
-| Retrieval engine (ingest → curate → hybrid route → trace) | **Real**, benchmarked in §VIII |
+| `graphsight` viewer + `graphsight-langgraph` tracer | **Real**, published at 0.3.0, install-verified from PyPI |
+| Retrieval engine (ingest → curate → route → trace) | **Real**, 51 tests, live-verified against `fastapi/fastapi` and `pallets/click` |
+| Structured GitHub ingest (typed, dated edges) | **Real**, exercised against the live API |
 | Studio UI (trace canvas, streamed answers, citations, sessions) | **Real**, wired to the live API with an offline sample fallback |
-| Multi-tenant pipeline (GitHub → Postgres → compile → S3 → pod swap) | **Real**, e2e-tested; off by default via `MULTI_TENANCY_ENABLED` |
+| Multi-tenant pipeline (GitHub → Postgres → compile → S3 → pod swap) | **Real**, e2e-tested; off by default |
 | MCP server (`trace_impact` / `search_context` / `find_entity`) | **Real**, mounted in SaaS mode |
-| Landing page (`/`) waitlist form | UI real; form logs to console (backend `TODO` marked in code) |
-| `archive/dashboard/` Next.js console (GitHub connect, API keys, billing) | UI complete; data mocked — retired to `archive/` after the Graphsight pivot |
-| Auth (Clerk JWT, JWKS-verified) + per-user rate limits | **Real**; explicit dev-bypass when `CLERK_ISSUER` unset |
-| `graphsight-langgraph/` adapter (LangGraph → Studio, standalone) | **Real**, verified vs `langchain-core 1.5.0`; renders at `/memory/import` with no backend |
-| `graphsight-github-trace` CLI (GitHub repo → traced run) | **Real**, tested against `langchain-ai/langgraph` live; lexical + 1-hop retrieval, labeled as such |
-| `graphsight` pip package (local viewer, bundled UI) | **Real**, wheel built + smoke-tested; stdlib-only server |
+| Landing page waitlist form | UI real; **form logs to console** — capture backend not wired |
+| `archive/dashboard/` Next.js console | UI complete, data mocked — retired after the Graphsight pivot |
 
-**Known gaps we already know about:** single-writer LadybugDB lock (API must start after ingest;
-single worker), in-memory rate-limit counters (Redis URI is the multi-worker path), §VIII accuracy
-ceiling (grounding-prompt strictness + benchmark label noise), and the production-hardening TODO
-list in §VII.
+### Known gaps
+
+Single-writer LadybugDB lock (the API must start *after* ingest; single worker). In-memory
+rate-limit counters (Redis is the multi-worker path). Retrieval *quality* is unmeasured — the
+engine's correctness and performance are verified, but every automated test stubs the embedder,
+so vector relevance itself has no regression coverage. And the accuracy ceiling in
+[Benchmarks](#benchmarks--known-constraints).
 
 ---
 
-## II. Architecture & Stack
-
-The single idea the whole project is built around: **one hybrid store, queried by two arms
-(vector + graph), fused by intent.**
+## Architecture
 
 ```mermaid
 flowchart TB
-  %% ---------- 1 · INGESTION ----------
-  subgraph INGEST["1 · Ingestion pipeline (offline CLI)"]
+  subgraph INGEST["1 · Ingestion"]
     direction TB
-    DOC["Source doc<br/>'PR #N merged by AUTHOR. Title… Description…'"]
-    DOC --> WIN["sliding_window_words<br/>300-word windows · 50 overlap"]
-    WIN --> NER["GLiNER zero-shot NER<br/>Person · Service · Library · PR<br/>Ticket · Team · Tool<br/>(spaCy ruler fallback)"]
-    NER --> MEMB["embed each mention<br/>MiniLM · 384-dim · normalized"]
-    MEMB --> CUR1{"cosine vs<br/>existing nodes"}
-    CUR1 -->|"≥ 0.92"| FAST["fast auto-merge<br/>0 LLM"]
-    CUR1 -->|"0.85 – 0.92"| DEEP["Groq · same entity?<br/>YES / NO · fail-safe NO"]
-    CUR1 -->|"under 0.85"| NEW["mint new node<br/>slug id"]
-    DEEP -->|YES| FAST
-    DEEP -->|NO| NEW
+    SRC["GitHub payloads · docs · Jira"]
+    SRC --> STRUCT["GitHubGraphBuilder<br/>reads relations from the API:<br/>author · reviews · closes-refs · files"]
+    SRC --> TEXT["sliding window → NER →<br/>two-tier curation"]
+    STRUCT --> TYPED["typed, timestamped edges<br/>AUTHORED · RESOLVES · TOUCHES"]
+    TEXT --> PROX["CO_OCCURS<br/>(proximity, weighted lowest)"]
   end
 
-  %% ---------- 2 · HYBRID STORE ----------
-  subgraph SCHEMA["2 · LadybugDB — single .lbug (vectors + graph)"]
+  subgraph STORE["2 · LadybugDB — one .lbug"]
     direction LR
-    ENT[("Entity<br/>id · label · type<br/>embedding FLOAT 384")]
+    ENT[("Entity<br/>id · label · type · ts<br/>embedding FLOAT 384")]
     DOCN[("Document<br/>id · path · content")]
-    ENT -->|"RELATES_TO · confidence"| ENT
+    ENT -->|"RELATES_TO<br/>confidence · relation · ts"| ENT
     DOCN -->|MENTIONS| ENT
-    HNSW["HNSW vector index<br/>on Entity.embedding"]
+    HNSW["HNSW index"]
     ENT --- HNSW
   end
-  FAST --> ENT
-  NEW --> ENT
-  MEMB -. "document + edges" .-> DOCN
+  TYPED --> ENT
+  PROX --> ENT
 
-  %% ---------- 3 · QUERY ----------
-  Q(["User query"]) --> IC["classify_intent"]
-  IC -->|"keyword markers"| W["alpha / beta weights"]
-  IC -->|"ambiguous"| GROQI["Groq · SEMANTIC / RELATIONAL"]
-  GROQI --> W
-
-  subgraph VEC["3a · Vector arm — semantic"]
+  subgraph QUERY["3 · Query — two arms, fused by intent"]
     direction TB
-    QE["embed_query · MiniLM"] --> VS["QUERY_VECTOR_INDEX (HNSW)<br/>top-k pool · similarity s_v"]
+    Q["query"] --> INTENT{"intent?"}
+    INTENT -->|relational| WR["alpha=0.15 beta=0.85"]
+    INTENT -->|semantic| WS["alpha=0.80 beta=0.20"]
+    Q --> VEC["vector arm<br/>HNSW top-k"]
+    Q --> GR["graph arm<br/>multiplicative BFS<br/>path = product of edge weights"]
+    VEC --> FUSE["score = (alpha·sv + beta·sg) × recency"]
+    GR --> FUSE
+    WR --> FUSE
+    WS --> FUSE
   end
-
-  subgraph GRAPH["3b · Graph arm — relational"]
-    direction TB
-    SEEDL["linked seeds<br/>spaCy ruler → find_nodes_by_label"]
-    SEEDF["fuzzy seeds<br/>cosine ≥ 0.35 · top-3"]
-    SEEDL --> SD["seed set · dedup"]
-    SEEDF --> SD
-    SD --> EF["expand_frontier<br/>ONE query per hop · no N+1"]
-    EF --> HUB["hub throttle<br/>drop a relation fanning out<br/>past MAX_DEGREE from one node"]
-    HUB --> PS["path_score =<br/>product of edge confidences"]
-    PS --> HOPQ{"hop below MAX_HOPS<br/>and frontier left?"}
-    HOPQ -->|yes| EF
-    HOPQ -->|no| GG["graph_scores s_g + hops"]
-  end
-
-  W --> QE
-  W --> SEEDL
-  VS --> SEEDF
-  QE -. reads .-> HNSW
-  VS -. reads .-> ENT
-  EF -. traverses .-> ENT
-
-  VS --> FUSE["Fusion · S = alpha·s_v + beta·s_g<br/>dynamic vector_k throttle by graph hits<br/>rank → top_k nodes"]
-  GG --> FUSE
-  FUSE --> AD["attach_documents · via MENTIONS"]
-  AD -. reads .-> DOCN
-  AD --> BC["build_context<br/>dedup chunks · graph traces first"]
-  BC --> GEN["Grounded generation<br/>OpenRouter · context-only · streamed"]
-  GEN --> OUT(["answer + per-node score pills<br/>+ trace_log → ReactFlow canvas"])
+  ENT --> VEC
+  ENT --> GR
+  FUSE --> TRACE["trace_log:<br/>seeds · hops + relation ·<br/>recency per node"]
+  TRACE --> UI["Graphsight Studio"]
 ```
-
-**The GraphRAG story in five lines**
-1. **One hybrid store, no sync.** LadybugDB holds *both* the 384-dim embeddings *and* the relationship graph in a single `.lbug` — no graph-DB ↔ vector-DB consistency problem.
-2. **Ingestion builds the graph.** Docs → GLiNER typed entities → two-tier curation dedupes → entities, embeddings, and `RELATES_TO` / `MENTIONS` edges land in the store.
-3. **Two arms read the same store.** A query fans into a **vector arm** (semantic similarity via HNSW) and a **graph arm** (multi-hop traversal over `RELATES_TO`, scoring paths by the product of edge confidences).
-4. **Intent decides the blend.** The classifier sets `alpha/beta`; fusion combines them as `S = alpha·s_v + beta·s_g`. "Who caused X?" leans graph; "explain X" leans vector.
-5. **Why it beats plain RAG.** Embeddings find *similar text*; the graph arm follows *relationships* — surfacing the PR / person / service connected to the answer even when the words don't match.
 
 ### Stack
 
 | Layer | Technology | Role |
 |---|---|---|
-| **Embeddings** | `sentence-transformers` · `all-MiniLM-L6-v2` | 384-dim sentence vectors (cosine) |
-| **Entity extraction** | **GLiNER** (designed) / **spaCy** (current fallback) | Zero-shot domain NER; see §VIII for why spaCy is active |
-| **Storage** | **LadybugDB** (embedded, Kùzu-lineage) | Single-file hybrid vector + graph store with a native HNSW `VECTOR` extension |
-| **LLM — extraction / intent** | **Groq** · `llama-3.1-8b-instant` | Grey-zone entity disambiguation + router intent fallback |
-| **LLM — generation** | **OpenRouter** · `anthropic/claude-3-haiku` (default) | Grounded plain-language answers + node summaries |
-| **API** | **FastAPI** + Uvicorn | Headless backend: trace, subgraph, answer, graphs, history |
-| **Concurrency** | read connection pool + bounded embed `ThreadPoolExecutor` | parallel graph/vector reads; embeds off the request threads |
-| **Auth** | **Clerk** (frontend) + **PyJWT / JWKS** (backend) | Networkless session-token verification; dev-bypass when unconfigured |
-| **History** | **Neon Postgres** via **SQLModel** | Users, chat sessions, persisted trace logs |
-| **Frontend** | **Vite + React + ReactFlow** · Tailwind / shadcn | Graphsight Studio — visual query tracer |
-| **Observability** | **Sentry** (backend + frontend) | Full-stack error + performance tracing (opt-in via DSN) |
-| _**SaaS platform (§VII)**_ | _active only when_ | `MULTI_TENANCY_ENABLED` |
-| **Task queue / debounce** | **Celery** + **Redis** | Incremental-compute orchestration + ZSET debounce-coalesce |
-| **Control plane / graph store** | **Postgres** (two DBs) via SQLModel | Orgs·keys·pods·assignments·jobs / durable EntityNode·EntityEdge |
-| **Artifact storage** | **AWS S3** (boto3, multipart) · local mock | Versioned per-org `.lbug` artifacts |
-| **Agent interface** | **MCP** (Model Context Protocol) SDK | Typed semantic tools for IDE agents at `/mcp` |
+| **Embeddings** | `sentence-transformers` · `all-MiniLM-L6-v2` | 384-dim vectors (cosine) |
+| **Entity extraction** | **GLiNER** (designed) / **spaCy** (current fallback) | Zero-shot NER; see Benchmarks for why spaCy is active |
+| **Storage** | **LadybugDB** (embedded, Kùzu-lineage) | Single-file hybrid vector + graph store, native HNSW |
+| **LLM — extraction / intent** | **Groq** · `llama-3.1-8b-instant` | Grey-zone disambiguation + router intent fallback |
+| **LLM — generation** | **OpenRouter** · `anthropic/claude-3-haiku` | Grounded answers + node summaries |
+| **API** | **FastAPI** + Uvicorn | trace · subgraph · answer · graphs · history |
+| **Concurrency** | read connection pool + bounded embed pool | parallel graph/vector reads; embeds off request threads |
+| **Auth** | **Clerk** + **PyJWT / JWKS** | Networkless verification; dev-bypass when unconfigured |
+| **History** | **Neon Postgres** via **SQLModel** | Users, sessions, persisted trace logs |
+| **Frontend** | **Vite + React 18 + ReactFlow** · Tailwind | Graphsight Studio |
+| **Observability** | **Sentry** (opt-in via DSN) | Full-stack error + perf tracing |
+| _**SaaS only**_ | _active when_ `MULTI_TENANCY_ENABLED` | |
+| **Queue / debounce** | **Celery** + **Redis** | Incremental compute + ZSET debounce-coalesce |
+| **Control plane** | **Postgres** (two DBs) | Orgs · keys · pods · jobs / durable nodes + edges |
+| **Artifacts** | **AWS S3** (boto3) · local mock | Versioned per-org `.lbug` |
+| **Agent interface** | **MCP** SDK | Typed semantic tools at `/mcp` |
+
+### Data model
+
+A single generic `Entity` table (`id, label, type, ts, embedding`) keeps the schema dynamic
+across all entity labels. `Document` nodes hold one sliding-window chunk each. Edges:
+`Document -[MENTIONS]-> Entity` and `Entity -[RELATES_TO]-> Entity`, carrying
+`confidence, relation, ts`.
+
+**Typed relations, weighted by how much they actually tell you:**
+
+| Relation | Weight | Source |
+|---|---|---|
+| `AUTHORED` | 0.95 | GitHub API |
+| `RESOLVES` | 0.92 | "Fixes #N" in PR body / commit message |
+| `REVIEWED` | 0.85 | `/pulls/N/reviews` |
+| `TOUCHES` | 0.80 | PR file list |
+| `PART_OF` | 0.80 | commit → repo |
+| `REPORTED` | 0.75 | issue author |
+| `CO_OCCURS` | 0.35 | same-window text proximity |
+
+Text ingestion can only produce `CO_OCCURS`. Structure produces the rest, so a two-hop
+`AUTHORED → RESOLVES` chain outranks a one-hop proximity guess. An edge **upgrades** when
+structure later proves a guess right; it never downgrades.
+
+`REVIEWED` comes from `/pulls/N/reviews`, **not** `requested_reviewers` — that field is a
+pending ask which empties once someone actually reviews, so reading it both misses real
+reviewers and credits people who never opened the code. Self-approvals are excluded.
+
+**Recency.** `ts` is the underlying event time (0 when unknown) and drives
+`score *= 0.5 ** (age_days / half_life)`, floored at `RECENCY_FLOOR = 0.35`. Half-life is
+per type — Ticket 21d, Commit 45d, PR 60d, File 120d, Person 180d, Service/Repo 365d.
+Undated entities are left alone rather than penalised, so a graph without dates behaves exactly
+as it did before.
+
+**Migration is automatic.** Opening an older store adds the missing columns via
+`ALTER TABLE ... ADD ... DEFAULT`, keeping every row, and reprices legacy edges — the pre-0.3
+writer stored them all at a degenerate `1.0`, which flattened traversal *and* would have
+outranked every typed relation forever. Verified lossless on a real 83-node store. Reingest to
+populate real timestamps and relations.
 
 ### Repository layout
 
 ```
 backend/
 ├── api.py                  # FastAPI app + lifespan (warmup, pools, MCP mount, pod agent)
-├── auth.py                 # Clerk JWT verify + tenant API-key resolution + org context
-├── cache.py                # bounded OrderedDict LRU for the answer / summary caches
-├── ratelimit.py            # per-user slowapi limiter (keyed by the verified user id)
-├── database.py             # SQLModel engine / session for the Postgres history store
-├── storage.py              # artifact store: AWS S3 (boto3) or local mock  ← SaaS
-├── registry.py             # TenantDatabaseRegistry: per-org loaded graph + atomic swap  ← SaaS
-├── pod_agent.py            # REALITY loop: poll assignments, pull + swap tenant graphs  ← SaaS
-├── mcp_server.py           # MCP server: trace_impact / search_context / find_entity  ← SaaS
-├── middleware/
-│   └── routing.py          # gateway simulation: org→pod check, 421 misdirected  ← SaaS
-├── models/
-│   ├── history.py          # User / ChatSession / TraceLog tables
-│   ├── control_plane.py    # Organization·Repository·GraphArtifact·IngestJob·Pod·PodAssignment·ApiKey  ← SaaS
-│   └── graph_store.py      # EntityNode / EntityEdge (composite PK (org_id, node_id)) + UPSERT  ← SaaS
-├── routers/
-│   ├── history.py          # session + trace-log endpoints (ownership-checked)
-│   └── onboarding.py       # POST /api/admin/onboarding/provision (X-Admin-Secret)  ← SaaS
-├── worker/                 # ← SaaS: Celery ingestion + orchestration
-│   ├── celery_app.py       # Celery app (Redis broker) + beat schedule
-│   ├── settings.py         # broker, debounce window, sweep cadence, compile lock
-│   ├── debounce.py         # Redis ZSET debounce-coalesce (atomic Lua claim)
-│   ├── tasks.py            # request_reconcile · sweeper · reconcile_org_to_head (5 phases)
-│   └── ingestion/
-│       ├── github_client.py  # real GitHub delta fetch (httpx, paginated, rate-limit aware)
-│       ├── pipeline.py       # delta → NLP → embed → UPSERT to graph store
-│       └── compiler.py       # stream PG rows → build .lbug + HNSW (worker-side)
-├── tracerag/
-│   ├── config.py           # single source of truth: thresholds, weights, models, tenancy flags
-│   ├── db.py               # LadybugDB: read connection pool + write conn, HNSW, graph queries
-│   ├── extract.py          # GLiNER (→ spaCy fallback) + sliding window + LRU query cache
-│   ├── curation.py         # two-tier resolution (vector fast-merge + Groq grey-zone)
-│   ├── router.py           # intent classify + dual-stream fusion + async aroute + embed pool
-│   ├── llm.py              # Groq / OpenRouter client factories
+├── auth.py                 # Clerk JWT verify + tenant API-key resolution
+├── tracerag/               # the engine (product name: Graphsight)
+│   ├── config.py           # single source of truth: weights, half-lives, thresholds
+│   ├── db.py               # LadybugDB: pools, HNSW, typed edges, schema migration
+│   ├── extract.py          # GLiNER (→ spaCy fallback) + sliding window + LRU cache
+│   ├── curation.py         # two-tier resolution (vector fast-merge + Groq grey zone)
+│   ├── github_graph.py     # GitHub payloads → typed, timestamped edges
+│   ├── recency.py          # age decay: 0.5 ** (age_days / half_life), floored
+│   ├── router.py           # intent classify + dual-stream fusion + trace_log
+│   ├── memory.py           # GraphMemory — embedded API (ingest / query / context)
 │   └── integrations/langchain.py   # drop-in BaseRetriever
-├── scripts/
-│   ├── ingest.py · ingest_github.py · benchmark.py · stress_test.py
-│   └── generate_dry_run_artifact.py   # tiny real .lbug for the serve dry-run  ← SaaS
-└── tests/                  # ← SaaS: e2e proofs (torch-free where possible)
-    ├── test_e2e_serve.py         # dynamic tenant load + model-sharing + real query
-    ├── test_ingest_pipeline.py   # GitHub → NLP → Postgres; cursor idempotency; isolation
-    ├── test_compiler.py          # Postgres truth → queryable .lbug (+ HNSW)
-    ├── test_github_client.py     # pagination · normalization · rate limits · cursor
-    └── test_onboarding.py        # admin guard · provision txn · key auth · reconcile armed
+├── scripts/                # ingest · ingest_github · benchmark · stress_test
+├── worker/                 # ← SaaS: Celery ingestion + orchestration
+├── models/ · routers/ · middleware/     # history, onboarding, gateway routing
+└── tests/
+    ├── test_recency.py · test_router_scoring.py · test_github_graph.py   # scoring, no DB
+    ├── test_db_integration.py           # real .lbug: DDL, migration, MERGE semantics
+    ├── test_ingest_github_wiring.py     # the live path reaches the builder
+    └── test_e2e_serve.py · test_compiler.py · test_onboarding.py   # ← SaaS
 
-infra/postgres/init.sql     # creates control_plane_db + graph_store_db on first boot  ← SaaS
-docker-compose.yml          # db + redis + api + worker + beat on one bridge network  ← SaaS
-.env.example                # full-stack environment template
+frontend/                   # Vite + React 18 — landing + Graphsight Studio
+└── src/components/
+    ├── landing/            # marketing page at `/`
+    ├── memory/             # Studio at `/studio`: CommandPanel · GraphCanvas · Inspector
+    └── right/              # EntityNode (age + recency), TracedEdge (relation labels)
 
-frontend/                   # Vite + React 18 — the product surface (landing + studio)
-└── src/
-    ├── components/
-    │   ├── landing/        # marketing/waitlist page at `/` (light neubrutalist system)
-    │   ├── memory/         # Graphsight Studio at `/studio`: CommandPanel · GraphCanvas ·
-    │   │                   #   InspectorPanel · AppLayout (+ DESIGN.md, the design system)
-    │   ├── left|right/     # legacy dashboard panes, kept at `/classic` for reference
-    │   └── auth/           # Clerk sign-in/up pages
-    ├── lib/                # api client, auth-token bridge, dagre layout, Clerk helpers
-    ├── data/               # mock trace for the offline fallback + /memory/preview demo
-    └── types/              # shared TraceState / node / edge types
-
-graphsight-langgraph/       # standalone adapter: trace any LangGraph agent (one callback
-                            #   handler, depends only on langchain-core) → AgentTrace v0.1 →
-                            #   Studio render at /memory/import — no TraceRAG backend needed
-                            #   + `graphsight-github-trace`: GitHub repo → trace in one command
-graphsight/                 # pip-installable local viewer: bundled Studio UI + stdlib server;
-                            #   `graphsight trace_state.json` opens the trace, zero deps
+graphsight-langgraph/       # standalone tracer: any LangGraph agent → AgentTrace v0.2
+graphsight/                 # pip-installable local viewer (bundled UI + stdlib server)
 BETA.md                     # "Beta for Friends" — 10-minute test script + feedback questions
-
-docs/                       # demo scripts, deploy notes, stress results, planning docs
-archive/                    # retired deliverables: standalone landing page, Next.js
-                            #   customer console (UI complete, data mocked), scratch files
-hf-space/                   # HuggingFace Space deployment (own git remote)
-```
-
-### Data model
-
-A single generic `Entity` node table (`id, label, type, ts, embedding`) keeps the schema dynamic
-across all entity labels. `Document` nodes store one **sliding-window chunk** each (with raw
-`content` for generation). Edges: `Document -[MENTIONS]-> Entity` and `Entity -[RELATES_TO]->
-Entity`, carrying `confidence, relation, ts`.
-
-`relation` is one of `AUTHORED · RESOLVES · REVIEWED · TOUCHES · PART_OF · REPORTED ·
-CO_OCCURS`, each with its own weight (`config.RELATION_WEIGHTS`). `REVIEWED` comes from
-`/pulls/N/reviews` — **not** from `requested_reviewers`, which is a pending ask that empties
-once someone actually reviews, so reading it both misses real reviewers and credits people who
-never opened the code. Text ingestion can only
-produce `CO_OCCURS` — same-window proximity, weighted lowest. Structured ingestion reads the
-rest from the source API, so a two-hop `AUTHORED → RESOLVES` chain outranks a one-hop guess.
-An edge **upgrades** if structure later proves a guess right; it never downgrades.
-
-`ts` is the underlying event time (0 when unknown), which drives recency decay:
-`score *= 0.5 ** (age_days / half_life)`, floored at `RECENCY_FLOOR`. Undated entities are
-left alone rather than penalised.
-
-**Opening an older store migrates it in place.** `init_schema()` adds the missing columns via
-`ALTER TABLE ... ADD ... DEFAULT`, keeping every existing row, and reprices legacy edges —
-the pre-0.3 writer stored them all at a degenerate `1.0`, which both flattened traversal and
-would have outranked every typed relation. Reingest to populate real timestamps and relations.
-
-### High-Level Design (HLD)
-
-```mermaid
-flowchart LR
-  subgraph CLIENT["Graphsight Studio — Vite + React + ReactFlow"]
-    direction TB
-    UI["Visual canvas<br/>traced path · score pills · hover"]
-    AC["Answer card<br/>streamed + clickable citations"]
-    CK["Clerk SDK<br/>getToken bridge"]
-  end
-
-  CLERK[("Clerk<br/>Auth Provider / JWKS")]
-
-  subgraph BACKEND["FastAPI Backend"]
-    direction TB
-    CORS["CORS"]
-    AUTH["Auth dependency<br/>PyJWT + JWKS verify"]
-    RL["slowapi rate limiter<br/>per-user 10/min"]
-    ROUTER["TraceRouter<br/>intent-weighted hybrid retrieval"]
-    GEN["Answer / Summarize<br/>grounded · streamed · cached"]
-    HIST["History API<br/>ownership-checked"]
-    CACHE[("LRU caches")]
-  end
-
-  subgraph LOCAL["Local models (in-process)"]
-    direction TB
-    EMB["sentence-transformers<br/>all-MiniLM-L6-v2 · 384-dim"]
-    RULER["spaCy ruler<br/>query-side entity linking"]
-  end
-
-  subgraph DATA["Data stores"]
-    direction TB
-    LBUG[("LadybugDB<br/>vectors + graph in one .lbug<br/>HNSW vector index")]
-    PG[("Neon Postgres<br/>users · chat sessions · trace logs")]
-  end
-
-  subgraph EXT["External LLMs"]
-    direction TB
-    GROQ["Groq · llama-3.1-8b-instant<br/>intent + grey-zone merge"]
-    OR["OpenRouter · claude-3-haiku<br/>answers + summaries"]
-  end
-
-  subgraph INGESTHLD["Offline ingestion (CLI)"]
-    direction TB
-    GH[("GitHub API<br/>merged PRs")]
-    GLINER["GLiNER zero-shot NER<br/>spaCy fallback"]
-    CUR["Two-tier curation"]
-  end
-
-  CK -->|sign in| CLERK
-  UI -->|"query + Bearer JWT"| CORS
-  AC -->|"answer + Bearer JWT"| CORS
-  CORS --> AUTH
-  AUTH -->|verify| CLERK
-  AUTH --> RL
-  RL --> ROUTER
-  RL --> HIST
-  RL --> GEN
-  ROUTER --> EMB
-  ROUTER --> RULER
-  ROUTER --> LBUG
-  ROUTER --> GROQ
-  GEN --> CACHE
-  GEN --> OR
-  GEN -->|SSE tokens| AC
-  ROUTER -->|subgraph| UI
-  HIST --> PG
-
-  GH --> GLINER --> CUR
-  CUR -->|nodes + edges| LBUG
-  CUR -->|adjudicate| GROQ
-```
-
-- Every request crosses **CORS → Auth (JWT verify against Clerk's JWKS) → per-user rate limit** before any business logic.
-- The retrieval core (`TraceRouter`) reads the **single hybrid store (LadybugDB)**, embeds locally (no network for embeddings), and calls **Groq** only for the cheap intent decision.
-- Generation is a **separate, cached, streamed** path to **OpenRouter** — off the retrieval critical path. **History** is independent (Postgres), and **ingestion is fully offline**.
-
-### Low-Level Design — query & retrieval pipeline (`POST /api/trace`)
-
-```mermaid
-flowchart TB
-  START(["POST /api/trace<br/>{ query, top_k, session_id }"])
-
-  subgraph SEC["Security chain"]
-    direction TB
-    A1["extract Bearer token"] --> A2["JWKS: resolve public key by kid"]
-    A2 --> A3["verify RS256 sig + exp / iss / azp"]
-    A3 --> A4["sub → request.state.user_id"]
-    A4 --> A5["slowapi: bucket = user_id<br/>10/min else HTTP 429"]
-  end
-
-  START --> A1
-  A5 --> I1
-
-  subgraph ROUTE["TraceRouter.route — recall"]
-    direction TB
-    I1["classify_intent<br/>keyword markers (free)"] -->|ambiguous| I2["Groq fallback<br/>SEMANTIC / RELATIONAL"]
-    I1 --> W["alpha, beta weights"]
-    I2 --> W
-    W --> E["embed_query<br/>MiniLM 384-dim, normalized"]
-    E --> V["vector_hits<br/>CALL QUERY_VECTOR_INDEX (HNSW)<br/>pool = (id, similarity)"]
-    V --> S1["linked seeds<br/>spaCy ruler → find_nodes_by_label"]
-    V --> S2["fuzzy seeds<br/>cosine ≥ min_sim, top-N"]
-    S1 --> S["seeds (dedup)"]
-    S2 --> S
-  end
-
-  S --> B1
-
-  subgraph BFS["graph_stream — multiplicative BFS, per hop"]
-    direction TB
-    B1["expand_frontier(frontier)<br/>ONE query per hop (no N+1)"] --> B2["hub throttle: drop a relation<br/>fanning out past MAX_DEGREE<br/>(repo TOUCHES everything);<br/>the node's other edges survive"]
-    B2 --> B3["path_score = product of edge confidences<br/>keep max score per node"]
-    B3 --> B4{"more hops left<br/>and frontier not empty?"}
-    B4 -->|yes| B1
-    B4 -->|no| BOUT["graph_scores + hops"]
-  end
-
-  subgraph ASSEMBLE["Fuse & assemble"]
-    direction TB
-    F["fuse: S = alpha·s_v + beta·s_g<br/>throttle vector_k by graph hits<br/>rank → top_k"]
-    F --> D["attach_documents<br/>via MENTIONS edges"]
-    D --> C["build_context<br/>dedup chunks · traces first"]
-  end
-
-  BOUT --> F
-  C --> OUT(["results + trace_log + context"])
-
-  E -. uses .-> EMB[("MiniLM (local)")]
-  V -. reads .-> LBUG[("LadybugDB")]
-  B1 -. reads .-> LBUG
-  D -. reads .-> LBUG
-  I2 -. calls .-> GROQ[("Groq")]
-
-  OUT --> SUB["POST /api/subgraph<br/>1-hop neighborhood → ReactFlow canvas"]
-  OUT -. "if session_id" .-> PERSIST[("persist_trace → Postgres<br/>ownership-checked")]
-  OUT --> ANS["POST /api/answer/stream"]
-
-  subgraph GENF["Answer generation"]
-    direction TB
-    G1{"LRU hit?<br/>key = (query, context)"} -->|hit| G3["stream cached text"]
-    G1 -->|miss| G2["OpenRouter (stream)<br/>grounded, context-only prompt"]
-    G2 --> G3
-  end
-
-  ANS --> G1
-  G3 --> TOK["SSE tokens → Answer card<br/>→ clickable citations"]
-```
-
-1. **Security first.** Auth + rate limit run as dependencies *before* the handler; the verified `sub` is stashed on `request.state` so the limiter keys per user.
-2. **Intent is two-tier.** Keyword markers decide most queries for free; only ambiguous ones pay a fast Groq call. Intent sets the fusion weights.
-3. **Two recall arms.** Vector arm hits HNSW; graph arm seeds from links + fuzzy hits, then runs a **batched BFS** (one DB query per hop), scoring paths by the product of edge confidences, with hubs throttled.
-4. **Fusion + assembly.** `S = alpha·s_v + beta·s_g`; documents pulled via `MENTIONS`, de-duplicated into the final context.
-5. **Generation is decoupled.** Canvas (`/api/subgraph`) and streamed answer (`/api/answer/stream`, LRU-cached) are separate calls — the LLM never blocks retrieval.
-
-### Low-Level Design — ingestion & curation pipeline (offline)
-
-```mermaid
-flowchart TB
-  GH[("GitHub API<br/>/repos/{repo}/pulls?state=closed")] --> FETCH["fetch_merged_prs<br/>page, keep merged_at != null, limit 50"]
-  FETCH --> ASM["assemble_text<br/>'PR #N merged by AUTHOR. Title… Description…'<br/>strip markdown / HTML"]
-  ASM --> WIN["sliding_window_words<br/>300-word windows, 50 overlap"]
-  WIN --> NER["GLiNER zero-shot NER<br/>Person · Service · Library · PR · Ticket · Team · Tool<br/>(spaCy ruler fallback)"]
-  NER --> MEMB["embed each mention<br/>MiniLM 384-dim"]
-  MEMB --> C1
-
-  subgraph CURING["Two-tier curation — per mention"]
-    direction TB
-    C1{"cosine vs existing nodes"}
-    C1 -->|"≥ 0.92"| C2["fast auto-merge<br/>0 LLM calls"]
-    C1 -->|"0.85 – 0.92"| C3["Groq: same entity? YES / NO<br/>fail-safe to NO"]
-    C1 -->|"under 0.85"| C4["mint new node<br/>deterministic slug id"]
-    C3 -->|YES| C2
-    C3 -->|NO| C4
-  end
-
-  C2 --> UP
-  C4 --> UP
-  UP["upsert nodes (never clobber canonical)<br/>RELATES_TO = same-window co-occurrence<br/>Document → Entity via MENTIONS<br/>store PR url as source"] --> IDX["build_vector_index<br/>HNSW over embeddings (once, post-ingest)"]
-  IDX --> OUTDB[("graphs/{owner}__{repo}.lbug")]
-
-  C3 -. calls .-> GROQ2[("Groq")]
-```
-
-- Each merged PR becomes one document; entities are extracted **per sliding window** so long bodies don't lose tail entities.
-- The **"Janitor"** is the two-tier curation: cosine auto-merges obvious duplicates; only the grey zone (0.85–0.92) costs a Groq call, which **fails safe to NO**.
-- The HNSW index is built **once after** ingestion (the index is static and can't be mutated while embeddings are written).
-
-### End-to-end request sequence
-
-```mermaid
-sequenceDiagram
-  autonumber
-  participant U as Browser Studio
-  participant A as FastAPI auth+ratelimit
-  participant R as TraceRouter
-  participant L as LadybugDB
-  participant G as Groq
-  participant O as OpenRouter
-  participant P as Postgres
-
-  U->>A: POST /api/trace (query + Bearer JWT)
-  A->>A: verify JWT via JWKS, set user_id
-  A->>A: rate-limit bucket(user_id)
-  A->>R: route(query)
-  R->>R: classify intent (keyword markers)
-  opt ambiguous
-    R->>G: classify SEMANTIC / RELATIONAL
-    G-->>R: intent
-  end
-  R->>L: vector_hits (HNSW)
-  L-->>R: pool
-  loop per hop (up to MAX_HOPS)
-    R->>L: expand_frontier (batched, 1 query)
-    L-->>R: neighbors + confidences
-  end
-  R->>L: documents_for_entities (MENTIONS)
-  L-->>R: chunks
-  R-->>A: results + trace_log + context
-  opt session_id present
-    A->>P: persist_trace (ownership-checked)
-  end
-  A-->>U: trace payload
-
-  U->>A: POST /api/subgraph (node_ids)
-  A->>L: 1-hop neighborhood
-  L-->>A: nodes + edges
-  A-->>U: nodes + edges (canvas render)
-
-  U->>A: POST /api/answer/stream (query, context)
-  alt LRU cache hit
-    A-->>U: stream cached answer
-  else cache miss
-    A->>O: grounded prompt (context only)
-    O-->>A: token stream
-    A-->>U: SSE tokens
-  end
-  U->>U: click citation, then pan / zoom / highlight node
-```
-
-### Component reference
-
-| Component | Responsibility | Key files |
-|---|---|---|
-| TraceRouter | Intent classification, dual-arm retrieval, fusion, context assembly | `tracerag/router.py` |
-| TraceDB | LadybugDB schema, HNSW, batched graph queries | `tracerag/db.py` |
-| EntityExtractor | GLiNER (→ spaCy) over sliding windows | `tracerag/extract.py` |
-| CurationEngine | Two-tier entity resolution | `tracerag/curation.py` |
-| Auth | Clerk JWT verification (PyJWT + JWKS) + dev-bypass | `auth.py` |
-| Rate limiter | Per-user slowapi limiter | `ratelimit.py` |
-| LRU caches | Bounded answer / summary caches | `cache.py` |
-| History | Sessions + trace logs, ownership-checked | `routers/history.py`, `models.py` |
-| API | FastAPI app + endpoints | `api.py` |
-| Studio | Visual tracer, answer card, citations | `frontend/src/` |
-
----
-
-## III. Entity Resolution — The Two-Tier "Janitor"
-
-Every extracted mention is embedded and compared (cosine) against already-resolved nodes. The
-decision is tiered to spend LLM budget only where it matters:
-
-| Similarity | Action | Cost |
-|---|---|---|
-| **≥ 0.92** | **Fast Mode** — auto-merge into the existing canonical node | 0 LLM calls |
-| **0.85 – 0.92** | **Deep Merge** — ask Groq *"Are 'X' and 'Y' the exact same entity? YES/NO"* (`temperature=0`) | 1 Groq call |
-| **< 0.85** | Mint a new node (deterministic slug id) | 0 LLM calls |
-
-Canonical nodes are **never** overwritten on merge (a later, noisier surface form can't clobber
-the clean label/embedding), and Groq failures **fail-safe to NO** — the engine prefers a duplicate
-node over a hallucinated merge.
-
-> **Implementation note.** This LadybugDB build's HNSW index is *static* (the indexed property
-> can't be mutated once the index exists), so curation does its dedup search **in-memory**
-> (normalized-cosine) during ingest, and the persistent HNSW index is built **once afterward** for
-> query-time retrieval.
-
-**Observed on the test corpus (7 docs, 255 raw mentions):**
-
-| Metric | Value |
-|---|---|
-| Raw extracted mentions | 255 |
-| Canonical nodes after curation | **135** |
-| Entity consolidation | **≈ 47%** |
-| Fast-mode auto-merges (≥0.92) | 117 |
-| Groq grey-zone adjudications (0.85–0.92) | 12 (→ 3 merged, 9 kept distinct) |
-
----
-
-## IV. Intent-Based Hybrid Routing
-
-The router never uses static weights. It classifies query intent, then fuses two retrieval streams:
-
-```
-S = α · s_v + β · s_g          (α + β = 1)
-```
-
-- `s_v` = vector similarity (`1 − cosine_distance`) from the HNSW index.
-- `s_g` = graph **PathScore** — the product of edge confidences along the traversal from the vector
-  "seed" nodes (seeds score `1.0`).
-
-**Dynamic weighting:**
-
-| Intent | α (vector) | β (graph) | Trigger |
-|---|---|---|---|
-| **Semantic / conceptual** | **0.80** | 0.20 | keywords (*explain, architecture, overview…*) |
-| **Relational / multi-hop** | 0.15 | **0.85** | keywords (*who, caused by, which PR, depends on…*) |
-| *ambiguous* | — | — | Groq fallback classifier (`SEMANTIC` / `RELATIONAL`) |
-
-The graph traversal is a batched, multiplicative-confidence BFS: each hop expands the **entire
-frontier in one query** (no N+1), and hub super-nodes above a degree threshold are reached but not
-traversed through, so the frontier can't explode into a hairball. Every call emits a `trace_log`
-consumed by the UI:
-
-```json
-{
-  "intent": { "alpha": 0.15, "beta": 0.85, "type": "relational" },
-  "execution_path": {
-    "vector_seeds": ["paymentservice-service", "..."],
-    "graph_hops":  [{ "from_id": "...", "to_id": "...", "confidence": 0.9 }]
-  },
-  "metrics": { "total_nodes_evaluated": 18 }
-}
+docs/PITCH.md               # 90-second builder pitch, demo script, hard-question answers
 ```
 
 ---
 
-## V. Application Layer — Graphsight Studio
+## Entity resolution — the two-tier janitor
 
-Retrieval is half the loop; the Studio closes it with generation, exploration, and observability
-over the retrieved subgraph.
+Unconstrained extraction produces near-duplicates. Asking an LLM about every pair is expensive
+and non-deterministic. So:
 
-**Product surface & routes** (Vite app, `npm run dev` → `localhost:5173`):
+1. **Fast merge (0 LLM).** Cosine ≥ **0.92** against an existing node → same entity, merge.
+2. **Grey zone (0.85–0.92).** Ask Groq a single yes/no question. **Fail-safe is NO** — an
+   unreachable LLM mints a new node rather than silently collapsing two real entities.
+3. **Below 0.85.** New node, slug id.
 
-| Route | What it is |
-|---|---|
-| `/` | Waitlist landing page — hero, animated marquee, interactive code showcase, use-case bento, pricing |
-| `/studio` | **Graphsight Studio** — the memory tool itself (below) |
-| `/memory/preview` | Studio on mock data with simulated tracing; demos with no backend |
-| `/memory/import` | Drop/paste a `trace_state.json` from `graphsight-langgraph` — the Studio renders an external agent's run, no backend |
-| `/classic` | The previous dashboard UI, kept for comparison |
-
-The landing page and Studio share one design system (documented in
-`frontend/src/components/memory/DESIGN.md`): light, white surfaces, `#131316` ink and borders,
-hard offset shadows, Space Grotesk display type, a lime `#C8F169` highlight, and emerald for all
-interactive/traced states — so color is semantic on the canvas: **emerald shadow = on the traced
-path, lime shadow = citation focus, gray = background context**.
-
-**The Studio shell** is deliberately *not* a chatbot: a collapsible command sidebar
-(⌘K-focusable trace input, streamed "Recall" answer with citation chips, sessions, suggested
-traces, recent queries, and a persistent latency readout), a full-bleed React Flow canvas, and a
-floating inspector that slides in on node click with the exact context snippet, retrieval
-scores, and provenance. Keyboard: `⌘K` search, `⌘\` sidebar, `Esc` inspector. While a query
-runs there is no spinner — nodes pulse a sonar ring and a light beam sweeps the canvas until the
-traced path lights up.
-
-**Visual observability.** The backend is fully decoupled from the UI: `POST /api/trace` returns the
-ranked nodes *and* the `trace_log`, and `POST /api/subgraph` returns a bounded neighborhood
-(requested nodes + 1-hop neighbors + interconnecting edges) so the browser never renders the whole
-graph. The canvas shows which nodes came from the **vector** arm vs the **graph** arm, the exact
-**α / β** the router chose, the **hop path** the traversal walked, and a dimmed 1-hop context around
-the active trace. When a hybrid retriever makes a surprising choice, you can *see* why.
-
-**Grounded answers (streamed).** `POST /api/answer/stream` produces a concise, plain-language answer
-from the **retrieved context only** (OpenRouter), streamed token-by-token and cached per
-`(query, context)`. If the context doesn't cover the question, the model is instructed to say so
-rather than guess.
-
-**Clickable citations.** Entity mentions in the answer (people, PRs, services) render as chips that
-pan, zoom, and highlight the matching node on the canvas — turning a claim into traceable evidence.
-Mentions are matched with word-boundary–safe lookarounds, so labels such as `PR #5818` resolve
-correctly without false matches inside longer words.
-
-**Graph-aware suggestions.** `GET /api/suggestions` derives example questions from the active graph's
-hub entities, so users only ask what the loaded graph can actually answer.
-
-**Multi-graph hot-swap.** `GET /api/graphs` + `POST /api/graphs/switch` change the active `.lbug` at
-runtime without a restart — warm models stay resident. The frontend persists the selection across
-reloads.
-
-**Session history.** Chat sessions and their `trace_log`s persist to Postgres and re-hydrate the
-canvas on demand, with no LLM call on replay.
+Canonical labels are never clobbered by a noisier surface form; only `ts` moves forward, because
+recency is the newest fact about a node.
 
 ---
 
-## VI. Security & Operational Hardening
+## Hybrid routing
 
-The billed and user-data surface is protected end-to-end:
+**Intent decides the weights.** Lexical markers first (`who`, `which PR`, `caused by` →
+relational; `explain`, `architecture`, `how does` → semantic), falling back to a one-token LLM
+call with a 6-second timeout that fails safe to semantic.
 
-- **Authentication.** Clerk session JWTs are verified networklessly against Clerk's JWKS (PyJWT,
-  RS256) — signature, expiry, issuer, and authorized-party are all checked, with no per-request
-  network call. The verified `sub` claim is the user id. With `CLERK_ISSUER` unset, the API runs in
-  an explicit **dev-bypass** mode so local development and CI are unaffected.
-- **Ownership (IDOR-closed).** History endpoints and trace persistence derive the user from the
-  token and enforce per-session ownership, instead of trusting any client-supplied id.
-- **Per-user rate limiting.** The LLM endpoints (`/api/answer`, `/api/answer/stream`,
-  `/api/summarize`) are capped per user via slowapi (default `10/min`), keyed by the verified user
-  id with an IP fallback. `scripts/ratelimit_test.py` burst-verifies the cap holds exactly — a
-  25-request simultaneous burst resolves to **10×`200` + 15×`429`**.
-- **Bounded caches.** The answer and summary caches are fixed-capacity LRU structures, so a
-  long-running server cannot leak memory.
-
-> **Operational note.** slowapi's default counter is in-memory and per-process; run the API
-> single-worker for the rate limit to behave as one shared bucket. A Redis `storage_uri` is the
-> path to multi-worker — see `ratelimit.py`.
-
----
-
-## VII. The Multi-Tenant SaaS Platform (Cell Model)
-
-Enable with `MULTI_TENANCY_ENABLED=True`. With it off, every request maps to one default org
-served by the single warm local graph and nothing below applies — the engine in §I–§VI is
-untouched.
-
-**The one idea:** *Postgres is the durable truth; each `.lbug` is a compiled, versioned,
-disposable read-artifact.* Ingestion writes graph content to Postgres; a worker compiles it into an
-optimized `.lbug`; serving pods pull that file and **atomically swap** it to answer queries.
-Durability (Postgres) and read-performance (the artifact) are decoupled — lose a `.lbug`,
-recompile it from the truth.
-
-### The Cell Model
-- **One `.lbug` per organization** ("cell"). All of an org's repos compile into the *same* file,
-  so cross-repo traversal (a PR in repo A → a ticket in project C) is a **native graph edge**, not
-  a federation query.
-- **Physical isolation is the security boundary.** A tenant's queries open a different file; there
-  is no shared table to leak across. In the graph store this is enforced structurally: `EntityNode`
-  has the **composite primary key `(org_id, node_id)`**, so the same `node_id` can exist under two
-  orgs with zero collision and every read is org-scoped by construction.
-- **Two isolated Postgres databases:** `control_plane_db` (orchestration) and `graph_store_db`
-  (durable content). Created on first boot by `infra/postgres/init.sql`.
-
-### End-to-end: from a merged PR to a served query
-
-```mermaid
-flowchart TB
-  WH["GitHub webhook<br/>PR merged"] --> ARM["request_reconcile<br/>arm Redis ZSET debounce"]
-  ARM --> BEAT["Celery beat sweeper<br/>claim due orgs · atomic Lua pop"]
-  BEAT --> REC["reconcile_org_to_head<br/>per-org compile lock"]
-
-  subgraph WORKER["Celery worker"]
-    direction TB
-    REC --> FETCH["GitHub client<br/>since=cursor · paginated · rate-limit aware"]
-    FETCH --> NLP["NLP pipeline<br/>GLiNER/spaCy on the delta only"]
-    NLP --> UPSERT["UPSERT nodes/edges/embeddings"]
-    UPSERT --> COMPILE["compiler<br/>stream PG rows · build .lbug + HNSW"]
-    COMPILE --> S3PUT["upload to S3"]
-    S3PUT --> REG["register GraphArtifact<br/>flip desired_artifact_id  (INTENT)"]
-  end
-
-  UPSERT --> GS[("graph_store_db<br/>EntityNode · EntityEdge<br/>PK (org_id, node_id)")]
-  COMPILE -. reads .-> GS
-  REG --> CP[("control_plane_db<br/>orgs · keys · pods · assignments · jobs")]
-  S3PUT --> BUCKET[("S3 / mock bucket<br/>versioned org .lbug")]
-
-  subgraph POD["Serving pod"]
-    direction TB
-    AGENT["pod agent<br/>poll assignments"] --> SWAP["desired != loaded?<br/>download · verify checksum · atomic swap"]
-    SWAP --> REGY["TenantDatabaseRegistry<br/>org → loaded .lbug (shared warm models)"]
-    SWAP --> REAL["write loaded_artifact_id  (REALITY)"]
-  end
-
-  REG -. INTENT .-> AGENT
-  REAL -. REALITY .-> CP
-  BUCKET -. download .-> SWAP
-
-  Q(["Bearer sk_live_… query"]) --> GW["routing middleware<br/>key → org · PodAssignment check<br/>ready / 421 / 503 / 409"]
-  GW --> REGY
-  REGY --> TRACE["/api/trace<br/>hybrid retrieval on the tenant graph"]
-  AG(["IDE agent · Cursor"]) --> MCP["/mcp semantic tools<br/>trace_impact · search_context · find_entity"]
-  MCP --> REGY
+```
+relational  alpha=0.15  beta=0.85       semantic  alpha=0.80  beta=0.20
+score_total = (alpha · score_vector + beta · score_graph) × recency
 ```
 
-### Ingestion — debounce, incremental compute, compile
-- **Webhook → debounce.** A merge doesn't compile immediately; it arms a Redis **ZSET debounce**
-  (`worker/debounce.py`) scored by an *effective deadline* `min(now+window, first+max_wait)`. A
-  burst of PRs **coalesces into one compile**; a Celery **beat** sweeper atomically claims due orgs
-  (Lua pop, race-free) and enqueues `reconcile_org_to_head`. A per-org compile lock serializes
-  compiles without serializing the cheap fetch.
-- **Incremental compute.** The real **GitHub client** (`worker/ingestion/github_client.py` — httpx,
-  Link-header pagination, `?since=cursor`, typed rate-limit exceptions the worker retries on)
-  fetches only the delta; the **pipeline** (`pipeline.py`) runs GLiNER/spaCy on that delta and
-  **UPSERTs** nodes/edges/embeddings into `graph_store_db`. Entities and authors are org-shared
-  nodes, so the same service mentioned in two repos merges into one node — the seed of cross-repo
-  traversal.
-- **Compile.** The **compiler** (`compiler.py`) streams the org's rows from Postgres with a
-  server-side cursor (RAM stays flat), writes a fresh `.lbug`, and builds the **HNSW index** — the
-  CPU-heavy step, **on the worker, never on a serving pod** — then uploads to S3 (`storage.py`,
-  boto3 multipart; local file mock for dev/CI).
+**The graph arm is a multiplicative BFS.** A path's score is the product of its edge weights, so
+depth costs you — and a hop through `AUTHORED` (0.95) survives far better than one through
+`CO_OCCURS` (0.35). Seeds come from deterministic entity links first, then fuzzy cosine hits.
 
-### Serving — the "Intent vs. Reality" state machine
-The worker registers the artifact and flips the org's **`desired_artifact_id`** (INTENT). Each pod
-runs a **pod agent** (`pod_agent.py`) polling its `PodAssignment` rows; on `desired != loaded` it
-downloads the artifact, **verifies the checksum**, and performs an **atomic in-process swap**
-(`registry.py` — a locked pointer flip that shares the one warmed embedder/spaCy across tenants, so
-a new tenant costs ≈0 model RAM), then writes **`loaded_artifact_id`** (REALITY). The desired≠loaded
-gap *is* the self-healing transition window; a pod that dies mid-pull never advances REALITY and
-simply retries.
+**Hub throttling is per relation, not per node.** A repo `TOUCHES` everything, so that relation
+carries no signal and is dropped — but the repo's other edges still work. Judging the whole node
+would hide any PR with a wide diff, which is the opposite of what you want. (This was a real
+bug: enabling `--files` gave real PRs enough `TOUCHES` edges to trip a per-node filter, making
+**47% of `pallets/click`'s PRs untraversable** and collapsing traversal to one hop.)
 
-```mermaid
-sequenceDiagram
-  autonumber
-  participant W as Celery worker
-  participant CP as control_plane_db
-  participant S3 as S3 bucket
-  participant PA as Pod agent
-  participant REG as Tenant registry
-  W->>S3: upload org-v(N+1).lbug
-  W->>CP: GraphArtifact(ready) · desired_artifact_id = N+1   (INTENT)
-  loop poll
-    PA->>CP: my assignments — desired vs loaded
-  end
-  PA->>PA: desired != loaded → pull from S3 + verify checksum
-  PA->>REG: atomic swap to v(N+1)
-  PA->>CP: loaded_artifact_id = N+1                          (REALITY)
-  Note over CP: desired == loaded → converged
-```
-
-### Multi-tenant auth & gateway-style routing
-- **API keys.** Each org has an `sk_live_…` key; **only its SHA-256 is stored**.
-  `auth.resolve_org_from_token` maps a Bearer key → `org_id` with a constant-time compare and a
-  revocation check.
-- **Gateway simulation** (`middleware/routing.py`). Tenant-scoped routes are gated on this pod's
-  assignment for the org: **ready here → pass**; still loading → **`503`**; served by a *different*
-  pod → **`421 Misdirected Request`** (advertising the correct pod, exactly how a stateless gateway
-  reroutes); unassigned → **`409`**. The resolved org then selects that tenant's loaded graph from
-  the registry — an org can never touch another's file.
-- **Org context** flows to the MCP tools via a request-scoped `ContextVar`, so the same tenancy
-  applies to the agent surface.
-
-### The agent surface (MCP)
-`mcp_server.py` mounts a **Model Context Protocol** server at `/mcp` exposing three typed,
-read-only **semantic tools** — never raw Cypher — over the hybrid engine:
-
-| Tool | Use |
-|---|---|
-| `trace_impact(entity_name, max_hops)` | "What breaks if I change X?" — confidence-decayed blast radius with citations |
-| `search_context(query)` | "Why does X exist / how does it work?" — hybrid retrieval passages with citations |
-| `find_entity(name)` | Disambiguate a name to the graph's actual entities |
-
-An IDE agent (Cursor, Claude Desktop) gets a **cited, cross-repo** answer because it's one graph.
-Guards (hop/degree/`top_k`) are enforced server-side; the seed node is expanded generously while
-deeper hops keep hub-suppression.
-
-### Control-plane schema (`control_plane_db`)
-
-| Table | Purpose |
-|---|---|
-| **Organization** | the tenant; holds `desired_artifact_id` (INTENT) |
-| **Repository** | repos under an org; `last_synced_cursor` (incremental engine) + per-repo `github_token` |
-| **GraphArtifact** | append-only registry of compiled `.lbug` versions in S3; `entity_count` (watch the ~1M/org ceiling) |
-| **IngestJob** | Celery orchestration + audit; a partial-unique index enforces **one active job per org** |
-| **Pod** | the serving fleet (fungible, sticky) |
-| **PodAssignment** | sticky org→pod; `loaded_artifact_id` (REALITY) — the routing ground truth |
-| **ApiKey** | per-org key; SHA-256 stored, `revoked_at` for instant kill |
-
-### One-call onboarding
-`POST /api/admin/onboarding/provision` (guarded by an `X-Admin-Secret` header vs `ADMIN_SECRET_KEY`;
-**fail-closed** — unset secret → `503`) creates **Organization + ApiKey + Repository + PodAssignment
-in one transaction** and arms the first ingestion, returning the raw `sk_live_…` key **exactly
-once**. That is the entire "sign up a tenant" flow.
-
-### Status & production-hardening TODO
-Every layer above is **built and test-proven** (`backend/tests/`), end-to-end on real files — the
-only mock left in the data path was retired when the real GitHub client landed. Not yet done, and
-explicitly out of scope so far:
-- **Secrets at rest** — `Repository.github_token` is stored plaintext; encrypt / move to a secrets
-  manager, and rotate any keys shared during development.
-- **Multi-pod scheduler** — onboarding pins every org to the single `POD_ID`; spreading tenants
-  across a real fleet needs a placement policy (the pod agent already obeys whatever assignments
-  exist).
-- **Real deploy** — the stack runs under docker-compose (below); production means managed Postgres,
-  Redis, an S3 bucket, and a pod fleet behind a real gateway.
+**Everything is recorded.** `trace_log` carries the intent weights, the vector seeds, every hop
+with its `relation`, and a per-node recency breakdown (`age_days`, `factor`). The Studio renders
+relation labels on edges and an age chip on nodes, so you can see *why* something ranked.
 
 ---
 
-## VIII. Benchmarks & Known Constraints (read this carefully)
+## Measured behaviour
 
-We evaluate with an **LLM-as-a-judge** (Groq) over 10 queries (5 semantic, 5 relational), comparing
-the hybrid router's context against a **pure-vector baseline**, and measuring a token "sufficiency"
-judgment. The honest results:
+Live ingest of `fastapi/fastapi` (100 PRs + 100 issues + 100 commits, with files and reviews):
+
+```
+graph        1274 nodes, 1633 typed edges
+query        p50 18ms · p95 21ms · max 36ms
+concurrency  115 q/s across 32 threads, 0 errors (read pool = 10)
+ingest       98.4s wall (concurrent per-PR detail fetch)
+```
+
+`pallets/click`, 50 PRs → 274 nodes, 572 typed edges in ~60s.
+
+**Hostile input.** No crash on: null user, null body, malformed dates, emoji logins, a
+5000-repeat body, a self-referencing PR, or a 2000-file diff. Empty / whitespace / 50k-char /
+null-byte queries all return normally. A Cypher injection attempt
+(`'; MATCH (n) DETACH DELETE n; //`) left all 1274 nodes intact — the parameterized queries
+hold.
+
+**Test suite.** 51 tests. Scoring logic runs against a fake store (no driver, no model
+download); `test_db_integration.py` runs the real DDL, migration and `MERGE ... ON MATCH`
+clauses through LadybugDB. CI installs `pytest ladybug numpy pandas requests tqdm` — no torch —
+so the whole job finishes in seconds.
+
+---
+
+## Graphsight Studio
+
+The web surface (`/studio`) renders a query's traced path: the node graph laid out with dagre,
+the execution stepper, the fused scores, and clickable citations that pan the camera to the
+cited node. Nodes show an age chip and recency multiplier; edges show their relation.
+
+Other routes: `/memory/preview` (mock data, no backend), `/memory/import` (render an external
+LangGraph trace with no backend at all), `/classic` (the earlier dashboard panes).
+
+Run history lands in `.graphsight/`, browsable and **diffable** — two runs side by side, so you
+can see what changed between them.
+
+---
+
+## Benchmarks & known constraints
+
+LLM-as-a-judge (Groq) over 10 queries (5 semantic, 5 relational), hybrid router vs. a pure-vector
+baseline:
 
 ```
 Category      Queries   Hybrid Tok   Baseline Tok   Reduction   Accuracy
@@ -898,128 +379,126 @@ relational          5       3883.2         3837.0       -1.2%      40.0%
 OVERALL            10       3558.3         3513.0       -1.3%      20.0%
 ```
 
-These numbers are **not** flattering, and they are real. Two findings dominate:
+These are not flattering and they are real.
 
-### Token reduction ≈ 0% (−1.3%)
-On this **dense, single-domain corpus**, the top-k vector chunks and the top-k graph-traversed
-chunks **heavily overlap** — the graph surfaces largely the *same* evidence the vectors already
-found. After **global chunk deduplication**, the two contexts reach **parity**; the residual −1.3%
-is simply the small `Entity: <label> (<type>)` metadata the hybrid adds on top of the identical
-chunk set. (This replaced an earlier −70% result that was a genuine bug — chunks were repeated once
-*per mentioning entity*; global dedup fixed it.)
+**Token reduction ≈ 0%.** On this dense single-domain corpus the top-k vector chunks and the
+top-k graph-traversed chunks heavily overlap — the graph surfaces largely the *same* evidence
+the vectors already found. After global chunk deduplication the two contexts reach parity. (An
+earlier −70% figure was a genuine bug: chunks were repeated once *per mentioning entity*.
+Global dedup fixed it, and we deleted the claim.)
 
-### Accuracy capped at 20% — two avoidable causes
-1. **NER fallback to spaCy.** GLiNER (the designed zero-shot extractor) is blocked on this machine
-   by an `onnxruntime` DLL load failure. The active spaCy fallback extracts the wrong things for
-   this domain — markdown artifacts, `CARDINAL` numbers, raw timestamps — so the graph is **noisy**,
-   and the judge correctly rates much of the retrieved context as insufficient.
-2. **Aggressive truncation for rate limits.** Groq's free tier caps us at 6,000 TPM, so the judge
-   sees only the first 5,000 characters of context. Relevant evidence past that cutoff is invisible
-   to the judge, artificially depressing accuracy.
+**Accuracy capped at 20%,** from two avoidable causes: GLiNER is blocked on this machine by an
+`onnxruntime` DLL load failure, so the active spaCy fallback extracts the wrong things for this
+domain (markdown artifacts, `CARDINAL` numbers, timestamps) and the graph is noisy; and Groq's
+free tier caps the judge at 5,000 characters of context, hiding relevant evidence past the
+cutoff.
 
-### Treat this as a baseline, not a verdict
-The pipeline is **correct and fully operational** — these are *data-quality* and *environment*
-constraints, not logic defects. The path to the originally-hypothesized gains:
+**Treat this as a baseline, not a verdict.** The pipeline is correct and operational — these are
+data-quality and environment constraints. The path forward: unblock GLiNER, raise the judge
+budget, and re-scope the token comparison against naive over-retrieval rather than equal-k
+vector retrieval, which is where graph precision would actually save tokens.
 
-- **Unblock GLiNER** (fix `onnxruntime` / install the MSVC redistributable) → clean domain entities
-  → a meaningful graph and far higher judge accuracy.
-- **Raise the judge token budget** (paid Groq tier or a local model) → remove the 5k truncation.
-- **Re-scope the token-reduction comparison** to naive over-retrieval (where graph precision
-  actually saves tokens), rather than equal-k vector retrieval.
+**One more caveat, stated plainly:** this benchmark predates the typed-edge and recency work. The
+engine now produces a materially different graph, and these numbers have not been re-run against
+it.
 
 ---
 
-## IX. Quickstart
+## Quickstart
 
-### Single-tenant engine (local)
-
-```powershell
-# 1. backend install
-cd backend
-pip install -r requirements.txt
-python -m spacy download en_core_web_sm        # fallback NER
-#  .env: set GROQ_API_KEY + OPENROUTER_API_KEY               (see .env.example)
-#  optional: CLERK_ISSUER + APP_DATABASE_URL to enable auth + history
-#  (leave CLERK_ISSUER unset for an un-authed local dev-bypass)
-
-# 2. ingest your datasets/ (writes memory.lbug, builds the HNSW index)
-python scripts/ingest.py --datasets ./datasets --reset
-
-# 2b. or ingest a GitHub repo. Two passes land in one graph: PR prose through
-#     extraction, and the same payloads through GitHubGraphBuilder, which reads
-#     authorship, reviews, "Fixes #N" and touched files as typed, dated edges.
-python scripts/ingest_github.py --repo pallets/click --issues 50 --commits 50 --files --reviews
-#     --files and --reviews each cost one extra request per PR (fetched
-#     concurrently). Without them there are no TOUCHES / REVIEWED edges.
-#     --no-text skips extraction and writes structure only.
-#     50 PRs of pallets/click -> 274 nodes, 572 typed edges in ~60s.
-
-# 3. evaluate (optional)
-python scripts/benchmark.py            # -> results.csv + summary table
-
-# 4. serve the API  (run AFTER ingest — single-writer DB lock; single-worker)
-uvicorn api:app --reload --port 8000   # docs at /docs
-
-# 5. run the frontend (in a second shell)
-cd ../frontend
-npm install
-npm run dev
-#   http://localhost:5173/          → landing page
-#   http://localhost:5173/studio    → Graphsight Studio (live API, sample fallback)
-#   http://localhost:5173/memory/preview → mock-data demo, no backend needed
-#   http://localhost:5173/memory/import  → render an external LangGraph trace (graphsight-langgraph)
-```
-
-### Multi-tenant SaaS mode (docker-compose)
-
-Brings up Postgres (both DBs), Redis, the API, the Celery worker, and the beat scheduler on one
-bridge network, then provisions a tenant and serves a query end-to-end.
+### The tracer + viewer (what most people want)
 
 ```bash
-# 1. configure — set at minimum ADMIN_SECRET_KEY, GITHUB_TOKEN, OPENROUTER_API_KEY
-cp .env.example .env
-
-# 2. bring the stack up (db + redis + api:8000 + worker + beat)
-docker compose up --build
-
-# 3. provision a tenant — save the returned sk_live_… key (shown once)
-curl -X POST localhost:8000/api/admin/onboarding/provision \
-  -H "X-Admin-Secret: $ADMIN_SECRET_KEY" -H "Content-Type: application/json" \
-  -d '{"tenant_name":"Acme","repo_name":"tiangolo/fastapi"}'
-#    → within ~2 min: worker ingests the repo (GitHub→NLP→Postgres→compile→S3)
-#      and the pod agent atomically swaps the tenant's graph in
-
-# 4. query as the tenant (routed by the API key to its pod + graph)
-curl -X POST localhost:8000/api/trace \
-  -H "Authorization: Bearer sk_live_…" -H "Content-Type: application/json" \
-  -d '{"query":"what changed in dependency injection?"}'
+pip install graphsight graphsight-langgraph
+# add GraphsightTracer to your agent, call tracer.capture(), then:
+graphsight .graphsight/
 ```
 
-> Storage defaults to a shared local volume (`TRACERAG_STORAGE_PROVIDER=local`); set it to `s3`
-> with `TRACERAG_S3_BUCKET` + `AWS_*` to use a real bucket. Point a repo at any public GitHub repo;
-> with no `GITHUB_TOKEN` the fetcher falls back to a deterministic mock batch.
+See [BETA.md](BETA.md) for a 10-minute test script.
 
-### API surface
+### The engine (local, single-tenant)
 
-| Method | Endpoint | Auth | Returns |
-|---|---|---|---|
-| POST | `/api/trace` | token | ranked nodes + `page_content` + `trace_log` + `context` |
-| POST | `/api/subgraph` | — | `{ nodes, edges }` (1-hop bounded) |
-| POST | `/api/answer` · `/api/answer/stream` | token + rate-limit | grounded answer (blocking / streamed) |
-| POST | `/api/summarize` | token + rate-limit | one-sentence node summary |
-| GET · POST | `/api/graphs` · `/api/graphs/switch` | — | list / hot-swap the active graph |
-| GET | `/api/suggestions` | — | graph-aware example questions |
-| POST · GET | `/api/sessions` · `/api/sessions/{id}/traces` | token (owner) | create / list sessions, fetch trace logs |
-| GET | `/api/health` | — | `{ status, nodes }` |
-| POST | `/api/admin/onboarding/provision` | `X-Admin-Secret` | _SaaS:_ provision Org+Key+Repo+Assignment, arm first sync → `sk_live_…` |
-| — | `/mcp` | Bearer (org key) | _SaaS:_ MCP server — `trace_impact` · `search_context` · `find_entity` |
+```powershell
+cd backend
+pip install -r requirements.txt
+python -m spacy download en_core_web_sm        # NER fallback
+#  .env: GROQ_API_KEY + OPENROUTER_API_KEY               (see .env.example)
+#  optional: CLERK_ISSUER + APP_DATABASE_URL for auth + history
 
-> **Operational note.** LadybugDB is a single-writer embedded store. Don't run `ingest.py` and
-> `uvicorn` against the same `.lbug` simultaneously — ingest first, then serve. The API loads the
-> data snapshot at startup; re-ingest → restart the server to refresh.
+# ingest your own documents
+python scripts/ingest.py --datasets ./datasets --reset
+
+# ...or a GitHub repo. Two passes land in one graph: PR prose through extraction,
+# and the same payloads through GitHubGraphBuilder, which reads authorship,
+# reviews, "Fixes #N" and touched files as typed, dated edges.
+python scripts/ingest_github.py --repo pallets/click --issues 50 --commits 50 --files --reviews
+#   --files / --reviews each cost one extra request per PR (fetched concurrently);
+#   without them there are no TOUCHES / REVIEWED edges.
+#   --no-text writes structured edges only, skipping extraction entirely.
+#   GITHUB_TOKEN in .env raises the rate limit from 60/hr to 5000/hr.
+
+# serve (AFTER ingest — single-writer DB lock, single worker)
+uvicorn api:app --reload --port 8000           # docs at /docs
+
+# frontend, in a second shell
+cd ../frontend; npm install; npm run dev
+#   http://localhost:5173/         -> landing
+#   http://localhost:5173/studio   -> Graphsight Studio
+```
+
+### Embedded library
+
+```python
+from tracerag.memory import GraphMemory
+
+with GraphMemory("memory.lbug") as mem:
+    mem.ingest_github("acme/api", pulls=prs, issues=issues, commits=commits)
+    mem.build_index()
+    print(mem.context("who owns the session code?"))
+```
+
+---
+
+## Multi-tenant mode
+
+Off by default (`MULTI_TENANCY_ENABLED` unset). With it on, Graphsight runs as a B2B platform
+where each org gets a physically isolated graph.
+
+**The one idea:** *Postgres is the durable truth; each `.lbug` is a compiled, versioned,
+disposable read-artifact.* A Celery pipeline (**GitHub → NLP → Postgres → compile → S3**)
+produces per-org artifacts; serving pods pull and **atomically swap** them. Durability and read
+performance are decoupled — lose a `.lbug`, recompile it.
+
+One `.lbug` per organization ("cell"). All of an org's repos compile into the same file, so
+cross-repo queries work without a join. Redis ZSET debounce-coalesces bursty webhooks; an atomic
+Lua claim prevents double-compiles; a pod agent runs an intent-vs-reality loop to converge each
+pod onto its assigned artifact version.
+
+```bash
+cp .env.example .env       # set ADMIN_SECRET_KEY, GITHUB_TOKEN, OPENROUTER_API_KEY
+docker compose up -d       # db + redis + api:8000 + worker + beat
+# provision a tenant; save the returned sk_live_… key (shown once)
+```
+
+`backend/tests/` contains e2e proofs for each stage: ingest pipeline, compiler, GitHub client
+pagination, onboarding, and dynamic tenant load with model sharing.
+
+---
+
+## API surface
+
+| Endpoint | Purpose |
+|---|---|
+| `POST /api/trace` | Hybrid retrieval → results + `trace_log` |
+| `POST /api/subgraph` | Nodes + 1-hop neighbours + edges for the canvas |
+| `POST /api/answer` | Streamed, grounded answer with citations |
+| `GET/POST /api/graphs` · `/switch` | List and hot-swap the active `.lbug` |
+| `GET/POST /api/sessions` · `/traces` | Persisted chat history (ownership-checked) |
+| `POST /api/summarize` | One-sentence node summary (server-cached) |
+| `/mcp` | MCP tools: `trace_impact` · `search_context` · `find_entity` (SaaS mode) |
 
 ---
 
 ## License
 
-MIT.
+MIT — see [LICENSE](LICENSE).
