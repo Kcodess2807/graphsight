@@ -25,6 +25,11 @@ your LangGraph agent ──▶ LangGraphTracer ──▶ AgentTrace (v0.2) ─�
 Only dependency: `langchain-core`. No engine, no backend, no account —
 nothing leaves your machine.
 
+![Graphsight showing a retrieved-but-unused document](https://raw.githubusercontent.com/Kcodess2807/graphsight/main/docs/media/retrieved-vs-used.gif)
+
+*A real run. `PR #101` scored **0.910** — the highest of anything retrieved — and the answer
+never used it. `PR #412` scored **0.340** and is the one that answered.*
+
 ## Installation
 
 ```bash

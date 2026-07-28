@@ -12,6 +12,11 @@ connected? Most stacks make you dig through logs. Graphsight renders the run
 as an **interactive graph in your browser** — one command, zero dependencies,
 nothing leaves your machine.
 
+![Graphsight showing a retrieved-but-unused document](https://raw.githubusercontent.com/Kcodess2807/graphsight/main/docs/media/retrieved-vs-used.gif)
+
+*A real run. `PR #101` scored **0.910** — the highest of anything retrieved — and the answer
+never used it. `PR #412` scored **0.340** and is the one that answered.*
+
 ```bash
 pip install graphsight
 graphsight path/to/trace_state.json

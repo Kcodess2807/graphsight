@@ -15,7 +15,10 @@ Graphsight traces a run, then shows every retrieved item marked **used** or **ig
 by lexical overlap against the final answer. No LLM re-reads your evidence, no scores are
 invented, and nothing leaves localhost.
 
-<!-- TODO: 30-second GIF of the failure demo — retrieved-vs-used catching the stale PR -->
+![Graphsight showing a retrieved-but-unused document](docs/media/retrieved-vs-used.gif)
+
+*A real run. `PR #101` scored **0.910** — the highest of anything retrieved — and the answer
+never used it. `PR #412` scored **0.340** and is the one that answered.*
 
 ---
 
