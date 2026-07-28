@@ -206,6 +206,17 @@
   .lp2-marquee { animation: none; }
 }
 
+/* traced edges in the landing x-ray — dashes crawl along the path */
+.lp-edge-flow {
+  animation: lp-edge-flow 1.1s linear infinite;
+}
+@keyframes lp-edge-flow {
+  to { stroke-dashoffset: -18; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .lp-edge-flow { animation: none; }
+}
+
 /* ── Landing page (monochrome waitlist, lp- prefix) ─────────────── */
 .lp-spotlight {
   background: radial-gradient(ellipse 60% 50% at 50% 0%, rgba(255, 255, 255, 0.05), transparent 70%);
