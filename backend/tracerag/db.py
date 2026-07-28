@@ -109,9 +109,10 @@ class TraceDB:
             return self._records(conn.execute(query, params or {}))
 
     def init_schema(self) -> None:
+        # ts = unix seconds of the underlying event (merge/creation), 0 when unknown
         self.execute(
             f"CREATE NODE TABLE IF NOT EXISTS {config.NODE_TABLE} ("
-            f"id STRING PRIMARY KEY, label STRING, type STRING, "
+            f"id STRING PRIMARY KEY, label STRING, type STRING, ts INT64, "
             f"embedding FLOAT[{config.EMBED_DIM}]);"
         )
         self.execute(
@@ -120,7 +121,8 @@ class TraceDB:
         )
         self.execute(
             f"CREATE REL TABLE IF NOT EXISTS {config.REL_TABLE} ("
-            f"FROM {config.NODE_TABLE} TO {config.NODE_TABLE}, confidence DOUBLE);"
+            f"FROM {config.NODE_TABLE} TO {config.NODE_TABLE}, "
+            f"confidence DOUBLE, relation STRING, ts INT64);"
         )
         self.execute(
             f"CREATE REL TABLE IF NOT EXISTS {config.MENTIONS_TABLE} ("
@@ -152,22 +154,46 @@ class TraceDB:
         label: str,
         node_type: str,
         embedding: Sequence[float],
+        ts: int = 0,
     ) -> None:
-        # no ON MATCH SET: never clobber a canonical node with a noisier surface form
+        # no ON MATCH SET on label/type: never clobber a canonical node with a
+        # noisier surface form. ts does move forward — recency is the newest fact.
         self._check_dim(embedding)
         self.execute(
             f"MERGE (e:{config.NODE_TABLE} {{id: $id}}) "
-            f"ON CREATE SET e.label = $label, e.type = $type, e.embedding = $embedding",
-            {"id": node_id, "label": label, "type": node_type,
+            f"ON CREATE SET e.label = $label, e.type = $type, e.ts = $ts, "
+            f"e.embedding = $embedding "
+            f"ON MATCH SET e.ts = CASE WHEN $ts > e.ts THEN $ts ELSE e.ts END",
+            {"id": node_id, "label": label, "type": node_type, "ts": int(ts),
              "embedding": list(embedding)},
         )
 
-    def add_relationship(self, from_id: str, to_id: str, confidence: float = 1.0) -> None:
+    def add_relationship(
+        self,
+        from_id: str,
+        to_id: str,
+        confidence: float | None = None,
+        relation: str = config.RELATION_CO_OCCURS,
+        ts: int = 0,
+    ) -> None:
+        """Typed edge. Confidence defaults to the relation's configured weight,
+        so a structural AUTHORED hop outranks a proximity guess."""
+        if confidence is None:
+            confidence = config.RELATION_WEIGHTS.get(
+                relation, config.DEFAULT_RELATION_WEIGHT
+            )
         self.execute(
             f"MATCH (a:{config.NODE_TABLE} {{id: $from_id}}), "
             f"(b:{config.NODE_TABLE} {{id: $to_id}}) "
-            f"MERGE (a)-[r:{config.REL_TABLE}]->(b) ON CREATE SET r.confidence = $confidence",
-            {"from_id": from_id, "to_id": to_id, "confidence": confidence},
+            f"MERGE (a)-[r:{config.REL_TABLE}]->(b) "
+            f"ON CREATE SET r.confidence = $confidence, r.relation = $relation, r.ts = $ts "
+            # a stronger relation later (CO_OCCURS then AUTHORED) upgrades the edge
+            f"ON MATCH SET r.confidence = CASE WHEN $confidence > r.confidence "
+            f"THEN $confidence ELSE r.confidence END, "
+            f"r.relation = CASE WHEN $confidence > r.confidence THEN $relation "
+            f"ELSE r.relation END",
+            {"from_id": from_id, "to_id": to_id, "confidence": float(confidence),
+             "relation": relation, "ts": int(ts)},
         )
 
     def upsert_document(
@@ -215,7 +241,7 @@ class TraceDB:
             f"CALL QUERY_VECTOR_INDEX('{config.NODE_TABLE}', "
             f"'{config.VECTOR_INDEX}', $q, {int(k)}) "
             f"RETURN node.id AS id, node.label AS label, node.type AS type, "
-            f"distance ORDER BY distance;",
+            f"node.ts AS ts, distance ORDER BY distance;",
             {"q": list(query_embedding)},
         )
         rows = []
@@ -223,6 +249,7 @@ class TraceDB:
             distance = float(r["distance"])
             rows.append({
                 "id": r["id"], "label": r["label"], "type": r["type"],
+                "ts": int(r["ts"]) if r.get("ts") is not None else 0,
                 "distance": distance, "similarity": 1.0 - distance,
             })
         return rows
@@ -259,7 +286,8 @@ class TraceDB:
             f"MATCH (a:{config.NODE_TABLE}) WHERE a.id IN $ids "
             f"OPTIONAL MATCH (a)-[r:{config.REL_TABLE}]-(b:{config.NODE_TABLE}) "
             f"RETURN a.id AS from_id, b.id AS to_id, b.label AS label, "
-            f"b.type AS type, r.confidence AS confidence;",
+            f"b.type AS type, b.ts AS ts, r.confidence AS confidence, "
+            f"r.relation AS relation;",
             {"ids": list(node_ids)},
         )
         grouped: dict[str, list[dict[str, Any]]] = {}
@@ -268,6 +296,8 @@ class TraceDB:
                 continue
             grouped.setdefault(r["from_id"], []).append({
                 "id": r["to_id"], "label": r["label"], "type": r["type"],
+                "ts": int(r["ts"]) if r.get("ts") is not None else 0,
+                "relation": r.get("relation") or config.RELATION_CO_OCCURS,
                 "confidence": float(r["confidence"])
                 if r["confidence"] is not None else 1.0,
             })

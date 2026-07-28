@@ -213,5 +213,7 @@ class CurationEngine:
                 if a == b or (a, b) in seen_pairs:
                     continue
                 seen_pairs.add((a, b))
-                self.db.add_relationship(a, b)
+                # proximity only — tagged CO_OCCURS so traversal weights it far
+                # below a structural edge, and upgrades it if one arrives later
+                self.db.add_relationship(a, b, relation=config.RELATION_CO_OCCURS)
                 stats.relates_edges += 1

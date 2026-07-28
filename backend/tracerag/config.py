@@ -199,8 +199,49 @@ CHUNK_OVERLAP = int(os.getenv("TRACERAG_CHUNK_OVERLAP", "150"))
 
 # ladybugdb schema (kùzu-compatible cypher ddl)
 NODE_TABLE = "Entity"
-REL_TABLE = "RELATES_TO"          # entity -> entity, same-window co-occurrence
+REL_TABLE = "RELATES_TO"          # entity -> entity; carries relation + ts
 DOC_TABLE = "Document"           # source doc node, no embedding
 MENTIONS_TABLE = "MENTIONS"      # document -> entity
 VECTOR_INDEX = "idx_entity_embedding"
+
+# Relation vocabulary. Structured sources (the GitHub API) emit these directly;
+# CO_OCCURS is the weak fallback for text we can only infer from proximity.
+RELATION_AUTHORED = "AUTHORED"
+RELATION_REVIEWED = "REVIEWED"
+RELATION_RESOLVES = "RESOLVES"
+RELATION_TOUCHES = "TOUCHES"
+RELATION_PART_OF = "PART_OF"
+RELATION_REPORTED = "REPORTED"
+RELATION_CO_OCCURS = "CO_OCCURS"
+
+# How much a hop through each relation is worth. Traversal multiplies these, so
+# a 2-hop path through two strong edges still beats one weak hop.
+RELATION_WEIGHTS = {
+    RELATION_AUTHORED: 0.95,
+    RELATION_RESOLVES: 0.92,
+    RELATION_REVIEWED: 0.85,
+    RELATION_TOUCHES: 0.80,
+    RELATION_PART_OF: 0.80,
+    RELATION_REPORTED: 0.75,
+    RELATION_CO_OCCURS: 0.35,   # proximity is a hint, not a fact
+}
+DEFAULT_RELATION_WEIGHT = float(os.getenv("TRACERAG_DEFAULT_REL_WEIGHT", "0.5"))
+
+# Recency: score *= 0.5 ** (age_days / half_life) — at half_life days an item
+# keeps half its score. Incidents go stale in weeks, service definitions in a
+# year, so the half-life is per entity type.
+RECENCY_ENABLED = os.getenv("TRACERAG_RECENCY", "1") not in ("0", "false", "False")
+RECENCY_HALF_LIFE_DAYS = {
+    "Ticket": 21.0,
+    "Issue": 21.0,
+    "PR": 60.0,
+    "Commit": 45.0,
+    "Person": 180.0,
+    "File": 120.0,
+    "Service": 365.0,
+    "Repo": 365.0,
+}
+DEFAULT_HALF_LIFE_DAYS = float(os.getenv("TRACERAG_HALF_LIFE_DAYS", "90"))
+# Never decay an item to nothing — old but on-topic still beats unrelated.
+RECENCY_FLOOR = float(os.getenv("TRACERAG_RECENCY_FLOOR", "0.35"))
 VECTOR_METRIC = "cosine"
