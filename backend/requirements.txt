@@ -1,3 +1,7 @@
+# Requires Python 3.12+. On 3.11 the LadybugDB VECTOR extension loads but
+# CREATE_VECTOR_INDEX throws 'Caught an unknown exception!', so ingestion fails
+# at the index build. Verified on 3.12.3 and 3.13.7.
+
 # --- Storage Core ---
 ladybug
 

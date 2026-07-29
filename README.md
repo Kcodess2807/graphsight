@@ -447,6 +447,12 @@ See [BETA.md](BETA.md) for a 10-minute test script.
 
 ### The engine (local, single-tenant)
 
+> **The engine needs Python 3.12 or newer.** On 3.11, LadybugDB 0.18.3 loads the VECTOR
+> extension fine but `CREATE_VECTOR_INDEX` dies with `RuntimeError: Caught an unknown
+> exception!`, so ingestion fails at the index build. Verified working on 3.12.3 and 3.13.7.
+> (The `graphsight` and `graphsight-langgraph` packages are unaffected — they never touch
+> LadybugDB and support 3.10+.)
+>
 > **Windows: install from a short path.** `torch` ships header files deep enough to exceed
 > the 260-character path limit, so a venv under a long nested directory fails with
 > `OSError: [Errno 2] No such file or directory: ...predicated_tile_access_iterator_residual_last.h`.
