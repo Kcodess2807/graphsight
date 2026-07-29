@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { Analytics } from "@vercel/analytics/react";
 import { ClerkProvider, useAuth } from "@clerk/clerk-react";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "sonner";
@@ -37,6 +38,11 @@ function AuthTokenBridge() {
 // visitors never hit a broken page. dev builds (or the flag) show it.
 const SHOW_STUDIO =
   import.meta.env.DEV || import.meta.env.VITE_ENABLE_STUDIO === "1";
+
+// Off unless the deploy opts in. This same build is copied into the graphsight
+// wheel (release.yml), which promises no telemetry and no outbound calls, so the
+// default must stay off. Only the Vercel site sets the flag.
+const SHOW_ANALYTICS = import.meta.env.VITE_ENABLE_ANALYTICS === "1";
 
 function AppRoutes() {
   return (
@@ -90,6 +96,7 @@ export default function App() {
       ) : (
         routed
       )}
+      {SHOW_ANALYTICS && <Analytics />}
       <Toaster
         position="bottom-right"
         toastOptions={{
