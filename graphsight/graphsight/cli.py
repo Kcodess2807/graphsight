@@ -1,4 +1,4 @@
-"""graphsight CLI — open a trace (or a whole run history) in the bundled UI."""
+"""graphsight CLI: open a trace (or a whole run history) in the bundled UI."""
 from __future__ import annotations
 
 import argparse
@@ -19,7 +19,7 @@ def main(argv: Optional[list[str]] = None) -> None:
 
     parser = argparse.ArgumentParser(
         prog="graphsight",
-        description="Open a trace_state.json — or a history directory like .graphsight/ — in your browser.",
+        description="Open a trace_state.json, or a history directory like .graphsight/, in your browser.",
     )
     parser.add_argument("trace", nargs="?", type=Path,
                         help="a trace_state.json, or a directory of them (e.g. .graphsight/); "

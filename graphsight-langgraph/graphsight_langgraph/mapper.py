@@ -63,7 +63,7 @@ def to_tracestate(trace: AgentTrace) -> dict[str, Any]:
                     else f"retrieved, unused · via {trace.framework}"
                 )
             else:
-                used = True  # no answer to compare against — show everything plain
+                used = True  # no answer to compare against, show everything plain
                 subtitle = f"via {trace.framework} · {retrieval.arm} arm"
             if used:
                 used_ids.add(item.id)
@@ -144,7 +144,7 @@ def to_tracestate(trace: AgentTrace) -> dict[str, Any]:
             "score": round(sum(scores) / len(scores), 3) if scores else 0.0,
             "uncertainty": 0.0,
             "rationale": (
-                f"External {trace.framework} trace — scores reported by the "
+                f"External {trace.framework} trace. Scores reported by the "
                 "retriever; Graphsight does not recompute them."
             ),
         },

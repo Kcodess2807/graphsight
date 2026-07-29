@@ -1,4 +1,4 @@
-"""graphsight — local viewer for agent retrieval traces.
+"""graphsight: local viewer for agent retrieval traces.
 
 Usage:
 

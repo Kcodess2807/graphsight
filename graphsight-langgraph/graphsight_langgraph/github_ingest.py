@@ -53,11 +53,11 @@ def _get(path: str, token: Optional[str]) -> Any:
     except urllib.error.HTTPError as err:
         if err.code in (401, 403):
             raise SystemExit(
-                f"GitHub API {err.code} for {path}. Private repo or rate limit — "
-                "pass --token or set GITHUB_TOKEN."
+                f"GitHub API {err.code} for {path}. Private repo or rate limit. "
+                "Pass --token or set GITHUB_TOKEN."
             ) from err
         if err.code == 404:
-            raise SystemExit(f"GitHub API 404 for {path} — is the repo name right?") from err
+            raise SystemExit(f"GitHub API 404 for {path}. Is the repo name right?") from err
         raise SystemExit(f"GitHub API error {err.code} for {path}.") from err
 
 
@@ -122,7 +122,7 @@ def build_corpus(
         ))
         authored.setdefault(login, [])
 
-    # solo repos often have no PRs/issues at all — commits carry the history
+    # solo repos often have no PRs/issues at all; commits carry the history
     commits = _get(f"/repos/{repo}/commits?per_page={n_commits}", token) if n_commits else []
     for c in commits:
         sha = c["sha"][:7]
@@ -143,7 +143,7 @@ def build_corpus(
 
     for login, work_ids in authored.items():
         docs.append(Document(
-            page_content=f"GitHub user {login} — authored {len(work_ids)} of the "
+            page_content=f"GitHub user {login} authored {len(work_ids)} of the "
                          f"recent changes (PRs/commits) in {repo}.",
             metadata={"id": f"person_{login}", "label": login, "kind": "person",
                       "source": f"https://github.com/{login}",
@@ -203,7 +203,7 @@ class LexicalGraphRetriever(BaseRetriever):
             edges = [e for e in doc.metadata.get("edges", [])
                      if e["source"] in kept and e["target"] in kept]
             meta = {k: v for k, v in doc.metadata.items() if k != "edges"}
-            # zero overlap means "here because of its edges, not the query" —
+            # zero overlap means "here because of its edges, not the query";
             # no score is more honest than a 0.00 chip
             if score > 0:
                 meta["score"] = score
@@ -239,7 +239,7 @@ def run_traced(corpus: list[Document], question: str, repo: str, k: int):
             kinds[d.metadata["kind"]] = kinds.get(d.metadata["kind"], 0) + 1
         parts = ", ".join(f"{v} {k.replace('_', ' ')}(s)" for k, v in sorted(kinds.items()))
         return {"answer": (
-            f"Top match in {repo}: {top.metadata['label']} — "
+            f"Top match in {repo}: {top.metadata['label']}. "
             f"{top.page_content[:160]}… Retrieved {len(docs)} items ({parts}); "
             "open the graph to see who and what they connect to."
         )}

@@ -75,7 +75,7 @@ class StudioHandler(SimpleHTTPRequestHandler):
         self._send_json(json.dumps(runs).encode("utf-8"))
 
     def _serve_run(self, name: str) -> None:
-        # only bare filenames that exist in the dir — no traversal
+        # only bare filenames that exist in the dir, no traversal
         if (
             self.history_dir is None
             or Path(name).name != name
@@ -97,7 +97,7 @@ def make_server(
     if not (DIST / "index.html").is_file():
         raise SystemExit(
             "Bundled UI missing (graphsight/dist/). This is a packaging "
-            "error — reinstall graphsight."
+            "error. Reinstall graphsight."
         )
     handler = partial(
         type(

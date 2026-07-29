@@ -9,7 +9,7 @@ STOP = frozenset({
     "has", "have", "not", "but", "its", "also", "into", "over", "after",
 })
 
-# 3+ chars, must start alphanumeric — used for answer-overlap scoring
+# 3+ chars, must start alphanumeric; used for answer-overlap scoring
 WORD_RE = re.compile(r"[a-z0-9][a-z0-9_#-]{2,}")
 
 

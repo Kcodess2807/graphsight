@@ -1,4 +1,4 @@
-"""graphsight-langgraph — capture LangGraph runs as Graphsight traces.
+"""graphsight-langgraph: capture LangGraph runs as Graphsight traces.
 
     from graphsight_langgraph import LangGraphTracer, capture
 
