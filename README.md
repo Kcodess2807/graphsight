@@ -11,8 +11,8 @@ Your agent retrieved twelve documents and answered from three. The other nine co
 latency, and a wider surface for the model to go wrong on. Nothing in your stack tells you
 which nine.
 
-Graphsight traces a run, then marks every retrieved item **overlaps the answer** or **no lexical
-trace in answer**, scored by lexical overlap against the final answer. No LLM re-reads your evidence, no scores are
+Graphsight traces the run and marks each retrieved item **overlaps the answer** or **no lexical
+trace in answer**, scored against the final answer. No LLM re-reads your evidence, no score is
 invented, and nothing leaves localhost.
 
 ![Graphsight showing a retrieved-but-unused document](docs/media/retrieved-vs-used.gif)
@@ -20,17 +20,16 @@ invented, and nothing leaves localhost.
 *A real run. `PR #101` scored **0.910**, the highest of anything retrieved, and the answer
 never used it. `PR #412` scored **0.340** and is the one that answered.*
 
-**New here?** [Your first trace](docs/FIRST_TRACE.md), a 10-minute walkthrough, or the
-[60-second start](#60-second-start) → [what this is](#what-this-actually-is).
-**Evaluating it?** [For reviewers](#for-reviewers-start-here) →
-[benchmarks](#benchmarks--known-constraints).
-**Building on it?** [Architecture](#architecture) · [routing](#hybrid-routing) ·
-[measured behaviour](#measured-behaviour) · [quickstart](#quickstart) ·
-[API](#api-surface).
+**Jump to:** [what this is](#what-this-actually-is) · [architecture](#architecture) ·
+[routing](#hybrid-routing) · [benchmarks](#benchmarks--known-constraints) ·
+[project status](#project-status) · [contributing](#contributing)
 
 ---
 
-## 60-second start
+## Quickstart
+
+**New to this?** [Your first trace](docs/FIRST_TRACE.md) is a 10-minute walkthrough with a
+complete runnable example. Otherwise:
 
 ```bash
 pip install graphsight graphsight-langgraph
@@ -63,7 +62,33 @@ the retrieved-vs-used verdict per item. The viewer has **zero dependencies**, st
 
 No account, no API key, no telemetry, no cloud.
 
----
+### No framework? Build the trace directly
+
+The trace contract is framework neutral. LangGraph is one producer, not a requirement.
+If you wrote your retrieval loop yourself, construct the trace from whatever you already
+have and skip the callback entirely:
+
+```python
+from graphsight_langgraph import AgentTrace, Retrieval, RetrievedItem, save_trace
+from graphsight_langgraph._text import tokens
+
+atoks = tokens(answer)
+def overlap(text):                      # same heuristic the tracer uses
+    t = tokens(text)
+    return round(len(atoks & t) / min(len(t), len(atoks)), 3) if t and atoks else None
+
+trace = AgentTrace(query=query, framework="custom", answer=answer)
+trace.retrievals.append(Retrieval(
+    span_id="retrieve", query=query, arm="vector",
+    items=[RetrievedItem(id=c.id, label=c.title, content=c.text,
+                         score=c.score, answer_overlap=overlap(c.text))
+           for c in chunks],
+))
+print(save_trace(trace))                # -> .graphsight/<timestamp>_<slug>.json
+```
+
+`answer_overlap` is what drives the used/ignored split. Leave it `None` and every item
+renders plain, which is the honest default when there is nothing to compare against.
 
 ## What this actually is
 
@@ -114,46 +139,6 @@ addresses each:
 The anti-slop principle throughout: **evidence is never paraphrased by an LLM, and scores are
 never invented.** Overlap is lexical and reproducible. If we can't measure something, we don't
 claim it.
-
----
-
-## For reviewers: start here
-
-**One-sentence pitch:** a graph-backed causal memory tier for AI coding agents, GitHub events
-become a live knowledge graph (vectors + typed edges in one embedded store), agents query it
-over MCP instead of re-reading repos, and every answer ships with the traced path that produced
-it.
-
-**15-minute path:**
-
-1. **The product**, install the two packages above, trace one agent run, look at the
-   retrieved-vs-used column. That loop is the whole pitch.
-2. **The engine**, [Architecture](#architecture) and [Hybrid routing](#hybrid-routing). The
-   interesting decisions are typed edge weights, recency decay, and per-relation hub throttling.
-3. **The honest part**, [Benchmarks & known constraints](#benchmarks--known-constraints). The
-   original token-reduction thesis did **not** hold. Read it before forming a verdict.
-4. **The SaaS layer**, [Multi-tenant mode](#multi-tenant-mode). Off by default.
-
-### What's real vs. what's mocked
-
-| Layer | Status |
-|---|---|
-| `graphsight` viewer + `graphsight-langgraph` tracer | **Real**, published at 0.3.1, install-verified from PyPI |
-| Retrieval engine (ingest → curate → route → trace) | **Real**, 43 tests, live-verified against `fastapi/fastapi` and `pallets/click` |
-| Structured GitHub ingest (typed, dated edges) | **Real**, exercised against the live API |
-| Studio UI (trace canvas, streamed answers, citations, sessions) | **Real**, wired to the live API with an offline sample fallback |
-| Multi-tenant pipeline (GitHub → Postgres → compile → S3 → pod swap) | **Real**, e2e-tested; off by default |
-| MCP server (`trace_impact` / `search_context` / `find_entity`) | **Real**, mounted in SaaS mode |
-| Landing page waitlist form | UI real; **form logs to console**, capture backend not wired |
-| `archive/dashboard/` Next.js console | UI complete, data mocked, retired after the Graphsight pivot |
-
-### Known gaps
-
-Single-writer LadybugDB lock (the API must start *after* ingest; single worker). In-memory
-rate-limit counters (Redis is the multi-worker path). Retrieval *quality* is unmeasured. The
-engine's correctness and performance are verified, but every automated test stubs the embedder,
-so vector relevance itself has no regression coverage. And the accuracy ceiling in
-[Benchmarks](#benchmarks--known-constraints).
 
 ---
 
@@ -433,45 +418,34 @@ it.
 
 ---
 
-## Quickstart
+## Project status
 
-### The tracer + viewer (what most people want)
+Honest accounting of what is finished, what is partial, and what is not measured.
 
-```bash
-pip install graphsight graphsight-langgraph
-# add LangGraphTracer to your agent, call capture(tracer, answer=...), then:
-graphsight .graphsight/
-```
+### What's real vs. what's mocked
 
-See [BETA.md](BETA.md) for a 10-minute test script.
+| Layer | Status |
+|---|---|
+| `graphsight` viewer + `graphsight-langgraph` tracer | **Real**, published at 0.3.1, install-verified from PyPI |
+| Retrieval engine (ingest → curate → route → trace) | **Real**, 43 tests, live-verified against `fastapi/fastapi` and `pallets/click` |
+| Structured GitHub ingest (typed, dated edges) | **Real**, exercised against the live API |
+| Studio UI (trace canvas, streamed answers, citations, sessions) | **Real**, wired to the live API with an offline sample fallback |
+| Multi-tenant pipeline (GitHub → Postgres → compile → S3 → pod swap) | **Real**, e2e-tested; off by default |
+| MCP server (`trace_impact` / `search_context` / `find_entity`) | **Real**, mounted in SaaS mode |
+| Landing page waitlist form | UI real; **form logs to console**, capture backend not wired |
+| `archive/dashboard/` Next.js console | UI complete, data mocked, retired after the Graphsight pivot |
 
-### No framework? Build the trace directly
+### Known gaps
 
-The trace contract is framework neutral. LangGraph is one producer, not a requirement.
-If you wrote your retrieval loop yourself, construct the trace from whatever you already
-have and skip the callback entirely:
+Single-writer LadybugDB lock (the API must start *after* ingest; single worker). In-memory
+rate-limit counters (Redis is the multi-worker path). Retrieval *quality* is unmeasured. The
+engine's correctness and performance are verified, but every automated test stubs the embedder,
+so vector relevance itself has no regression coverage. And the accuracy ceiling in
+[Benchmarks](#benchmarks--known-constraints).
 
-```python
-from graphsight_langgraph import AgentTrace, Retrieval, RetrievedItem, save_trace
-from graphsight_langgraph._text import tokens
+---
 
-atoks = tokens(answer)
-def overlap(text):                      # same heuristic the tracer uses
-    t = tokens(text)
-    return round(len(atoks & t) / min(len(t), len(atoks)), 3) if t and atoks else None
-
-trace = AgentTrace(query=query, framework="custom", answer=answer)
-trace.retrievals.append(Retrieval(
-    span_id="retrieve", query=query, arm="vector",
-    items=[RetrievedItem(id=c.id, label=c.title, content=c.text,
-                         score=c.score, answer_overlap=overlap(c.text))
-           for c in chunks],
-))
-print(save_trace(trace))                # -> .graphsight/<timestamp>_<slug>.json
-```
-
-`answer_overlap` is what drives the used/ignored split. Leave it `None` and every item
-renders plain, which is the honest default when there is nothing to compare against.
+## Running the engine locally
 
 ### The engine (local, single-tenant)
 
