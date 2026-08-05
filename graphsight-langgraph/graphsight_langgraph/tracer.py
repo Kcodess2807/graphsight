@@ -54,7 +54,9 @@ class LangGraphTracer(BaseCallbackHandler):
 
     def __init__(self) -> None:
         super().__init__()
-        self._t0 = time.monotonic()
+        # perf_counter, not monotonic: on Windows below 3.13 monotonic ticks
+        # every ~15.6ms, so a fast run reports latency_ms = 0.0
+        self._t0 = time.perf_counter()
         self._spans: dict[str, Span] = {}
         self._order: list[str] = []
         self._retrievals: list[Retrieval] = []
@@ -63,7 +65,7 @@ class LangGraphTracer(BaseCallbackHandler):
 
     # span bookkeeping
     def _now_ms(self) -> float:
-        return (time.monotonic() - self._t0) * 1000.0
+        return (time.perf_counter() - self._t0) * 1000.0
 
     def _open_span(
         self,

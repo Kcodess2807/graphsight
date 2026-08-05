@@ -445,6 +445,34 @@ graphsight .graphsight/
 
 See [BETA.md](BETA.md) for a 10-minute test script.
 
+### No framework? Build the trace directly
+
+The trace contract is framework neutral. LangGraph is one producer, not a requirement.
+If you wrote your retrieval loop yourself, construct the trace from whatever you already
+have and skip the callback entirely:
+
+```python
+from graphsight_langgraph import AgentTrace, Retrieval, RetrievedItem, save_trace
+from graphsight_langgraph._text import tokens
+
+atoks = tokens(answer)
+def overlap(text):                      # same heuristic the tracer uses
+    t = tokens(text)
+    return round(len(atoks & t) / min(len(t), len(atoks)), 3) if t and atoks else None
+
+trace = AgentTrace(query=query, framework="custom", answer=answer)
+trace.retrievals.append(Retrieval(
+    span_id="retrieve", query=query, arm="vector",
+    items=[RetrievedItem(id=c.id, label=c.title, content=c.text,
+                         score=c.score, answer_overlap=overlap(c.text))
+           for c in chunks],
+))
+print(save_trace(trace))                # -> .graphsight/<timestamp>_<slug>.json
+```
+
+`answer_overlap` is what drives the used/ignored split. Leave it `None` and every item
+renders plain, which is the honest default when there is nothing to compare against.
+
 ### The engine (local, single-tenant)
 
 > **The engine needs Python 3.12 or newer.** On 3.11, LadybugDB 0.18.3 loads the VECTOR
@@ -536,6 +564,38 @@ pagination, onboarding, and dynamic tenant load with model sharing.
 | `GET/POST /api/sessions` · `/traces` | Persisted chat history (ownership-checked) |
 | `POST /api/summarize` | One-sentence node summary (server-cached) |
 | `/mcp` | MCP tools: `trace_impact` · `search_context` · `find_entity` (SaaS mode) |
+
+---
+
+## Contributing
+
+Open source, MIT, and genuinely early. The most useful things you could send:
+
+**Adapters for other frameworks.** LangGraph is the only one wired up today. Every producer
+emits the same `AgentTrace` contract (see [schema.py](graphsight-langgraph/graphsight_langgraph/schema.py)),
+so a LlamaIndex, DSPy, or plain-OpenAI adapter is a few hundred lines and needs nothing from
+the viewer.
+
+**Attack the used/ignored heuristic.** It is lexical overlap at a 0.2 threshold. It is fooled
+by paraphrase, and it is blind to a chunk the model used as a *negative* constraint, which
+leaves no words behind. The planned fix is offline leave-one-out ablation as ground truth, with
+precision and recall published against it. If you have measured this properly, tell me what you
+found.
+
+**Break it on your data.** Non-English repos, monorepos, private corpora. It has been run
+against a handful of public repos, not hundreds.
+
+```bash
+pip install -e ./graphsight -e ./graphsight-langgraph
+pip install pytest langgraph
+pytest graphsight/tests graphsight-langgraph/tests -q     # package tests
+pytest -q tests/test_recency.py tests/test_router_scoring.py \
+          tests/test_github_graph.py tests/test_db_integration.py \
+          tests/test_ingest_github_wiring.py               # engine, from backend/
+```
+
+Engine tests need Python 3.12+ (see [Known gaps](#known-gaps)). Issues and PRs both welcome,
+and a bug report with a trace file attached is worth more than either.
 
 ---
 

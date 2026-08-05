@@ -44,8 +44,11 @@ def test_retrieved_vs_used_active_flags():
     state = to_tracestate(make_trace(overlaps=(0.5, 0.05)))
     active = {n["id"]: n["active"] for n in state["graph"]["nodes"]}
     assert active == {"pr_1": True, "c_1": False}  # 0.05 < threshold -> dimmed
+    # the label must describe the measurement, not assert the item went unused
     subtitles = {n["id"]: n["meta"]["subtitle"] for n in state["graph"]["nodes"]}
-    assert "unused" in subtitles["c_1"] and "unused" not in subtitles["pr_1"]
+    assert "no lexical trace" in subtitles["c_1"]
+    assert "overlaps the answer" in subtitles["pr_1"]
+    assert "unused" not in subtitles["c_1"]
 
 
 def test_no_answer_means_no_usage_claims():

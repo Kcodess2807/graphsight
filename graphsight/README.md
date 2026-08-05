@@ -58,8 +58,10 @@ trace from any public GitHub repo — see [Producing traces](#producing-traces).
 
 The signal that isn't in your logs. When a trace carries the final answer,
 every retrieved item is scored by lexical overlap against it and rendered
-either **highlighted** (surfaced in the answer) or **dimmed** with the label
-*"retrieved, unused."* That splits the two classic retrieval failures at a
+either **highlighted** (*"overlaps the answer"*) or **dimmed** (*"no lexical
+trace in answer"*). The label states what was measured rather than what it
+implies, because a chunk the model used as a negative constraint leaves no
+words behind. Read that way, it splits the two classic retrieval failures at a
 glance:
 
 - **Right document retrieved, ignored by the model** → a dimmed node with a

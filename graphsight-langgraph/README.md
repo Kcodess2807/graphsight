@@ -130,9 +130,10 @@ gives the framework-neutral `AgentTrace` for your own tooling.
 When you pass `answer=`, each retrieved item gets an `answer_overlap`
 score — the lexical overlap between the item's content and the final
 answer. In the viewer, items that surfaced in the answer render
-highlighted; items retrieved but unused render dimmed with the label
-*"retrieved, unused."* That splits the two classic retrieval failures at a
-glance:
+highlighted (*"overlaps the answer"*); the rest render dimmed (*"no lexical
+trace in answer"*). The label states what was measured rather than what it
+implies, since a chunk used as a negative constraint leaves no words behind.
+Read that way, it splits the two classic retrieval failures at a glance:
 
 - **right doc retrieved, ignored by the model** → dimmed node with a high
   retrieval score

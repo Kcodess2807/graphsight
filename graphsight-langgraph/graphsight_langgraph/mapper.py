@@ -57,10 +57,12 @@ def to_tracestate(trace: AgentTrace) -> dict[str, Any]:
             seen_nodes.add(item.id)
             if has_usage:
                 used = (item.answer_overlap or 0.0) >= _USED
+                # say what was measured, not what it implies. a chunk used as a
+                # negative constraint leaves no lexical trace but is load bearing.
                 subtitle = (
-                    f"in the answer · via {trace.framework}"
+                    f"overlaps the answer · via {trace.framework}"
                     if used
-                    else f"retrieved, unused · via {trace.framework}"
+                    else f"no lexical trace in answer · via {trace.framework}"
                 )
             else:
                 used = True  # no answer to compare against, show everything plain
