@@ -27,7 +27,7 @@ Two packages, because they do different jobs:
 ## 2. See it work before writing any code
 
 The fastest way to understand the output is to look at one. This builds a real trace from a
-public GitHub repo — no token needed, no agent of your own:
+public GitHub repo, no token needed, no agent of your own:
 
 ```bash
 pip install "graphsight-langgraph[example]"
@@ -85,7 +85,7 @@ def retrieve(state: State, config):          # <- accept config
 
 
 def answer(state: State, config):
-    return {"answer": "PR #412 fixed it — the token refresh now retries once on a 401."}
+    return {"answer": "PR #412 fixed it, the token refresh now retries once on a 401."}
 
 
 graph = StateGraph(State)
@@ -113,8 +113,8 @@ graphsight .graphsight/
 
 ## 4. Read the result
 
-Two documents came back. **PR #101 scored 0.91 — nearly three times higher than PR #412's
-0.34 — and the answer never used it.**
+Two documents came back. **PR #101 scored 0.91, nearly three times higher than PR #412's
+0.34, and the answer never used it.**
 
 Click each node and compare the inspector:
 
@@ -126,9 +126,9 @@ Click each node and compare the inspector:
 That gap is the whole point. Your retriever ranked confidently and the model disagreed. The
 two failures this exposes:
 
-- **A dimmed node with a high score** — the right document was retrieved and the model
+- **A dimmed node with a high score**, the right document was retrieved and the model
   ignored it. Your retriever is fine; your prompt or context ordering isn't.
-- **A highlighted node that shouldn't be** — the model trusted the wrong thing.
+- **A highlighted node that shouldn't be**, the model trusted the wrong thing.
 
 The usage split is a lexical overlap heuristic (threshold 0.2), labeled as such. No LLM
 re-reads your evidence and no score is invented.
@@ -145,20 +145,20 @@ def retrieve(state, config):                             # accept it
     docs = retriever.invoke(state["question"], config=config)   # pass it through
 ```
 
-**Skip that and your trace shows the nodes but zero retrievals** — an empty graph. It is the
+**Skip that and your trace shows the nodes but zero retrievals**, an empty graph. It is the
 most common thing to get wrong.
 
 ---
 
 ## 6. Two things that change what you see
 
-**Pass `answer=`.** Without it there's no used/ignored split — every item renders plain,
+**Pass `answer=`.** Without it there's no used/ignored split, every item renders plain,
 because nothing has been compared against anything. Graphsight won't claim usage it can't
 measure.
 
 **Add a `score`.** Any of `score`, `relevance_score`, `similarity`, `_score` or
 `vector_score` in `Document.metadata` becomes the retrieval score. Without one, no score
-chips render — nothing is fabricated.
+chips render, nothing is fabricated.
 
 ---
 
@@ -167,7 +167,7 @@ chips render — nothing is fabricated.
 - **Every run accumulates.** `capture()` appends to `./.graphsight/`, so `graphsight
   .graphsight/` becomes your debugging history. Compare two runs to see what a prompt change
   did to retrieval.
-- **Draw relationships between results** — author, resolves, touches — with
+- **Draw relationships between results**, author, resolves, touches, with
   `metadata["edges"]`. Both ends of an edge must be documents you returned. See
   [making your retriever graph-aware](../graphsight-langgraph/README.md#making-your-retriever-graph-aware).
 - **Full API and schema:** [graphsight-langgraph](../graphsight-langgraph/README.md).

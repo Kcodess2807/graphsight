@@ -1,6 +1,6 @@
 # Graphsight
 
-**See what your agent retrieved — and what it actually used.**
+**See what your agent retrieved, and what it actually used.**
 
 [![PyPI](https://img.shields.io/pypi/v/graphsight.svg)](https://pypi.org/project/graphsight/)
 [![PyPI](https://img.shields.io/pypi/v/graphsight-langgraph.svg?label=graphsight-langgraph)](https://pypi.org/project/graphsight-langgraph/)
@@ -8,21 +8,21 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 Your agent retrieved twelve documents and answered from three. The other nine cost you tokens,
-latency, and a wider surface for the model to go wrong on — and nothing in your stack tells you
+latency, and a wider surface for the model to go wrong on. Nothing in your stack tells you
 which nine.
 
-Graphsight traces a run, then shows every retrieved item marked **used** or **ignored**, scored
-by lexical overlap against the final answer. No LLM re-reads your evidence, no scores are
+Graphsight traces a run, then marks every retrieved item **overlaps the answer** or **no lexical
+trace in answer**, scored by lexical overlap against the final answer. No LLM re-reads your evidence, no scores are
 invented, and nothing leaves localhost.
 
 ![Graphsight showing a retrieved-but-unused document](docs/media/retrieved-vs-used.gif)
 
-*A real run. `PR #101` scored **0.910** — the highest of anything retrieved — and the answer
+*A real run. `PR #101` scored **0.910**, the highest of anything retrieved, and the answer
 never used it. `PR #412` scored **0.340** and is the one that answered.*
 
-**New here?** [Your first trace](docs/FIRST_TRACE.md) — a 10-minute walkthrough — or the
+**New here?** [Your first trace](docs/FIRST_TRACE.md), a 10-minute walkthrough, or the
 [60-second start](#60-second-start) → [what this is](#what-this-actually-is).
-**Evaluating it?** [For reviewers](#for-reviewers--start-here) →
+**Evaluating it?** [For reviewers](#for-reviewers-start-here) →
 [benchmarks](#benchmarks--known-constraints).
 **Building on it?** [Architecture](#architecture) · [routing](#hybrid-routing) ·
 [measured behaviour](#measured-behaviour) · [quickstart](#quickstart) ·
@@ -48,7 +48,7 @@ capture(tracer, query="why is checkout failing?", answer=result["answer"])
 # -> .graphsight/20260728T184600_why-is-checkout-failing.json
 ```
 
-Passing `answer=` is what unlocks the retrieved-vs-used split — without it,
+Passing `answer=` is what unlocks the retrieved-vs-used split. Without it,
 everything renders plain and no usage is claimed.
 
 Then open it:
@@ -58,7 +58,7 @@ graphsight .graphsight/
 ```
 
 A local server on `127.0.0.1:4630` renders the run: the node graph, the retrieval steps, and
-the retrieved-vs-used verdict per item. The viewer has **zero dependencies** — stdlib
+the retrieved-vs-used verdict per item. The viewer has **zero dependencies**, stdlib
 `http.server` plus a bundled UI build. The tracer depends only on `langchain-core`.
 
 No account, no API key, no telemetry, no cloud.
@@ -69,20 +69,20 @@ No account, no API key, no telemetry, no cloud.
 
 Two halves, deliberately separable.
 
-### 1. The tracer + viewer — shipped, use it today
+### 1. The tracer + viewer: shipped, use it today
 
 | Package | What it does | Dependencies |
 |---|---|---|
 | [`graphsight-langgraph`](graphsight-langgraph/README.md) | One `BaseCallbackHandler` → framework-neutral `AgentTrace`. Also ships `graphsight-github-trace` (repo → traced run in one command) | `langchain-core` |
-| [`graphsight`](graphsight/README.md) | Local viewer — bundled Studio UI + stdlib server. `graphsight trace.json` or `graphsight .graphsight/` | none |
+| [`graphsight`](graphsight/README.md) | Local viewer, bundled Studio UI + stdlib server. `graphsight trace.json` or `graphsight .graphsight/` | none |
 
 This half works on **flat traces**. No graph, no database, no ingestion. If your agent does
 plain vector RAG, you still get the retrieved-vs-used signal, run history, and run diffing.
 
-### 2. The graph memory engine — the moat, heavier
+### 2. The graph memory engine: the moat, heavier
 
 A local-first hybrid store where **vectors and the relationship graph live in one `.lbug`
-file** — no graph-DB ↔ vector-DB sync problem — behind a two-tier entity resolver and an
+file**, no graph-DB ↔ vector-DB sync problem, behind a two-tier entity resolver and an
 intent-weighted router that emits a full `trace_log` for every query.
 
 This is what makes retrieval *causal* rather than merely similar: an agent asking "what broke
@@ -93,7 +93,7 @@ eight-month-old PR that happens to read like the question.
 model, and two API keys. Start with the tracer.
 
 > **Naming note:** the product is Graphsight. The internal Python package is still
-> `backend/tracerag/` — renaming it is churn we haven't paid for yet.
+> `backend/tracerag/`, renaming it is churn we haven't paid for yet.
 
 ---
 
@@ -107,9 +107,9 @@ addresses each:
 
 | Failure | Fix |
 |---|---|
-| **Dual-store sync hell** — keeping a graph DB and a vector DB consistent | Both live natively in one embedded LadybugDB file |
-| **Entity drift** — unconstrained extraction turns `PaymentService`, `payments-v2`, `pay_svc` into three nodes | Two-tier curation: cheap vector auto-merge, LLM adjudicates only the grey zone |
-| **Black-box routing** — no insight into why a hybrid retriever chose a graph edge over a chunk | Every query returns a structured `trace_log` the Studio renders |
+| **Dual-store sync hell**, keeping a graph DB and a vector DB consistent | Both live natively in one embedded LadybugDB file |
+| **Entity drift**, unconstrained extraction turns `PaymentService`, `payments-v2`, `pay_svc` into three nodes | Two-tier curation: cheap vector auto-merge, LLM adjudicates only the grey zone |
+| **Black-box routing**, no insight into why a hybrid retriever chose a graph edge over a chunk | Every query returns a structured `trace_log` the Studio renders |
 
 The anti-slop principle throughout: **evidence is never paraphrased by an LLM, and scores are
 never invented.** Overlap is lexical and reproducible. If we can't measure something, we don't
@@ -117,40 +117,40 @@ claim it.
 
 ---
 
-## For reviewers — start here
+## For reviewers: start here
 
-**One-sentence pitch:** a graph-backed causal memory tier for AI coding agents — GitHub events
+**One-sentence pitch:** a graph-backed causal memory tier for AI coding agents, GitHub events
 become a live knowledge graph (vectors + typed edges in one embedded store), agents query it
 over MCP instead of re-reading repos, and every answer ships with the traced path that produced
 it.
 
 **15-minute path:**
 
-1. **The product** — install the two packages above, trace one agent run, look at the
+1. **The product**, install the two packages above, trace one agent run, look at the
    retrieved-vs-used column. That loop is the whole pitch.
-2. **The engine** — [Architecture](#architecture) and [Hybrid routing](#hybrid-routing). The
+2. **The engine**, [Architecture](#architecture) and [Hybrid routing](#hybrid-routing). The
    interesting decisions are typed edge weights, recency decay, and per-relation hub throttling.
-3. **The honest part** — [Benchmarks & known constraints](#benchmarks--known-constraints). The
+3. **The honest part**, [Benchmarks & known constraints](#benchmarks--known-constraints). The
    original token-reduction thesis did **not** hold. Read it before forming a verdict.
-4. **The SaaS layer** — [Multi-tenant mode](#multi-tenant-mode). Off by default.
+4. **The SaaS layer**, [Multi-tenant mode](#multi-tenant-mode). Off by default.
 
 ### What's real vs. what's mocked
 
 | Layer | Status |
 |---|---|
-| `graphsight` viewer + `graphsight-langgraph` tracer | **Real**, published at 0.3.0, install-verified from PyPI |
-| Retrieval engine (ingest → curate → route → trace) | **Real**, 51 tests, live-verified against `fastapi/fastapi` and `pallets/click` |
+| `graphsight` viewer + `graphsight-langgraph` tracer | **Real**, published at 0.3.1, install-verified from PyPI |
+| Retrieval engine (ingest → curate → route → trace) | **Real**, 43 tests, live-verified against `fastapi/fastapi` and `pallets/click` |
 | Structured GitHub ingest (typed, dated edges) | **Real**, exercised against the live API |
 | Studio UI (trace canvas, streamed answers, citations, sessions) | **Real**, wired to the live API with an offline sample fallback |
 | Multi-tenant pipeline (GitHub → Postgres → compile → S3 → pod swap) | **Real**, e2e-tested; off by default |
 | MCP server (`trace_impact` / `search_context` / `find_entity`) | **Real**, mounted in SaaS mode |
-| Landing page waitlist form | UI real; **form logs to console** — capture backend not wired |
-| `archive/dashboard/` Next.js console | UI complete, data mocked — retired after the Graphsight pivot |
+| Landing page waitlist form | UI real; **form logs to console**, capture backend not wired |
+| `archive/dashboard/` Next.js console | UI complete, data mocked, retired after the Graphsight pivot |
 
 ### Known gaps
 
 Single-writer LadybugDB lock (the API must start *after* ingest; single worker). In-memory
-rate-limit counters (Redis is the multi-worker path). Retrieval *quality* is unmeasured — the
+rate-limit counters (Redis is the multi-worker path). Retrieval *quality* is unmeasured. The
 engine's correctness and performance are verified, but every automated test stubs the embedder,
 so vector relevance itself has no regression coverage. And the accuracy ceiling in
 [Benchmarks](#benchmarks--known-constraints).
@@ -170,7 +170,7 @@ flowchart TB
     TEXT --> PROX["CO_OCCURS<br/>(proximity, weighted lowest)"]
   end
 
-  subgraph STORE["2 · LadybugDB — one .lbug"]
+  subgraph STORE["2 · LadybugDB, one .lbug"]
     direction LR
     ENT[("Entity<br/>id · label · type · ts<br/>embedding FLOAT 384")]
     DOCN[("Document<br/>id · path · content")]
@@ -182,7 +182,7 @@ flowchart TB
   TYPED --> ENT
   PROX --> ENT
 
-  subgraph QUERY["3 · Query — two arms, fused by intent"]
+  subgraph QUERY["3 · Query, two arms, fused by intent"]
     direction TB
     Q["query"] --> INTENT{"intent?"}
     INTENT -->|relational| WR["alpha=0.15 beta=0.85"]
@@ -207,8 +207,8 @@ flowchart TB
 | **Embeddings** | `sentence-transformers` · `all-MiniLM-L6-v2` | 384-dim vectors (cosine) |
 | **Entity extraction** | **GLiNER** (designed) / **spaCy** (current fallback) | Zero-shot NER; see Benchmarks for why spaCy is active |
 | **Storage** | **LadybugDB** (embedded, Kùzu-lineage) | Single-file hybrid vector + graph store, native HNSW |
-| **LLM — extraction / intent** | **Groq** · `llama-3.1-8b-instant` | Grey-zone disambiguation + router intent fallback |
-| **LLM — generation** | **OpenRouter** · `anthropic/claude-3-haiku` | Grounded answers + node summaries |
+| **LLM, extraction / intent** | **Groq** · `llama-3.1-8b-instant` | Grey-zone disambiguation + router intent fallback |
+| **LLM, generation** | **OpenRouter** · `anthropic/claude-3-haiku` | Grounded answers + node summaries |
 | **API** | **FastAPI** + Uvicorn | trace · subgraph · answer · graphs · history |
 | **Concurrency** | read connection pool + bounded embed pool | parallel graph/vector reads; embeds off request threads |
 | **Auth** | **Clerk** + **PyJWT / JWKS** | Networkless verification; dev-bypass when unconfigured |
@@ -244,18 +244,18 @@ Text ingestion can only produce `CO_OCCURS`. Structure produces the rest, so a t
 `AUTHORED → RESOLVES` chain outranks a one-hop proximity guess. An edge **upgrades** when
 structure later proves a guess right; it never downgrades.
 
-`REVIEWED` comes from `/pulls/N/reviews`, **not** `requested_reviewers` — that field is a
+`REVIEWED` comes from `/pulls/N/reviews`, **not** `requested_reviewers`. That field is a
 pending ask which empties once someone actually reviews, so reading it both misses real
 reviewers and credits people who never opened the code. Self-approvals are excluded.
 
 **Recency.** `ts` is the underlying event time (0 when unknown) and drives
 `score *= 0.5 ** (age_days / half_life)`, floored at `RECENCY_FLOOR = 0.35`. Half-life is
-per type — Ticket 21d, Commit 45d, PR 60d, File 120d, Person 180d, Service/Repo 365d.
+per type, Ticket 21d, Commit 45d, PR 60d, File 120d, Person 180d, Service/Repo 365d.
 Undated entities are left alone rather than penalised, so a graph without dates behaves exactly
 as it did before.
 
 **Migration is automatic.** Opening an older store adds the missing columns via
-`ALTER TABLE ... ADD ... DEFAULT`, keeping every row, and reprices legacy edges — the pre-0.3
+`ALTER TABLE ... ADD ... DEFAULT`, keeping every row, and reprices legacy edges, the pre-0.3
 writer stored them all at a degenerate `1.0`, which flattened traversal *and* would have
 outranked every typed relation forever. Verified lossless on a real 83-node store. Reingest to
 populate real timestamps and relations.
@@ -274,7 +274,7 @@ backend/
 │   ├── github_graph.py     # GitHub payloads → typed, timestamped edges
 │   ├── recency.py          # age decay: 0.5 ** (age_days / half_life), floored
 │   ├── router.py           # intent classify + dual-stream fusion + trace_log
-│   ├── memory.py           # GraphMemory — embedded API (ingest / query / context)
+│   ├── memory.py           # GraphMemory, embedded API (ingest / query / context)
 │   └── integrations/langchain.py   # drop-in BaseRetriever
 ├── scripts/                # ingest · ingest_github · benchmark · stress_test
 ├── worker/                 # ← SaaS: Celery ingestion + orchestration
@@ -285,7 +285,7 @@ backend/
     ├── test_ingest_github_wiring.py     # the live path reaches the builder
     └── test_e2e_serve.py · test_compiler.py · test_onboarding.py   # ← SaaS
 
-frontend/                   # Vite + React 18 — landing + Graphsight Studio
+frontend/                   # Vite + React 18, landing + Graphsight Studio
 └── src/components/
     ├── landing/            # marketing page at `/`
     ├── memory/             # Studio at `/studio`: CommandPanel · GraphCanvas · Inspector
@@ -293,19 +293,19 @@ frontend/                   # Vite + React 18 — landing + Graphsight Studio
 
 graphsight-langgraph/       # standalone tracer: any LangGraph agent → AgentTrace v0.2
 graphsight/                 # pip-installable local viewer (bundled UI + stdlib server)
-BETA.md                     # "Beta for Friends" — 10-minute test script + feedback questions
+BETA.md                     # "Beta for Friends", 10-minute test script + feedback questions
 docs/PITCH.md               # 90-second builder pitch, demo script, hard-question answers
 ```
 
 ---
 
-## Entity resolution — the two-tier janitor
+## Entity resolution: the two-tier janitor
 
 Unconstrained extraction produces near-duplicates. Asking an LLM about every pair is expensive
 and non-deterministic. So:
 
 1. **Fast merge (0 LLM).** Cosine ≥ **0.92** against an existing node → same entity, merge.
-2. **Grey zone (0.85–0.92).** Ask Groq a single yes/no question. **Fail-safe is NO** — an
+2. **Grey zone (0.85 to 0.92).** Ask Groq a single yes/no question. **Fail-safe is NO**. An
    unreachable LLM mints a new node rather than silently collapsing two real entities.
 3. **Below 0.85.** New node, slug id.
 
@@ -326,11 +326,11 @@ score_total = (alpha · score_vector + beta · score_graph) × recency
 ```
 
 **The graph arm is a multiplicative BFS.** A path's score is the product of its edge weights, so
-depth costs you — and a hop through `AUTHORED` (0.95) survives far better than one through
+depth costs you, and a hop through `AUTHORED` (0.95) survives far better than one through
 `CO_OCCURS` (0.35). Seeds come from deterministic entity links first, then fuzzy cosine hits.
 
 **Hub throttling is per relation, not per node.** A repo `TOUCHES` everything, so that relation
-carries no signal and is dropped — but the repo's other edges still work. Judging the whole node
+carries no signal and is dropped, but the repo's other edges still work. Judging the whole node
 would hide any PR with a wide diff, which is the opposite of what you want. (This was a real
 bug: enabling `--files` gave real PRs enough `TOUCHES` edges to trip a per-node filter, making
 **47% of `pallets/click`'s PRs untraversable** and collapsing traversal to one hop.)
@@ -370,12 +370,12 @@ The gap between 18ms and 71ms is the embedder: roughly 50ms per query to encode.
 **Hostile input.** No crash on: null user, null body, malformed dates, emoji logins, a
 5000-repeat body, a self-referencing PR, or a 2000-file diff. Empty / whitespace / 50k-char /
 null-byte queries all return normally. A Cypher injection attempt
-(`'; MATCH (n) DETACH DELETE n; //`) left all 1274 nodes intact — the parameterized queries
+(`'; MATCH (n) DETACH DELETE n; //`) left all 1274 nodes intact. The parameterized queries
 hold.
 
 **Test suite.** 51 tests. Scoring logic runs against a fake store (no driver, no model
 download); `test_db_integration.py` runs the real DDL, migration and `MERGE ... ON MATCH`
-clauses through LadybugDB. CI installs `pytest ladybug numpy pandas requests tqdm` — no torch —
+clauses through LadybugDB. CI installs `pytest ladybug numpy pandas requests tqdm` (no torch), 
 so the whole job finishes in seconds.
 
 ---
@@ -389,7 +389,7 @@ cited node. Nodes show an age chip and recency multiplier; edges show their rela
 Other routes: `/memory/preview` (mock data, no backend), `/memory/import` (render an external
 LangGraph trace with no backend at all), `/classic` (the earlier dashboard panes).
 
-Run history lands in `.graphsight/`, browsable and **diffable** — two runs side by side, so you
+Run history lands in `.graphsight/`, browsable and **diffable**, two runs side by side, so you
 can see what changed between them.
 
 ---
@@ -411,7 +411,7 @@ OVERALL            10       3558.3         3513.0       -1.3%      20.0%
 These are not flattering and they are real.
 
 **Token reduction ≈ 0%.** On this dense single-domain corpus the top-k vector chunks and the
-top-k graph-traversed chunks heavily overlap — the graph surfaces largely the *same* evidence
+top-k graph-traversed chunks heavily overlap, the graph surfaces largely the *same* evidence
 the vectors already found. After global chunk deduplication the two contexts reach parity. (An
 earlier −70% figure was a genuine bug: chunks were repeated once *per mentioning entity*.
 Global dedup fixed it, and we deleted the claim.)
@@ -422,7 +422,7 @@ domain (markdown artifacts, `CARDINAL` numbers, timestamps) and the graph is noi
 free tier caps the judge at 5,000 characters of context, hiding relevant evidence past the
 cutoff.
 
-**Treat this as a baseline, not a verdict.** The pipeline is correct and operational — these are
+**Treat this as a baseline, not a verdict.** The pipeline is correct and operational. These are
 data-quality and environment constraints. The path forward: unblock GLiNER, raise the judge
 budget, and re-scope the token comparison against naive over-retrieval rather than equal-k
 vector retrieval, which is where graph precision would actually save tokens.
@@ -478,7 +478,7 @@ renders plain, which is the honest default when there is nothing to compare agai
 > **The engine needs Python 3.12 or newer.** On 3.11, LadybugDB 0.18.3 loads the VECTOR
 > extension fine but `CREATE_VECTOR_INDEX` dies with `RuntimeError: Caught an unknown
 > exception!`, so ingestion fails at the index build. Verified working on 3.12.3 and 3.13.7.
-> (The `graphsight` and `graphsight-langgraph` packages are unaffected — they never touch
+> (The `graphsight` and `graphsight-langgraph` packages are unaffected, they never touch
 > LadybugDB and support 3.10+.)
 >
 > **Windows: install from a short path.** `torch` ships header files deep enough to exceed
@@ -505,7 +505,7 @@ python scripts/ingest_github.py --repo pallets/click --issues 50 --commits 50 --
 #   --no-text writes structured edges only, skipping extraction entirely.
 #   GITHUB_TOKEN in .env raises the rate limit from 60/hr to 5000/hr.
 
-# serve (AFTER ingest — single-writer DB lock, single worker)
+# serve (AFTER ingest: single-writer DB lock, single worker)
 uvicorn api:app --reload --port 8000           # docs at /docs
 
 # frontend, in a second shell
@@ -535,7 +535,7 @@ where each org gets a physically isolated graph.
 **The one idea:** *Postgres is the durable truth; each `.lbug` is a compiled, versioned,
 disposable read-artifact.* A Celery pipeline (**GitHub → NLP → Postgres → compile → S3**)
 produces per-org artifacts; serving pods pull and **atomically swap** them. Durability and read
-performance are decoupled — lose a `.lbug`, recompile it.
+performance are decoupled, lose a `.lbug`, recompile it.
 
 One `.lbug` per organization ("cell"). All of an org's repos compile into the same file, so
 cross-repo queries work without a join. Redis ZSET debounce-coalesces bursty webhooks; an atomic
@@ -601,4 +601,4 @@ and a bug report with a trace file attached is worth more than either.
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+MIT, see [LICENSE](LICENSE).

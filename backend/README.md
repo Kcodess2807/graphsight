@@ -8,7 +8,7 @@ app_port: 7860
 pinned: false
 ---
 
-# TraceRAG — Backend API
+# TraceRAG: Backend API
 
 GraphRAG retrieval engine (FastAPI + LadybugDB). This Space serves the backend
 for the [TraceRAG Studio](https://github.com/Kcodess2807/graphsight) frontend.
