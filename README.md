@@ -427,7 +427,7 @@ Honest accounting of what is finished, what is partial, and what is not measured
 | Layer | Status |
 |---|---|
 | `graphsight` viewer + `graphsight-langgraph` tracer | **Real**, published at 0.3.1, install-verified from PyPI |
-| Retrieval engine (ingest → curate → route → trace) | **Real**, 43 tests, live-verified against `fastapi/fastapi` and `pallets/click` |
+| Retrieval engine (ingest → curate → route → trace) | **Real**, 51 tests, live-verified against `fastapi/fastapi` and `pallets/click` |
 | Structured GitHub ingest (typed, dated edges) | **Real**, exercised against the live API |
 | Studio UI (trace canvas, streamed answers, citations, sessions) | **Real**, wired to the live API with an offline sample fallback |
 | Multi-tenant pipeline (GitHub → Postgres → compile → S3 → pod swap) | **Real**, e2e-tested; off by default |
