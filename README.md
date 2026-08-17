@@ -192,7 +192,7 @@ flowchart TB
 | **Embeddings** | `sentence-transformers` · `all-MiniLM-L6-v2` | 384-dim vectors (cosine) |
 | **Entity extraction** | **GLiNER** (designed) / **spaCy** (current fallback) | Zero-shot NER; see Benchmarks for why spaCy is active |
 | **Storage** | **LadybugDB** (embedded, Kùzu-lineage) | Single-file hybrid vector + graph store, native HNSW |
-| **LLM, extraction / intent** | **Groq** · `llama-3.1-8b-instant` | Grey-zone disambiguation + router intent fallback |
+| **LLM, router intent** | **Groq** · `llama-3.1-8b-instant` | Query intent classification; falls back to OpenRouter when unset |
 | **LLM, generation** | **OpenRouter** · `anthropic/claude-3-haiku` | Grounded answers + node summaries |
 | **API** | **FastAPI** + Uvicorn | trace · subgraph · answer · graphs · history |
 | **Concurrency** | read connection pool + bounded embed pool | parallel graph/vector reads; embeds off request threads |
