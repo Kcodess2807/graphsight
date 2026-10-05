@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import asyncio
 import logging
-import os
 from contextlib import asynccontextmanager
 from dataclasses import asdict
 from pathlib import Path
@@ -25,9 +24,7 @@ from auth import get_current_user, get_current_tenant_org
 from cache import LRUCache
 from database import init_db
 from ratelimit import limiter, LLM_RATE_LIMIT
-from routers import history, onboarding, github_oauth, webhooks
-from registry import REGISTRY, default_tenant_loader, set_model_source
-from middleware.routing import TenantRoutingMiddleware
+from routers import history
 import mcp_server
 
 logging.basicConfig(level=logging.INFO)
@@ -55,32 +52,14 @@ if config.SENTRY_ENABLED:
 _state: dict = {}
 
 
-# --- Tenant graph resolution (single path for both single- and multi-tenant) ---
+# single tenant: every org resolves to the warm local graph
 def _mcp_tenant_provider(org_id: str) -> "mcp_server.Tenant":
-    """Resolve an org_id to its MCP tenant (router+db) via the shared registry,
-    falling back to the warm local graph in single-tenant mode."""
-    lg = REGISTRY.get_tenant(org_id)
-    if lg is not None and lg.router is not None and lg.db is not None:
-        return mcp_server.Tenant(router=lg.router, db=lg.db,
-                                 graph_id=lg.artifact_id or org_id)
-    if not config.MULTI_TENANCY_ENABLED:
-        return mcp_server.Tenant(
-            router=_state["router"], db=_state["db"],
-            graph_id=(Path(_state.get("db_path", "")).name or org_id),
-        )
-    raise RuntimeError(f"tenant graph not loaded on this pod: {org_id}")
+    return mcp_server.Tenant(router=_state["router"], db=_state["db"],
+                             graph_id=Path(_state.get("db_path", "")).name or org_id)
 
 
 def _resolve_tenant(org_id: str):
-    """(router, db) for an org via the registry; warm local graph in dev; 503 if a
-    multi-tenant graph isn't loaded on this pod."""
-    lg = REGISTRY.get_tenant(org_id)
-    if lg is not None and lg.router is not None and lg.db is not None:
-        return lg.router, lg.db
-    if not config.MULTI_TENANCY_ENABLED:
-        return _state["router"], _state["db"]
-    raise HTTPException(status_code=503,
-                        detail=f"Tenant graph not loaded on this pod: {org_id}")
+    return _state["router"], _state["db"]
 
 
 @asynccontextmanager
@@ -108,55 +87,7 @@ async def lifespan(app: FastAPI):
     except Exception as exc:  # noqa: BLE001
         logger.warning("Postgres history disabled (%s).", exc)
 
-    # In multi-tenant mode, provision the control-plane + graph-store schemas on
-    # boot so a fresh stack is self-initializing (single-tenant/dev skips this).
-    if config.MULTI_TENANCY_ENABLED:
-        try:
-            from models.control_plane import init_control_plane
-            from models.graph_store import init_graph_store
-
-            init_control_plane()
-            init_graph_store()
-            logger.info("Control-plane + graph-store schemas ready (multi-tenant).")
-        except Exception as exc:  # noqa: BLE001
-            logger.warning("Multi-tenant schema init skipped (%s).", exc)
-
-    # Tenant graph resolution goes through the shared registry. Bind the warm
-    # local graph as the DEFAULT tenant so single-tenant serves through the exact
-    # same path (no second load), and register the handle loader so the pod agent
-    # can open real per-tenant graphs later (sharing the warm models). The MCP
-    # provider now resolves per org_id — the same function serves both modes.
-    REGISTRY.set_handle_loader(default_tenant_loader)
-    set_model_source(_state["router"])   # tenants share this warm embedder/spaCy
-    REGISTRY.bind(
-        config.DEFAULT_TENANT_ORG_ID,
-        db=_state["db"], router=_state["router"],
-        artifact_id="local-default", version=0, path=_state.get("db_path"),
-    )
     mcp_server.set_tenant_provider(_mcp_tenant_provider)
-
-    # Optional: run the pod agent (the multi-tenant REALITY loop) on this web pod.
-    # Off by default (POD_AGENT_ENABLED != "1"), so the single-tenant demo and the
-    # HF deploy are completely unaffected; it needs the control-plane DB configured.
-    if os.getenv("POD_AGENT_ENABLED") == "1":
-        import lifecycle
-        import pod_agent
-
-        # Boot sync: register this pod in the fleet + re-hydrate any tenants it was
-        # already assigned (so a rescheduled/crashed pod serves immediately, before
-        # any user intent check). Off the event loop; never blocks boot on failure.
-        try:
-            hydrated = await asyncio.to_thread(lifecycle.boot_pod, config.POD_ID)
-            logger.info("Pod boot: registered + hydrated %d assigned tenant(s).",
-                        len(hydrated))
-        except Exception as exc:  # noqa: BLE001
-            logger.warning("Pod boot sync skipped (%s).", exc)
-
-        _state["pod_agent_stop"] = asyncio.Event()
-        _state["pod_agent_task"] = asyncio.create_task(
-            pod_agent.run_pod_agent(_state["pod_agent_stop"])
-        )
-        logger.info("Pod agent enabled (pod_id=%s).", pod_agent.POD_ID)
 
     logger.info("TraceRAG STUDIO API ready (db=%s)", config.DB_PATH)
     try:
@@ -165,14 +96,6 @@ async def lifespan(app: FastAPI):
         async with mcp_server.session_lifespan():
             yield
     finally:
-        # Stop the pod agent first (if running): signal + await the task.
-        _agent_task = _state.get("pod_agent_task")
-        if _agent_task is not None:
-            _state["pod_agent_stop"].set()
-            try:
-                await _agent_task
-            except Exception as exc:  # noqa: BLE001
-                logger.warning("Pod agent shutdown failed: %s", exc)
         # ---- graceful shutdown ------------------------------------------------
         # Close BOTH the original and the currently-active DB: a graph hot-swap
         # replaces _state["db"] with a new TraceDB, so the active one would
@@ -202,14 +125,6 @@ app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 app.include_router(history.router)
-app.include_router(onboarding.router)   # admin tenant provisioning (X-Admin-Secret)
-app.include_router(github_oauth.router) # GitHub OAuth connect (encrypts the token)
-app.include_router(webhooks.router)     # real-time GitHub webhook -> debounce
-
-# Gateway routing simulation: gate tenant-scoped routes on this pod's
-# PodAssignment (no-op unless MULTI_TENANCY_ENABLED). Added BEFORE CORS so CORS
-# stays the outermost layer and its headers apply even to 421/409/503 rejections.
-app.add_middleware(TenantRoutingMiddleware)
 
 app.add_middleware(
     CORSMiddleware,
@@ -401,10 +316,6 @@ def switch_graph(req: SwitchGraphRequest) -> dict:
     _state["db"] = new_db
     _state["db_path"] = str(target)
     _state["router"].db = new_db
-    # keep the default-tenant registry entry in sync so tenant resolution (and
-    # the MCP tools) follow the hot-swap too.
-    REGISTRY.bind(config.DEFAULT_TENANT_ORG_ID, db=new_db, router=_state["router"],
-                  artifact_id="local-default", version=0, path=str(target))
     _SUMMARY_CACHE.clear()  # snippets differ per graph
     if old is not None and old is not new_db:
         try:

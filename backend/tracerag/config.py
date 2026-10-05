@@ -70,32 +70,9 @@ MCP_SEED_MAX_DEGREE = int(os.getenv("TRACERAG_MCP_SEED_MAX_DEGREE", "200"))
 # find_entity) rather than tracing a spurious weak match.
 MCP_RESOLVE_MIN_SIM = float(os.getenv("TRACERAG_MCP_RESOLVE_MIN_SIM", "0.40"))
 
-# --- Multi-tenancy (SaaS Cell Model) ---
-# OFF by default: the API resolves every request to DEFAULT_TENANT_ORG_ID and
-# serves the single warm local graph, so local/dev and the HF demo are untouched.
-# ON: requests carry a per-org API key, the graph is chosen per tenant from the
-# registry, and the routing middleware enforces pod assignment.
-MULTI_TENANCY_ENABLED = os.getenv("MULTI_TENANCY_ENABLED", "0") in ("1", "true", "True")
-# The synthetic org every request maps to in single-tenant mode.
+# The org every request maps to. Single tenant; the multi-tenant control plane
+# lives on the saas-control-plane branch.
 DEFAULT_TENANT_ORG_ID = os.getenv("DEFAULT_TENANT_ORG_ID", "org_local_dev")
-# This serving instance's identity — the gateway routes org_id -> POD_ID, and the
-# pod agent claims assignments for it. Stable per pod; injected by the orchestrator.
-POD_ID = os.getenv("POD_ID", "pod-local-dev")
-
-# Server-side secret guarding the admin onboarding endpoint. Unset => the endpoint
-# refuses all requests (503), so it can never be provisioned open by accident.
-ADMIN_SECRET_KEY = os.getenv("ADMIN_SECRET_KEY")
-
-# --- GitHub App: OAuth handshake + webhook verification ---
-GITHUB_CLIENT_ID = os.getenv("GITHUB_CLIENT_ID")
-GITHUB_CLIENT_SECRET = os.getenv("GITHUB_CLIENT_SECRET")
-GITHUB_OAUTH_REDIRECT_URI = os.getenv(
-    "GITHUB_OAUTH_REDIRECT_URI", "http://localhost:8000/api/github/callback")
-GITHUB_OAUTH_SCOPES = os.getenv("GITHUB_OAUTH_SCOPES", "repo read:org")
-# Signs the OAuth `state` (CSRF + which-org binding). Falls back to ADMIN_SECRET_KEY.
-GITHUB_OAUTH_STATE_SECRET = os.getenv("GITHUB_OAUTH_STATE_SECRET") or ADMIN_SECRET_KEY
-# Shared secret configured on the GitHub webhook; verifies X-Hub-Signature-256.
-GITHUB_WEBHOOK_SECRET = os.getenv("GITHUB_WEBHOOK_SECRET")
 
 # Sentry error tracking + performance monitoring. Fully optional: unset DSN =
 # disabled, so local/dev runs are untouched. traces_sample_rate is 1.0 (trace
@@ -192,8 +169,6 @@ GLINER_THRESHOLD = float(os.getenv("TRACERAG_GLINER_THRESHOLD", "0.55"))
 GLINER_WINDOW_WORDS = int(os.getenv("TRACERAG_GLINER_WINDOW_WORDS", "300"))
 GLINER_WINDOW_OVERLAP = int(os.getenv("TRACERAG_GLINER_WINDOW_OVERLAP", "50"))
 
-CHUNK_SIZE = int(os.getenv("TRACERAG_CHUNK_SIZE", "1200"))
-CHUNK_OVERLAP = int(os.getenv("TRACERAG_CHUNK_OVERLAP", "150"))
 
 
 # ladybugdb schema (kùzu-compatible cypher ddl)

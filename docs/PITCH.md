@@ -119,7 +119,7 @@ then open the trace. (Needs network; falls back gracefully on rate limits.)
 - Verified against langchain-core 1.5.0 + current LangGraph.
 - The full engine behind it: hybrid vector+graph store in a single embedded
   file, two-tier entity resolution, intent-weighted routing, MCP server,
-  multi-tenant pipeline — e2e-tested, in the same repo.
+  in the same repo. The multi-tenant pipeline is on the saas-control-plane branch.
 - Team of 3 (me: backend + AI logic; Vishal: backend; Utsav: frontend + AI).
 
 ## Hard questions — honest answers

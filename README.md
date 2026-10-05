@@ -200,10 +200,6 @@ flowchart TB
 | **History** | **Neon Postgres** via **SQLModel** | Users, sessions, persisted trace logs |
 | **Frontend** | **Vite + React 18 + ReactFlow** · Tailwind | Graphsight Studio |
 | **Observability** | **Sentry** (opt-in via DSN) | Full-stack error + perf tracing |
-| _**SaaS only**_ | _active when_ `MULTI_TENANCY_ENABLED` | |
-| **Queue / debounce** | **Celery** + **Redis** | Incremental compute + ZSET debounce-coalesce |
-| **Control plane** | **Postgres** (two DBs) | Orgs · keys · pods · jobs / durable nodes + edges |
-| **Artifacts** | **AWS S3** (boto3) · local mock | Versioned per-org `.lbug` |
 | **Agent interface** | **MCP** SDK | Typed semantic tools at `/mcp` |
 
 ### Data model
@@ -249,25 +245,23 @@ populate real timestamps and relations.
 
 ```
 backend/
-├── api.py                  # FastAPI app + lifespan (warmup, pools, MCP mount, pod agent)
-├── auth.py                 # Clerk JWT verify + tenant API-key resolution
+├── api.py                  # FastAPI app + lifespan (warmup, pools, MCP mount)
+├── auth.py                 # Clerk JWT verify
 ├── tracerag/               # the engine (product name: Graphsight)
 │   ├── config.py           # single source of truth: weights, half-lives, thresholds
 │   ├── db.py               # LadybugDB: pools, HNSW, typed edges, schema migration
 │   ├── extract.py          # GLiNER (→ spaCy fallback) + sliding window + LRU cache
-│   ├── curation.py         # two-tier resolution (vector fast-merge + Groq grey zone)
+│   ├── curation.py         # two-tier resolution (vector fast-merge + LLM grey zone)
 │   ├── github_graph.py     # GitHub payloads → typed, timestamped edges
 │   ├── recency.py          # age decay: 0.5 ** (age_days / half_life), floored
 │   ├── router.py           # intent classify + dual-stream fusion + trace_log
 │   └── integrations/langchain.py   # drop-in BaseRetriever
 ├── scripts/                # ingest · ingest_github · benchmark · stress_test
-├── worker/                 # ← SaaS: Celery ingestion + orchestration
-├── models/ · routers/ · middleware/     # history, onboarding, gateway routing
+├── models/ · routers/      # chat history
 └── tests/
     ├── test_recency.py · test_router_scoring.py · test_github_graph.py   # scoring, no DB
     ├── test_db_integration.py           # real .lbug: DDL, migration, MERGE semantics
-    ├── test_ingest_github_wiring.py     # the live path reaches the builder
-    └── test_e2e_serve.py · test_compiler.py · test_onboarding.py   # ← SaaS
+    └── test_ingest_github_wiring.py     # the live path reaches the builder
 
 frontend/                   # Vite + React 18, landing + Graphsight Studio
 └── src/components/
@@ -429,14 +423,14 @@ Honest accounting of what is finished, what is partial, and what is not measured
 | Retrieval engine (ingest → curate → route → trace) | **Real**, 51 tests, live-verified against `fastapi/fastapi` and `pallets/click` |
 | Structured GitHub ingest (typed, dated edges) | **Real**, exercised against the live API |
 | Studio UI (trace canvas, streamed answers, citations, sessions) | **Real**, wired to the live API with an offline sample fallback |
-| Multi-tenant pipeline (GitHub → Postgres → compile → S3 → pod swap) | **Real**, e2e-tested; off by default |
-| MCP server (`trace_impact` / `search_context` / `find_entity`) | **Real**, mounted in SaaS mode |
-| Landing page waitlist form | UI real; **form logs to console**, capture backend not wired |
+| Multi-tenant pipeline | On the `saas-control-plane` branch, not `main`; see [Multi-tenant mode](#multi-tenant-mode) |
+| MCP server (`trace_impact` / `search_context` / `find_entity`) | **Real**, mounted at `/mcp` by default (`TRACERAG_MCP_ENABLED=0` disables) |
+| Landing page waitlist form | **Real**, posts to `VITE_WAITLIST_ENDPOINT`; refuses to report success when unset |
 
 ### Known gaps
 
 Single-writer LadybugDB lock (the API must start *after* ingest; single worker). In-memory
-rate-limit counters (Redis is the multi-worker path). Retrieval *quality* is unmeasured. The
+rate-limit counters, so a single worker. Retrieval *quality* is unmeasured. The
 engine's correctness and performance are verified, but every automated test stubs the embedder,
 so vector relevance itself has no regression coverage. And the accuracy ceiling in
 [Benchmarks](#benchmarks--known-constraints).
@@ -490,27 +484,11 @@ cd ../frontend; npm install; npm run dev
 
 ## Multi-tenant mode
 
-Off by default (`MULTI_TENANCY_ENABLED` unset). With it on, Graphsight runs as a B2B platform
-where each org gets a physically isolated graph.
-
-**The one idea:** *Postgres is the durable truth; each `.lbug` is a compiled, versioned,
-disposable read-artifact.* A Celery pipeline (**GitHub → NLP → Postgres → compile → S3**)
-produces per-org artifacts; serving pods pull and **atomically swap** them. Durability and read
-performance are decoupled, lose a `.lbug`, recompile it.
-
-One `.lbug` per organization ("cell"). All of an org's repos compile into the same file, so
-cross-repo queries work without a join. Redis ZSET debounce-coalesces bursty webhooks; an atomic
-Lua claim prevents double-compiles; a pod agent runs an intent-vs-reality loop to converge each
-pod onto its assigned artifact version.
-
-```bash
-cp .env.example .env       # set ADMIN_SECRET_KEY, GITHUB_TOKEN, OPENROUTER_API_KEY
-docker compose up -d       # db + redis + api:8000 + worker + beat
-# provision a tenant; save the returned sk_live_… key (shown once)
-```
-
-`backend/tests/` contains e2e proofs for each stage: ingest pipeline, compiler, GitHub client
-pagination, onboarding, and dynamic tenant load with model sharing.
+Not on `main`. It lives on the
+[`saas-control-plane`](https://github.com/Kcodess2807/graphsight/tree/saas-control-plane) branch:
+per-org isolated graphs, compiled by a Celery pipeline (GitHub → NLP → Postgres → compile → S3)
+and atomically swapped onto serving pods. Parked until there is a first tenant; its heavy pipeline
+steps were still stubs when it was moved off `main`.
 
 ---
 
@@ -524,7 +502,7 @@ pagination, onboarding, and dynamic tenant load with model sharing.
 | `GET/POST /api/graphs` · `/switch` | List and hot-swap the active `.lbug` |
 | `GET/POST /api/sessions` · `/traces` | Persisted chat history (ownership-checked) |
 | `POST /api/summarize` | One-sentence node summary (server-cached) |
-| `/mcp` | MCP tools: `trace_impact` · `search_context` · `find_entity` (SaaS mode) |
+| `/mcp` | MCP tools: `trace_impact` · `search_context` · `find_entity` |
 
 ---
 
