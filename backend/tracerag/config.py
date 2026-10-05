@@ -145,7 +145,6 @@ DEV_USER_ID = os.getenv("TRACERAG_DEV_USER_ID", "dev-user")
 # two-tier curation thresholds (cosine sim): >=fast auto-merge, >=deep ask llm, else new node
 FAST_MERGE_THRESHOLD = float(os.getenv("TRACERAG_FAST_MERGE", "0.92"))
 DEEP_MERGE_THRESHOLD = float(os.getenv("TRACERAG_DEEP_MERGE", "0.85"))
-GREY_ZONE_LOW = DEEP_MERGE_THRESHOLD  # backward-compat alias
 
 CURATION_TOP_K = int(os.getenv("TRACERAG_CURATION_TOP_K", "5"))
 

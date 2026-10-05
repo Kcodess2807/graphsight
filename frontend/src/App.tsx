@@ -4,7 +4,6 @@ import { Analytics } from "@vercel/analytics/react";
 import { ClerkProvider, useAuth } from "@clerk/clerk-react";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "sonner";
-import { TraceDashboard } from "@/components/TraceDashboard";
 import { LandingPage } from "@/components/landing/LandingPage";
 import { MemoryImport } from "@/components/memory/MemoryImport";
 import { MemoryPreview } from "@/components/memory/MemoryPreview";
@@ -59,8 +58,6 @@ function AppRoutes() {
           {/* the live studio: backend-wired, sample fallback */}
           <Route path="/studio" element={<MemoryStudio />} />
           <Route path="/memory" element={<MemoryStudio />} />
-          {/* previous dashboard, kept for reference */}
-          <Route path="/classic" element={<TraceDashboard />} />
         </>
       )}
       {clerkEnabled && (

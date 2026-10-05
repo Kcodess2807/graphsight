@@ -3,7 +3,9 @@
 # at the index build. Verified on 3.12.3 and 3.13.7.
 
 # --- Storage Core ---
-ladybug
+# ponytail: pinned. 0.21+ needs a separately downloaded C API lib
+# (LBUG_C_API_LIB_PATH); unpin once that's wired into setup and CI.
+ladybug==0.18.3
 
 # ---Embeddings (local, 384-dim) ---
 sentence-transformers>=2.7.0   # all-MiniLM-L6-v2 -> FLOAT[384]
@@ -28,9 +30,6 @@ pandas>=2.1.0                  # conn.execute(...).get_as_df()
 # --- Loaders (generic ingest) ---
 python-frontmatter>=1.1.0      # .md front-matter parsing
 pypdf>=4.0.0                   # .pdf loader
-
-# --- Benchmark ---
-tiktoken>=0.7.0                # context-window token counting
 
 # --- Integrations ---
 langchain-core>=0.2.0          # BaseRetriever subclass

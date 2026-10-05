@@ -148,7 +148,7 @@ claim it.
 flowchart TB
   subgraph INGEST["1 · Ingestion"]
     direction TB
-    SRC["GitHub payloads · docs · Jira"]
+    SRC["GitHub payloads · docs"]
     SRC --> STRUCT["GitHubGraphBuilder<br/>reads relations from the API:<br/>author · reviews · closes-refs · files"]
     SRC --> TEXT["sliding window → NER →<br/>two-tier curation"]
     STRUCT --> TYPED["typed, timestamped edges<br/>AUTHORED · RESOLVES · TOUCHES"]
@@ -259,7 +259,6 @@ backend/
 │   ├── github_graph.py     # GitHub payloads → typed, timestamped edges
 │   ├── recency.py          # age decay: 0.5 ** (age_days / half_life), floored
 │   ├── router.py           # intent classify + dual-stream fusion + trace_log
-│   ├── memory.py           # GraphMemory, embedded API (ingest / query / context)
 │   └── integrations/langchain.py   # drop-in BaseRetriever
 ├── scripts/                # ingest · ingest_github · benchmark · stress_test
 ├── worker/                 # ← SaaS: Celery ingestion + orchestration
@@ -372,7 +371,7 @@ the execution stepper, the fused scores, and clickable citations that pan the ca
 cited node. Nodes show an age chip and recency multiplier; edges show their relation.
 
 Other routes: `/memory/preview` (mock data, no backend), `/memory/import` (render an external
-LangGraph trace with no backend at all), `/classic` (the earlier dashboard panes).
+LangGraph trace with no backend at all).
 
 Run history lands in `.graphsight/`, browsable and **diffable**, two runs side by side, so you
 can see what changed between them.
@@ -433,7 +432,6 @@ Honest accounting of what is finished, what is partial, and what is not measured
 | Multi-tenant pipeline (GitHub → Postgres → compile → S3 → pod swap) | **Real**, e2e-tested; off by default |
 | MCP server (`trace_impact` / `search_context` / `find_entity`) | **Real**, mounted in SaaS mode |
 | Landing page waitlist form | UI real; **form logs to console**, capture backend not wired |
-| `archive/dashboard/` Next.js console | UI complete, data mocked, retired after the Graphsight pivot |
 
 ### Known gaps
 
@@ -486,17 +484,6 @@ uvicorn api:app --reload --port 8000           # docs at /docs
 cd ../frontend; npm install; npm run dev
 #   http://localhost:5173/         -> landing
 #   http://localhost:5173/studio   -> Graphsight Studio
-```
-
-### Embedded library
-
-```python
-from tracerag.memory import GraphMemory
-
-with GraphMemory("memory.lbug") as mem:
-    mem.ingest_github("acme/api", pulls=prs, issues=issues, commits=commits)
-    mem.build_index()
-    print(mem.context("who owns the session code?"))
 ```
 
 ---

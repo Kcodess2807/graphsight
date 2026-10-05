@@ -21,7 +21,6 @@ npm run build    # dist/, copy into ../graphsight/graphsight/dist to rebundle th
 | `/memory/import` | render external traces; run history via `?runs=` | no |
 | `/docs/concepts` | concepts doc | no |
 | `/studio`, `/memory` | live Studio | yes, dev builds only (`VITE_ENABLE_STUDIO=1` to force) |
-| `/classic` | legacy dashboard, kept for reference | yes, dev builds only |
 
 Design system: [src/components/memory/DESIGN.md](src/components/memory/DESIGN.md)
 Light neubrutalist, hard offset shadows, lime highlights, emerald accents.

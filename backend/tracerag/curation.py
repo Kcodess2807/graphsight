@@ -5,7 +5,7 @@ from __future__ import annotations
 import hashlib
 import logging
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, fields
 from itertools import combinations
 
 from . import config
@@ -28,12 +28,8 @@ class IngestStats:
     mentions_edges: int = 0
 
     def merge(self, other: "IngestStats") -> None:
-        for f in field_names():
-            setattr(self, f, getattr(self, f) + getattr(other, f))
-
-
-def field_names() -> list[str]:
-    return [f.name for f in IngestStats.__dataclass_fields__.values()]
+        for f in fields(self):
+            setattr(self, f.name, getattr(self, f.name) + getattr(other, f.name))
 
 
 def slugify(text: str) -> str:

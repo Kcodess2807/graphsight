@@ -36,7 +36,7 @@ jobs:
         with:
           python-version: "3.12"
       - name: install engine test deps
-        run: pip install pytest ladybug numpy pandas requests tqdm
+        run: pip install pytest ladybug==0.18.3 numpy pandas requests tqdm
       # named explicitly: the rest of backend/tests needs the full API stack
       - name: run engine tests
         run: >
