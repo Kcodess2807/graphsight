@@ -525,16 +525,22 @@ found.
 against a handful of public repos, not hundreds.
 
 ```bash
+# package tests, from the repo root
 pip install -e ./graphsight -e ./graphsight-langgraph
 pip install pytest langgraph
-pytest graphsight/tests graphsight-langgraph/tests -q     # package tests
+pytest graphsight/tests graphsight-langgraph/tests -q
+
+# engine tests, no torch needed (the embedder is stubbed)
+cd backend
+pip install pytest ladybug==0.18.3 numpy pandas requests tqdm
 pytest -q tests/test_recency.py tests/test_router_scoring.py \
           tests/test_github_graph.py tests/test_db_integration.py \
-          tests/test_ingest_github_wiring.py               # engine, from backend/
+          tests/test_ingest_github_wiring.py
 ```
 
-Engine tests need Python 3.12+ (see [Known gaps](#known-gaps)). Issues and PRs both welcome,
-and a bug report with a trace file attached is worth more than either.
+These are the same commands CI runs. Engine tests need Python 3.12+ (see
+[Running the engine locally](#running-the-engine-locally)). Issues and PRs both welcome, and a
+bug report with a trace file attached is worth more than either.
 
 ---
 
