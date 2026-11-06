@@ -108,6 +108,9 @@ function InspectorContent({
               {(node.meta?.scoreGraph ?? 0) > 0 && (
                 <MetaRow label="Graph score" value={node.meta!.scoreGraph!.toFixed(3)} />
               )}
+              {node.meta?.answerOverlap != null && (
+                <MetaRow label="Answer overlap" value={node.meta.answerOverlap.toFixed(2)} />
+              )}
               {node.meta?.connections != null && (
                 <MetaRow label="Connections" value={String(node.meta.connections)} />
               )}

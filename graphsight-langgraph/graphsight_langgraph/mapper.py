@@ -83,6 +83,7 @@ def to_tracestate(trace: AgentTrace) -> dict[str, Any]:
                         "snippet": (item.content or "")[:600] or None,
                         "scoreGraph": item.graph_score,
                         "sourceUrl": item.source_uri,
+                        "answerOverlap": item.answer_overlap,
                     },
                 }
             )
@@ -135,6 +136,7 @@ def to_tracestate(trace: AgentTrace) -> dict[str, Any]:
         "id": f"trace_lg_{int(time.time() * 1000)}",
         "query": trace.query,
         "answer": trace.answer,
+        "outcome": trace.outcome,
         "computedAt": datetime.now(timezone.utc).isoformat(),
         "weights": {
             # honest split: this router didn't run, so weights describe the

@@ -49,12 +49,20 @@ class TraceRAGRetriever(BaseRetriever):
     ) -> list[Document]:
         response = self.router.route(query, top_k=self.k)
         docs: list[Document] = []
+        if response.facts:
+            docs.append(Document(
+                page_content="Graph facts:\n" + "\n".join(response.facts),
+                metadata={"id": "graph-facts", "label": "Graph facts", "kind": "document"},
+            ))
         seen_chunk_ids: set[str] = set()
         for node in response.results:
             docs.append(Document(
                 page_content=format_page_content(node, seen_chunk_ids),
                 metadata={
                     "id": node.id,
+                    "label": node.label or node.id,
+                    "kind": node.type or "document",
+                    "source": next((d["path"] for d in node.documents if d.get("path")), None),
                     "score_total": node.score_total,
                     "score_vector": node.score_vector,
                     "score_graph": node.score_graph,

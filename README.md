@@ -90,6 +90,22 @@ print(save_trace(trace))                # -> .graphsight/<timestamp>_<slug>.json
 `answer_overlap` is what drives the used/ignored split. Leave it `None` and every item
 renders plain, which is the honest default when there is nothing to compare against.
 
+### Episodic memory
+
+Label a run and later runs can recall it. Only runs labelled `success` are ever recalled, so a
+bad run can't teach the next one.
+
+```python
+capture(tracer, query=q, answer=a, outcome="success")   # saved to .graphsight/
+
+recall("who broke checkout?")        # past runs that asked something similar
+EpisodeRetriever().invoke(question)  # the same, traced like any other retriever
+```
+
+Matching is lexical, so a reworded question with different words won't match. Recalled episodes
+appear as nodes in the viewer. `backend/scripts/episodic_agent.py` is a working LangGraph agent
+that uses this with the graph engine, and `--no-memory` gives you the baseline.
+
 ## What this actually is
 
 Two halves, deliberately separable.
@@ -351,7 +367,7 @@ null-byte queries all return normally. A Cypher injection attempt
 (`'; MATCH (n) DETACH DELETE n; //`) left all 1274 nodes intact. The parameterized queries
 hold.
 
-**Test suite.** 51 tests. Scoring logic runs against a fake store (no driver, no model
+**Test suite.** 53 tests. Scoring logic runs against a fake store (no driver, no model
 download); `test_db_integration.py` runs the real DDL, migration and `MERGE ... ON MATCH`
 clauses through LadybugDB. CI installs `pytest ladybug numpy pandas requests tqdm` (no torch), 
 so the whole job finishes in seconds.
@@ -421,7 +437,7 @@ Honest accounting of what is finished, what is partial, and what is not measured
 | Layer | Status |
 |---|---|
 | `graphsight` viewer + `graphsight-langgraph` tracer | **Real**, published at 0.3.1, install-verified from PyPI |
-| Retrieval engine (ingest → curate → route → trace) | **Real**, 51 tests, live-verified against `fastapi/fastapi` and `pallets/click` |
+| Retrieval engine (ingest → curate → route → trace) | **Real**, 53 tests, live-verified against `fastapi/fastapi` and `pallets/click` |
 | Structured GitHub ingest (typed, dated edges) | **Real**, exercised against the live API |
 | Studio UI (trace canvas, streamed answers, citations, sessions) | **Real**, wired to the live API with an offline sample fallback |
 | Multi-tenant pipeline | On the `saas-control-plane` branch, not `main`; see [Multi-tenant mode](#multi-tenant-mode) |

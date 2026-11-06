@@ -17,7 +17,7 @@ from langchain_core.documents import Document
 from ._text import tokens as _tokens
 from .schema import AgentTrace, Retrieval, RetrievedItem, Span, TraceEdge
 
-_SCORE_KEYS = ("score", "relevance_score", "similarity", "_score", "vector_score")
+_SCORE_KEYS = ("score", "score_total", "relevance_score", "similarity", "_score", "vector_score")
 # LangGraph internals that fire chain events but aren't user nodes
 _NOISE_NAMES = {"LangGraph", "RunnableSequence", "RunnableCallable", "ChannelWrite", "__start__", "__end__"}
 

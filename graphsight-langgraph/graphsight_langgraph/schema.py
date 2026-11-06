@@ -9,6 +9,7 @@ SCHEMA_VERSION = "0.2"  # 0.2 adds RetrievedItem.answer_overlap (additive)
 
 SpanKind = Literal["node", "retriever", "llm", "tool"]
 Arm = Literal["vector", "graph", "hybrid", "unknown"]
+Outcome = Literal["success", "failure"]
 
 
 @dataclass
@@ -74,6 +75,8 @@ class AgentTrace:
     retrievals: list[Retrieval] = field(default_factory=list)
     answer: Optional[str] = None
     latency_ms: Optional[float] = None
+    # did the run succeed? set by the caller; recall() only learns from labelled runs
+    outcome: Optional[Outcome] = None
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)

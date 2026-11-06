@@ -54,6 +54,27 @@ class RouterResponse:
     query: str
     results: list[RoutedNode]
     trace_log: dict
+    # the typed links the walk found, as text the answer model can read
+    facts: list[str] = field(default_factory=list)
+
+
+def graph_facts(hops: list[dict], meta: dict[str, dict]) -> list[str]:
+    """Typed hops as lines of text, nearest first. Without these the model sees
+    entities and chunks but not one relation, so the graph can't change an answer."""
+    seen: set[frozenset[str]] = set()
+    facts: list[str] = []
+    for hop in hops:
+        pair = frozenset((hop["from_id"], hop["to_id"]))
+        # proximity is a guess, so it stays out of what the model treats as fact
+        if pair in seen or hop["relation"] == config.RELATION_CO_OCCURS:
+            continue
+        seen.add(pair)
+        a, b = (meta.get(i, {}).get("label") or i for i in (hop["from_id"], hop["to_id"]))
+        # <-> because traversal is undirected, so the hop doesn't know which way it points
+        facts.append(f"{a} <-> {b}: {hop['relation']}")
+        if len(facts) == config.GRAPH_MAX_FACTS:
+            break
+    return facts
 
 
 class TraceRouter:
@@ -246,7 +267,7 @@ class TraceRouter:
         for r in results:
             r.documents = docs_by_entity.get(r.id, [])
 
-    def build_context(self, results: list[RoutedNode]) -> str:
+    def build_context(self, results: list[RoutedNode], facts: list[str] = ()) -> str:
         """Assemble deduplicated context: cheap graph traces first, heavy text last."""
         seen_chunk_ids: set[str] = set()
         graph_traces: list[str] = []
@@ -269,6 +290,8 @@ class TraceRouter:
                     graph_traces.append(f"  [Trace: {label} ({ntype}) -> {cid}]")
 
         sections: list[str] = []
+        if facts:
+            sections.append("GRAPH FACTS:\n" + "\n".join(f"- {f}" for f in facts))
         if graph_traces:
             sections.append("SYSTEM TRACES:\n" + "\n".join(graph_traces))
         if text_chunks:
@@ -369,4 +392,6 @@ class TraceRouter:
                 "total_nodes_evaluated": len(vector_scores) + len(graph_scores),
             },
         }
-        return RouterResponse(query=query, results=results, trace_log=trace_log)
+        return RouterResponse(
+            query=query, results=results, trace_log=trace_log, facts=graph_facts(hops, meta)
+        )

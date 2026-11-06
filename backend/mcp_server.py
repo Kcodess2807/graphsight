@@ -249,7 +249,7 @@ def _search_context_impl(query: str, top_k: int) -> dict:
         })
 
     intent = (resp.trace_log.get("intent") or {}).get("type")
-    return {"query": resp.query, "intent": intent,
+    return {"query": resp.query, "intent": intent, "facts": resp.facts,
             "result_count": len(passages), "passages": passages}
 
 

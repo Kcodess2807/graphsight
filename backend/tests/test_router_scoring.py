@@ -121,6 +121,30 @@ def test_undated_nodes_are_not_penalised():
     assert by_id["undated"].score_total > by_id["dated"].score_total
 
 
+def test_facts_carry_typed_links_but_not_proximity_guesses():
+    """A link the answer model never sees can't change an answer."""
+    router = make_router(
+        hits=[hit("issue", 0.9, ntype="Ticket", label="Issue #1")],
+        neighbours={"issue": [nbr("pr", config.RELATION_RESOLVES),
+                              nbr("noise", config.RELATION_CO_OCCURS)],
+                    "pr": [nbr("issue", config.RELATION_RESOLVES)]},
+    )
+    res = router.route("which pr fixed this", top_k=10)
+    assert res.facts == ["Issue #1 <-> pr: RESOLVES"]  # one line, though walked both ways
+    assert "Issue #1 <-> pr: RESOLVES" in router.build_context(res.results, res.facts)
+
+
+def test_facts_survive_when_the_node_misses_the_top_k():
+    """The PR that answers the question can rank below the cut; its link must not."""
+    router = make_router(
+        hits=[hit("issue", 0.9, ntype="Ticket", label="Issue #1")],
+        neighbours={"issue": [nbr("pr", config.RELATION_RESOLVES)]},
+    )
+    res = router.route("which pr fixed this", top_k=1)
+    assert [r.id for r in res.results] == ["issue"]
+    assert res.facts == ["Issue #1 <-> pr: RESOLVES"]
+
+
 def test_trace_log_exposes_relations_and_recency():
     """The viewer can only show why something ranked if the trace says so."""
     router = make_router(

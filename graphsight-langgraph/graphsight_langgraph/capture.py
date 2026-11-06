@@ -38,6 +38,11 @@ def capture(
     query: Optional[str] = None,
     answer: Optional[str] = None,
     dir: Union[str, Path, None] = None,
+    outcome: Optional[str] = None,
 ) -> Path:
-    """finish() + save_trace() in one call."""
-    return save_trace(tracer.finish(query=query, answer=answer), dir=dir)
+    """finish() + save_trace() in one call. outcome: "success", "failure" or None."""
+    if outcome not in (None, "success", "failure"):
+        raise ValueError(f"outcome must be 'success', 'failure' or None, got {outcome!r}")
+    trace = tracer.finish(query=query, answer=answer)
+    trace.outcome = outcome
+    return save_trace(trace, dir=dir)

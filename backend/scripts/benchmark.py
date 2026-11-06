@@ -113,7 +113,7 @@ def run(db_path: Path, out_path: Path, k: int) -> list[dict]:
         for tq in TEST_SET:
             # hybrid (router) arm
             resp = router.route(tq.query, top_k=k)
-            context = router.build_context(resp.results)
+            context = router.build_context(resp.results, resp.facts)
             intent = resp.trace_log.get("intent", {})
             tokens = approx_tokens(context)
 
