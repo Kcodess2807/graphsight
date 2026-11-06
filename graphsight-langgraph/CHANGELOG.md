@@ -1,6 +1,6 @@
 # graphsight-langgraph changelog
 
-## Unreleased
+## 0.3.2 — 2026-11-07
 
 - `to_tracestate()` carries the final `answer`, so the viewer can show it.
 
