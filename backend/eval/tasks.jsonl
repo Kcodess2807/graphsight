@@ -1,0 +1,81 @@
+{"id": "lookup-0", "category": "lookup", "question": "Who authored PR #3826?", "gold": ["kdeldycke"]}
+{"id": "lookup-1", "category": "lookup", "question": "Who authored PR #3851?", "gold": ["Rowlando13"]}
+{"id": "lookup-2", "category": "lookup", "question": "Who authored PR #3861?", "gold": ["kdeldycke"]}
+{"id": "lookup-3", "category": "lookup", "question": "Who authored PR #3876?", "gold": ["Rowlando13"]}
+{"id": "lookup-4", "category": "lookup", "question": "Who authored PR #3884?", "gold": ["kdeldycke"]}
+{"id": "lookup-5", "category": "lookup", "question": "Who authored PR #3898?", "gold": ["kdeldycke"]}
+{"id": "lookup-6", "category": "lookup", "question": "Who authored PR #3901?", "gold": ["kdeldycke"]}
+{"id": "lookup-7", "category": "lookup", "question": "Who authored PR #3908?", "gold": ["Rowlando13"]}
+{"id": "lookup-8", "category": "lookup", "question": "Who authored PR #3911?", "gold": ["Rowlando13"]}
+{"id": "lookup-9", "category": "lookup", "question": "Who reported issue #3907?", "gold": ["Rowlando13"]}
+{"id": "lookup-10", "category": "lookup", "question": "Who reported issue #3893?", "gold": ["codeCraft-Ritik"]}
+{"id": "lookup-11", "category": "lookup", "question": "Who reported issue #3887?", "gold": ["asandoz-cea"]}
+{"id": "lookup-12", "category": "lookup", "question": "Who reported issue #3879?", "gold": ["januththedev"]}
+{"id": "lookup-13", "category": "lookup", "question": "Who reported issue #3841?", "gold": ["ShamikOfficial"]}
+{"id": "lookup-14", "category": "lookup", "question": "Who reviewed PR #3829?", "gold": ["Rowlando13"]}
+{"id": "lookup-15", "category": "lookup", "question": "Who reviewed PR #3858?", "gold": ["Courtneybrown11", "Rowlando13"]}
+{"id": "lookup-16", "category": "lookup", "question": "Who reviewed PR #3860?", "gold": ["Rowlando13", "janluke"]}
+{"id": "lookup-17", "category": "lookup", "question": "Who reviewed PR #3861?", "gold": ["Rowlando13"]}
+{"id": "lookup-18", "category": "lookup", "question": "Who reviewed PR #3865?", "gold": ["Rowlando13"]}
+{"id": "lookup-19", "category": "lookup", "question": "Who reviewed PR #3866?", "gold": ["Rowlando13"]}
+{"id": "multi_hop-20", "category": "multi_hop", "question": "Which PR fixed issue #173?", "gold": ["PR #3826"]}
+{"id": "multi_hop-21", "category": "multi_hop", "question": "Who authored the PR that fixed issue #173?", "gold": ["kdeldycke"]}
+{"id": "multi_hop-22", "category": "multi_hop", "question": "Which PR fixed issue #2419?", "gold": ["PR #3899"]}
+{"id": "multi_hop-23", "category": "multi_hop", "question": "Who reviewed the PR that fixed issue #2419?", "gold": ["Rowlando13"]}
+{"id": "multi_hop-24", "category": "multi_hop", "question": "Who authored the PR that fixed issue #2419?", "gold": ["kdeldycke"]}
+{"id": "multi_hop-25", "category": "multi_hop", "question": "Which PR fixed issue #3822?", "gold": ["PR #3858"]}
+{"id": "multi_hop-26", "category": "multi_hop", "question": "Who reviewed the PR that fixed issue #3822?", "gold": ["Courtneybrown11", "Rowlando13"]}
+{"id": "multi_hop-27", "category": "multi_hop", "question": "Who authored the PR that fixed issue #3822?", "gold": ["kdeldycke"]}
+{"id": "multi_hop-28", "category": "multi_hop", "question": "Which commit fixed issue #2110?", "gold": ["90a2973"]}
+{"id": "multi_hop-29", "category": "multi_hop", "question": "Which commit fixed issue #3886?", "gold": ["5c1963a"]}
+{"id": "enumerate-30", "category": "enumerate", "question": "Which PRs touched src/click/_termui_impl.py?", "gold": ["PR #3905", "PR #3910"]}
+{"id": "enumerate-31", "category": "enumerate", "question": "Which PRs touched src/click/decorators.py?", "gold": ["PR #3905", "PR #3910"]}
+{"id": "enumerate-32", "category": "enumerate", "question": "Which PRs touched src/click/shell_completion.py?", "gold": ["PR #3905", "PR #3910"]}
+{"id": "enumerate-33", "category": "enumerate", "question": "Which PRs touched src/click/testing.py?", "gold": ["PR #3878", "PR #3896", "PR #3905", "PR #3910"]}
+{"id": "enumerate-34", "category": "enumerate", "question": "Which PRs touched src/click/types.py?", "gold": ["PR #3858", "PR #3876"]}
+{"id": "enumerate-35", "category": "enumerate", "question": "Which PRs touched src/click/utils.py?", "gold": ["PR #3865", "PR #3876"]}
+{"id": "enumerate-36", "category": "enumerate", "question": "Which PRs did Courtneybrown11 review?", "gold": ["PR #3858"]}
+{"id": "enumerate-37", "category": "enumerate", "question": "Which PRs did Muguett-DBY review?", "gold": ["PR #3878"]}
+{"id": "enumerate-38", "category": "enumerate", "question": "Which PRs did OKAN-SOFTWARE review?", "gold": ["PR #3878"]}
+{"id": "enumerate-39", "category": "enumerate", "question": "Which PRs did Wkhanex review?", "gold": ["PR #3878"]}
+{"id": "enumerate-40", "category": "enumerate", "question": "Which PRs did agammann review?", "gold": ["PR #3901"]}
+{"id": "described-41", "category": "described", "question": "Which PR makes the test runner print control bytes in caret notation?", "gold": ["PR #3878"]}
+{"id": "described-42", "category": "described", "question": "Which PR lets tests hand extra settings straight to the test runner call?", "gold": ["PR #3896"]}
+{"id": "described-43", "category": "described", "question": "Which PR corrects what help shows for environment variables that are lists or blank?", "gold": ["PR #3884"]}
+{"id": "described-44", "category": "described", "question": "Which PR adds the newest CPython release to continuous integration?", "gold": ["PR #3909"]}
+{"id": "described-45", "category": "described", "question": "Which PR teaches type checkers what a filesystem path parameter returns?", "gold": ["PR #3858"]}
+{"id": "described-46", "category": "described", "question": "Which PR explains what happens when someone interrupts the pager?", "gold": ["PR #3900"]}
+{"id": "described-47", "category": "described", "question": "Which PR adds a walkthrough for compiling a CLI into a single binary?", "gold": ["PR #3897"]}
+{"id": "described-48", "category": "described", "question": "Which PR stops translating the help of obsolete commands?", "gold": ["PR #3901"]}
+{"id": "described-49", "category": "described", "question": "Which PR adds tests that removing terminal colors gives back the original text?", "gold": ["PR #3899"]}
+{"id": "described-50", "category": "described", "question": "Which PR moves a shared constructor setting up into the base class?", "gold": ["PR #3861"]}
+{"id": "described-51", "category": "described", "question": "Which PR warns about names that cannot be used as Python variables?", "gold": ["PR #3866"]}
+{"id": "described-52", "category": "described", "question": "Which PR fixes how long help gets cut down to a short summary?", "gold": ["PR #3865"]}
+{"id": "described-53", "category": "described", "question": "Which PR documents autocompletion inside interactive questions?", "gold": ["PR #3826"]}
+{"id": "described-54", "category": "described", "question": "Which PR strips ticket links from everywhere but the release notes?", "gold": ["PR #3905"]}
+{"id": "described-55", "category": "described", "question": "Which PR replaces an old display name attribute with a new one?", "gold": ["PR #3877"]}
+{"id": "described-56", "category": "described", "question": "Which PR updates the action that uploads releases?", "gold": ["PR #3906"]}
+{"id": "described-57", "category": "described", "question": "Which issue says an interrupted safe save destroys the existing data?", "gold": ["Issue #3903"]}
+{"id": "described-58", "category": "described", "question": "Which issue says the whole program dies when the pager is stopped?", "gold": ["Issue #3886"]}
+{"id": "described-59", "category": "described", "question": "Which issue reports that error text can smuggle in terminal control codes?", "gold": ["Issue #3832"]}
+{"id": "described-60", "category": "described", "question": "Which issue reports that opening the external editor crashes on Microsoft's OS?", "gold": ["Issue #3840"]}
+{"id": "described-61", "category": "described", "question": "Which issue asks for help output to open the manual page instead?", "gold": ["Issue #3882"]}
+{"id": "followup-62", "category": "followup", "question": "Who reviewed the PR that makes the test runner print control bytes in caret notation?", "gold": ["Muguett-DBY", "OKAN-SOFTWARE", "Rowlando13", "Wkhanex"], "seed": "Which PR makes the test runner print control bytes in caret notation?", "seed_gold": ["PR #3878"]}
+{"id": "followup-63", "category": "followup", "question": "Who reviewed the PR that lets tests hand extra settings straight to the test runner call?", "gold": ["Rowlando13"], "seed": "Which PR lets tests hand extra settings straight to the test runner call?", "seed_gold": ["PR #3896"]}
+{"id": "followup-64", "category": "followup", "question": "Who reviewed the PR that corrects what help shows for environment variables that are lists or blank?", "gold": ["Rowlando13"], "seed": "Which PR corrects what help shows for environment variables that are lists or blank?", "seed_gold": ["PR #3884"]}
+{"id": "followup-65", "category": "followup", "question": "Who reviewed the PR that teaches type checkers what a filesystem path parameter returns?", "gold": ["Courtneybrown11", "Rowlando13"], "seed": "Which PR teaches type checkers what a filesystem path parameter returns?", "seed_gold": ["PR #3858"]}
+{"id": "followup-66", "category": "followup", "question": "Who reviewed the PR that explains what happens when someone interrupts the pager?", "gold": ["Rowlando13"], "seed": "Which PR explains what happens when someone interrupts the pager?", "seed_gold": ["PR #3900"]}
+{"id": "followup-67", "category": "followup", "question": "Who reviewed the PR that adds a walkthrough for compiling a CLI into a single binary?", "gold": ["Rowlando13"], "seed": "Which PR adds a walkthrough for compiling a CLI into a single binary?", "seed_gold": ["PR #3897"]}
+{"id": "followup-68", "category": "followup", "question": "Who reviewed the PR that stops translating the help of obsolete commands?", "gold": ["Rowlando13", "agammann", "bekriabdella3-sys"], "seed": "Which PR stops translating the help of obsolete commands?", "seed_gold": ["PR #3901"]}
+{"id": "followup-69", "category": "followup", "question": "Who reviewed the PR that adds tests that removing terminal colors gives back the original text?", "gold": ["Rowlando13"], "seed": "Which PR adds tests that removing terminal colors gives back the original text?", "seed_gold": ["PR #3899"]}
+{"id": "followup-70", "category": "followup", "question": "Who reviewed the PR that moves a shared constructor setting up into the base class?", "gold": ["Rowlando13"], "seed": "Which PR moves a shared constructor setting up into the base class?", "seed_gold": ["PR #3861"]}
+{"id": "followup-71", "category": "followup", "question": "Who reviewed the PR that warns about names that cannot be used as Python variables?", "gold": ["Rowlando13"], "seed": "Which PR warns about names that cannot be used as Python variables?", "seed_gold": ["PR #3866"]}
+{"id": "followup-72", "category": "followup", "question": "Who reviewed the PR that fixes how long help gets cut down to a short summary?", "gold": ["Rowlando13"], "seed": "Which PR fixes how long help gets cut down to a short summary?", "seed_gold": ["PR #3865"]}
+{"id": "followup-73", "category": "followup", "question": "Who reviewed the PR that strips ticket links from everywhere but the release notes?", "gold": ["davidism"], "seed": "Which PR strips ticket links from everywhere but the release notes?", "seed_gold": ["PR #3905"]}
+{"id": "followup-74", "category": "followup", "question": "Who reviewed the PR that replaces an old display name attribute with a new one?", "gold": ["Rowlando13"], "seed": "Which PR replaces an old display name attribute with a new one?", "seed_gold": ["PR #3877"]}
+{"id": "unanswerable-75", "category": "unanswerable", "question": "Who authored PR #1234?", "gold": ["unknown"]}
+{"id": "unanswerable-76", "category": "unanswerable", "question": "Which files did PR #3000 touch?", "gold": ["unknown"]}
+{"id": "unanswerable-77", "category": "unanswerable", "question": "Who reported issue #9001?", "gold": ["unknown"]}
+{"id": "unanswerable-78", "category": "unanswerable", "question": "Which PR added async command support?", "gold": ["unknown"]}
+{"id": "unanswerable-79", "category": "unanswerable", "question": "Which PR fixed issue #3904?", "gold": ["unknown"]}
+{"id": "unanswerable-80", "category": "unanswerable", "question": "Who reviewed PR #3906?", "gold": ["unknown"]}

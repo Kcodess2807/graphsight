@@ -134,6 +134,17 @@ def test_facts_carry_typed_links_but_not_proximity_guesses():
     assert "Issue #1 <-> pr: RESOLVES" in router.build_context(res.results, res.facts)
 
 
+def test_an_id_in_the_question_seeds_the_walk_without_similarity():
+    """'issue #3907' must not depend on how close its embedding happens to be."""
+    router = make_router(hits=[], neighbours={"i": [nbr("pr", config.RELATION_RESOLVES)]})
+    router.db.find_nodes_by_label = lambda label: (
+        [{"id": "i", "label": label, "type": "Ticket"}] if label == "Issue #7" else [])
+    router._get_extractor = lambda: type("E", (), {"extract": lambda self, q: []})()
+    res = router.route("who fixed issue #7?", top_k=5)
+    assert res.trace_log["execution_path"]["linked_seeds"] == ["i"]
+    assert res.facts == ["Issue #7 <-> pr: RESOLVES"]
+
+
 def test_facts_survive_when_the_node_misses_the_top_k():
     """The PR that answers the question can rank below the cut; its link must not."""
     router = make_router(

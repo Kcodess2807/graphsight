@@ -367,7 +367,7 @@ null-byte queries all return normally. A Cypher injection attempt
 (`'; MATCH (n) DETACH DELETE n; //`) left all 1274 nodes intact. The parameterized queries
 hold.
 
-**Test suite.** 53 tests. Scoring logic runs against a fake store (no driver, no model
+**Test suite.** 66 tests. Scoring logic runs against a fake store (no driver, no model
 download); `test_db_integration.py` runs the real DDL, migration and `MERGE ... ON MATCH`
 clauses through LadybugDB. CI installs `pytest ladybug numpy pandas requests tqdm` (no torch), 
 so the whole job finishes in seconds.
@@ -390,6 +390,22 @@ can see what changed between them.
 ---
 
 ## Benchmarks & known constraints
+
+**Current evaluation:** 81 tasks on a frozen `pallets/click` snapshot, graded by exact match
+against GitHub's records. [Method, caveats and every per-question result](backend/eval/README.md).
+
+| Setup | Correct | Avg prompt tokens |
+|---|---|---|
+| Full context | 80/81 | 32,622 |
+| BM25 | 75/81 | 5,531 |
+| Graph | 69/81 | 2,379 |
+| Vector | 42/81 | 3,449 |
+
+BM25 beats the graph on accuracy, and the graph uses 43% of its tokens. The graph ties BM25 on
+lookups, multi-hop and list questions, and loses on questions asked by meaning. These are
+development numbers: the graph was fixed against these same tasks, and there is no held-out set yet.
+
+The older benchmark below is kept for the record.
 
 LLM-as-a-judge (Groq) over 10 queries (5 semantic, 5 relational), hybrid router vs. a pure-vector
 baseline:
@@ -437,7 +453,7 @@ Honest accounting of what is finished, what is partial, and what is not measured
 | Layer | Status |
 |---|---|
 | `graphsight` viewer + `graphsight-langgraph` tracer | **Real**, published at 0.3.1, install-verified from PyPI |
-| Retrieval engine (ingest → curate → route → trace) | **Real**, 53 tests, live-verified against `fastapi/fastapi` and `pallets/click` |
+| Retrieval engine (ingest → curate → route → trace) | **Real**, 66 tests, live-verified against `fastapi/fastapi` and `pallets/click` |
 | Structured GitHub ingest (typed, dated edges) | **Real**, exercised against the live API |
 | Studio UI (trace canvas, streamed answers, citations, sessions) | **Real**, wired to the live API with an offline sample fallback |
 | Multi-tenant pipeline | On the `saas-control-plane` branch, not `main`; see [Multi-tenant mode](#multi-tenant-mode) |

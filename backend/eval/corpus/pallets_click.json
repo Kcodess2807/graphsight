@@ -1,0 +1,1657 @@
+{
+ "pulls": [
+  {
+   "number": 3911,
+   "title": "Merge stable into main",
+   "body": "<!--\nBefore opening a PR, open a ticket describing the issue or feature the\nPR will address. An issue is not required for fixing typos in\ndocumentation, or other simple non-code changes.\n\nReplace this comment with a description of the change. Describe how it\naddresses the linked ticket.\n-->\n\n<!--\nLink to relevant issues or previous PRs, one per line. Use \"fixes\" to\nautomatically close an issue.\n\nfixes #<issue number>\n-->\n\n<!--\nEnsure each step in CONTRIBUTING.rst is complete, especially the following:\n\n- Add tests that demonstrate the correct behavior of the change. Tests\n  should fail without the change.\n- Add or update relevant docs, in the docs folder and in code.\n- Add an entry in CHANGES.rst summarizing the change and linking to the issue.\n- Add `.. versionchanged::` entries in any relevant code docs.\n-->\n",
+   "html_url": "https://github.com/pallets/click/pull/3911",
+   "merged_at": "2026-11-06T17:58:15Z",
+   "closed_at": "2026-11-06T17:58:15Z",
+   "created_at": "2026-11-06T17:56:58Z",
+   "user": {
+    "login": "Rowlando13"
+   },
+   "files": [
+    {
+     "filename": ".github/workflows/nightly.yaml"
+    },
+    {
+     "filename": ".github/workflows/tests.yaml"
+    },
+    {
+     "filename": "docs/contrib.md"
+    },
+    {
+     "filename": "docs/faqs.md"
+    },
+    {
+     "filename": "pyproject.toml"
+    }
+   ],
+   "reviews": []
+  },
+  {
+   "number": 3910,
+   "title": "Merge stable into main",
+   "body": "<!--\nBefore opening a PR, open a ticket describing the issue or feature the\nPR will address. An issue is not required for fixing typos in\ndocumentation, or other simple non-code changes.\n\nReplace this comment with a description of the change. Describe how it\naddresses the linked ticket.\n-->\n\n<!--\nLink to relevant issues or previous PRs, one per line. Use \"fixes\" to\nautomatically close an issue.\n\nfixes #<issue number>\n-->\n\n<!--\nEnsure each step in CONTRIBUTING.rst is complete, especially the following:\n\n- Add tests that demonstrate the correct behavior of the change. Tests\n  should fail without the change.\n- Add or update relevant docs, in the docs folder and in code.\n- Add an entry in CHANGES.rst summarizing the change and linking to the issue.\n- Add `.. versionchanged::` entries in any relevant code docs.\n-->\n",
+   "html_url": "https://github.com/pallets/click/pull/3910",
+   "merged_at": "2026-11-06T17:48:12Z",
+   "closed_at": "2026-11-06T17:48:12Z",
+   "created_at": "2026-11-06T17:41:11Z",
+   "user": {
+    "login": "Rowlando13"
+   },
+   "files": [
+    {
+     "filename": ".github/ISSUE_TEMPLATE/bug-report.md"
+    },
+    {
+     "filename": ".github/ISSUE_TEMPLATE/config.yml"
+    },
+    {
+     "filename": ".github/workflows/publish.yaml"
+    },
+    {
+     "filename": "CHANGES.md"
+    },
+    {
+     "filename": "docs/faqs.md"
+    },
+    {
+     "filename": "docs/index.md"
+    },
+    {
+     "filename": "docs/standalone-apps-briefcase.md"
+    },
+    {
+     "filename": "docs/standalone-apps-nuitka.md"
+    },
+    {
+     "filename": "docs/upgrade-guides.md"
+    },
+    {
+     "filename": "src/click/_termui_impl.py"
+    },
+    {
+     "filename": "src/click/core.py"
+    },
+    {
+     "filename": "src/click/decorators.py"
+    },
+    {
+     "filename": "src/click/shell_completion.py"
+    },
+    {
+     "filename": "src/click/testing.py"
+    },
+    {
+     "filename": "tests/test_abort_interrupt.py"
+    },
+    {
+     "filename": "tests/test_arguments.py"
+    },
+    {
+     "filename": "tests/test_basic.py"
+    },
+    {
+     "filename": "tests/test_commands.py"
+    },
+    {
+     "filename": "tests/test_context.py"
+    },
+    {
+     "filename": "tests/test_defaults.py"
+    },
+    {
+     "filename": "tests/test_formatting.py"
+    },
+    {
+     "filename": "tests/test_options.py"
+    },
+    {
+     "filename": "tests/test_stream_lifecycle.py"
+    },
+    {
+     "filename": "tests/test_termui.py"
+    },
+    {
+     "filename": "tests/test_testing.py"
+    },
+    {
+     "filename": "tests/test_types/test_File.py"
+    },
+    {
+     "filename": "tests/test_types/test_convert_type.py"
+    },
+    {
+     "filename": "tests/test_utils/test_echo.py"
+    },
+    {
+     "filename": "tests/test_utils/test_echo_via_pager.py"
+    },
+    {
+     "filename": "tests/test_utils/test_prompt.py"
+    },
+    {
+     "filename": "tests/test_utils/test_style.py"
+    }
+   ],
+   "reviews": []
+  },
+  {
+   "number": 3909,
+   "title": "Add Python 3.15 to the test matrix",
+   "body": "This add the new Python 3.15 as a target to the test matrix.\n\nI also choose both `3.15` and `3.15t` as the base for other flavors of tests like the platform tests, the random tests and the stress tests.",
+   "html_url": "https://github.com/pallets/click/pull/3909",
+   "merged_at": "2026-11-06T17:49:02Z",
+   "closed_at": "2026-11-06T17:49:03Z",
+   "created_at": "2026-11-06T07:15:32Z",
+   "user": {
+    "login": "kdeldycke"
+   },
+   "files": [
+    {
+     "filename": ".github/workflows/nightly.yaml"
+    },
+    {
+     "filename": ".github/workflows/tests.yaml"
+    },
+    {
+     "filename": "pyproject.toml"
+    }
+   ],
+   "reviews": []
+  },
+  {
+   "number": 3908,
+   "title": "Release 8.5.1",
+   "body": "<!--\nBefore opening a PR, open a ticket describing the issue or feature the\nPR will address. An issue is not required for fixing typos in\ndocumentation, or other simple non-code changes.\n\nReplace this comment with a description of the change. Describe how it\naddresses the linked ticket.\n-->\n\n<!--\nLink to relevant issues or previous PRs, one per line. Use \"fixes\" to\nautomatically close an issue.\n\nfixes #<issue number>\n-->\n\n<!--\nEnsure each step in CONTRIBUTING.rst is complete, especially the following:\n\n- Add tests that demonstrate the correct behavior of the change. Tests\n  should fail without the change.\n- Add or update relevant docs, in the docs folder and in code.\n- Add an entry in CHANGES.rst summarizing the change and linking to the issue.\n- Add `.. versionchanged::` entries in any relevant code docs.\n-->\n",
+   "html_url": "https://github.com/pallets/click/pull/3908",
+   "merged_at": "2026-11-06T17:37:27Z",
+   "closed_at": "2026-11-06T17:37:27Z",
+   "created_at": "2026-11-06T06:26:51Z",
+   "user": {
+    "login": "Rowlando13"
+   },
+   "files": [
+    {
+     "filename": "CHANGES.md"
+    },
+    {
+     "filename": "pyproject.toml"
+    },
+    {
+     "filename": "uv.lock"
+    }
+   ],
+   "reviews": []
+  },
+  {
+   "number": 3906,
+   "title": "Bump `pypa/gh-action-pypi-publish` to `v1.14.3`",
+   "body": "A small issue I noticed in https://github.com/pallets/click/actions/runs/42014070198/job/127200035533?pr=3905#step:3:83 where zizmor complained about a vulnerable `pypa/gh-action-pypi-publish` action.",
+   "html_url": "https://github.com/pallets/click/pull/3906",
+   "merged_at": "2026-11-05T13:51:55Z",
+   "closed_at": "2026-11-05T13:51:55Z",
+   "created_at": "2026-11-05T11:37:56Z",
+   "user": {
+    "login": "kdeldycke"
+   },
+   "files": [
+    {
+     "filename": ".github/workflows/publish.yaml"
+    }
+   ],
+   "reviews": []
+  },
+  {
+   "number": 3905,
+   "title": "Remove issue and PR references outside the changelog",
+   "body": "This PR removes all references to PRs and issues in the documentation, docstrings and code comments, to conform with our general guideliens at: https://github.com/pallets/website/blob/main/content/contributing/docs.md#docstrings-and-code-comments\r\n\r\nI use the oportunity to reflow and rewrap the modified paragraphs to follow our linter rules. Also fix some formatting and typos along the way.\r\n\r\nAlso, since we disabled discussions on GitHub, I removed these links and pointed to Discord.\r\n\r\nMost changes are removal of references, but in some cases I hard-coded some decisions and explanations from the issues they were linking to if they were missing from the context.\r\n\r\nThis is a follow up to https://github.com/pallets/click/pull/3902#discussion_r4454063671",
+   "html_url": "https://github.com/pallets/click/pull/3905",
+   "merged_at": "2026-11-06T05:15:18Z",
+   "closed_at": "2026-11-06T05:15:18Z",
+   "created_at": "2026-11-05T10:41:15Z",
+   "user": {
+    "login": "kdeldycke"
+   },
+   "files": [
+    {
+     "filename": ".github/ISSUE_TEMPLATE/bug-report.md"
+    },
+    {
+     "filename": ".github/ISSUE_TEMPLATE/config.yml"
+    },
+    {
+     "filename": "CHANGES.md"
+    },
+    {
+     "filename": "docs/upgrade-guides.md"
+    },
+    {
+     "filename": "src/click/_termui_impl.py"
+    },
+    {
+     "filename": "src/click/core.py"
+    },
+    {
+     "filename": "src/click/decorators.py"
+    },
+    {
+     "filename": "src/click/shell_completion.py"
+    },
+    {
+     "filename": "src/click/testing.py"
+    },
+    {
+     "filename": "tests/test_abort_interrupt.py"
+    },
+    {
+     "filename": "tests/test_arguments.py"
+    },
+    {
+     "filename": "tests/test_basic.py"
+    },
+    {
+     "filename": "tests/test_commands.py"
+    },
+    {
+     "filename": "tests/test_context.py"
+    },
+    {
+     "filename": "tests/test_defaults.py"
+    },
+    {
+     "filename": "tests/test_formatting.py"
+    },
+    {
+     "filename": "tests/test_options.py"
+    },
+    {
+     "filename": "tests/test_stream_lifecycle.py"
+    },
+    {
+     "filename": "tests/test_termui.py"
+    },
+    {
+     "filename": "tests/test_testing.py"
+    },
+    {
+     "filename": "tests/test_types/test_File.py"
+    },
+    {
+     "filename": "tests/test_types/test_convert_type.py"
+    },
+    {
+     "filename": "tests/test_utils/test_echo.py"
+    },
+    {
+     "filename": "tests/test_utils/test_echo_via_pager.py"
+    },
+    {
+     "filename": "tests/test_utils/test_prompt.py"
+    },
+    {
+     "filename": "tests/test_utils/test_style.py"
+    }
+   ],
+   "reviews": [
+    {
+     "user": {
+      "login": "davidism"
+     }
+    },
+    {
+     "user": {
+      "login": "davidism"
+     }
+    },
+    {
+     "user": {
+      "login": "kdeldycke"
+     }
+    }
+   ]
+  },
+  {
+   "number": 3901,
+   "title": "Stop passing a deprecated command's help text through `gettext`",
+   "body": "This PR is a small consistency fix, that is aligning the way the `(DEPRECATED)` label is translated in options, arguments and commands.\r\n\r\nIn the latter, the deprecation text was translated in addition to the label, which is not the behavior of options and arguments.\r\n\r\nRelated to: https://github.com/janluke/cloup/pull/244",
+   "html_url": "https://github.com/pallets/click/pull/3901",
+   "merged_at": "2026-11-04T18:53:30Z",
+   "closed_at": "2026-11-04T18:53:30Z",
+   "created_at": "2026-10-31T12:41:16Z",
+   "user": {
+    "login": "kdeldycke"
+   },
+   "files": [
+    {
+     "filename": "CHANGES.md"
+    },
+    {
+     "filename": "src/click/core.py"
+    },
+    {
+     "filename": "tests/test_commands.py"
+    }
+   ],
+   "reviews": [
+    {
+     "user": {
+      "login": "agammann"
+     }
+    },
+    {
+     "user": {
+      "login": "Rowlando13"
+     }
+    },
+    {
+     "user": {
+      "login": "bekriabdella3-sys"
+     }
+    }
+   ]
+  },
+  {
+   "number": 3900,
+   "title": "Document `less` interruption behavior",
+   "body": "This answer the question in https://github.com/pallets/click/issues/3886 on how Click and `less` interact with each others on `Ctrl+C`.",
+   "html_url": "https://github.com/pallets/click/pull/3900",
+   "merged_at": "2026-10-30T20:59:14Z",
+   "closed_at": "2026-10-30T20:59:15Z",
+   "created_at": "2026-10-29T11:00:29Z",
+   "user": {
+    "login": "kdeldycke"
+   },
+   "files": [
+    {
+     "filename": "docs/faqs.md"
+    }
+   ],
+   "reviews": [
+    {
+     "user": {
+      "login": "Rowlando13"
+     }
+    }
+   ]
+  },
+  {
+   "number": 3899,
+   "title": "Additional round-trip tests for `unstyle()`",
+   "body": "Extends styling/unstyling tests, and add an explicit exception unstyling test.\r\n\r\nCloses #2419.",
+   "html_url": "https://github.com/pallets/click/pull/3899",
+   "merged_at": "2026-11-01T17:57:56Z",
+   "closed_at": "2026-11-01T17:57:56Z",
+   "created_at": "2026-10-29T09:41:41Z",
+   "user": {
+    "login": "kdeldycke"
+   },
+   "files": [
+    {
+     "filename": "tests/test_utils/test_style.py"
+    }
+   ],
+   "reviews": [
+    {
+     "user": {
+      "login": "Rowlando13"
+     }
+    }
+   ]
+  },
+  {
+   "number": 3898,
+   "title": "Document Click UI scope and direction",
+   "body": "This PR add a FAQ entry we can use to point users to when they propose to extend existing UI elements or add new fancy features to Click.\r\n\r\nThe Tl;Dr is: we keep maintaining the existing stuff, don't add funky widgets, and aligns with Python upstream direction.\r\n\r\nPlaces we already stated that policy:\r\n- https://github.com/pallets/click/issues/178#issuecomment-47436998\r\n- https://github.com/pallets/click/pull/649#issuecomment-244592767\r\n- https://github.com/pallets/click/issues/3481\r\n- https://github.com/pallets/click/issues/3887#issuecomment-6194430215\r\n\r\nRelates to:\r\n- https://github.com/pallets/click/issues/3696",
+   "html_url": "https://github.com/pallets/click/pull/3898",
+   "merged_at": "2026-11-06T17:56:05Z",
+   "closed_at": "2026-11-06T17:56:05Z",
+   "created_at": "2026-10-29T08:02:28Z",
+   "user": {
+    "login": "kdeldycke"
+   },
+   "files": [
+    {
+     "filename": "docs/contrib.md"
+    },
+    {
+     "filename": "docs/faqs.md"
+    }
+   ],
+   "reviews": [
+    {
+     "user": {
+      "login": "Rowlando13"
+     }
+    },
+    {
+     "user": {
+      "login": "kdeldycke"
+     }
+    },
+    {
+     "user": {
+      "login": "Rowlando13"
+     }
+    }
+   ]
+  },
+  {
+   "number": 3897,
+   "title": "Add a standalone application guide for Nuitka",
+   "body": "In the same spirit as the tutorial we have at https://click.palletsprojects.com/en/stable/standalone-apps/ to produce standalone Click binaries, this PR adds a new page to the docs to explain how to build one with Nuitka.\r\n\r\nIt adopts the same template as the Briefcase tutorial proposed in #3315. I also adjusted a section titled in the original Briefcase page to make it more accurate.\r\n\r\nI am using Nuitka for a couple of years now and contributed bug reports to the project. It is reliable and actively maintained. Thanks @kayhayen for this incredible tool! I hope this tutorial will increase awareness of the awesome tool Nuitka is to a broader audience! :)",
+   "html_url": "https://github.com/pallets/click/pull/3897",
+   "merged_at": "2026-11-06T06:02:02Z",
+   "closed_at": "2026-11-06T06:02:02Z",
+   "created_at": "2026-10-27T14:07:00Z",
+   "user": {
+    "login": "kdeldycke"
+   },
+   "files": [
+    {
+     "filename": "CHANGES.md"
+    },
+    {
+     "filename": "docs/index.md"
+    },
+    {
+     "filename": "docs/standalone-apps-briefcase.md"
+    },
+    {
+     "filename": "docs/standalone-apps-nuitka.md"
+    }
+   ],
+   "reviews": [
+    {
+     "user": {
+      "login": "Rowlando13"
+     }
+    }
+   ]
+  },
+  {
+   "number": 3896,
+   "title": "Add `context_settings` parameter to `CliRunner.invoke`",
+   "body": "This PR adds a `context_settings` parameter to `CliRunner.invoke()`, allowing tests to pass context-specific settings to the command's `Context`.\n\n`CliRunner.invoke()` passes its extra keyword arguments to the `Context` of the command, except `color`: its own `color` parameter takes that name. `context_settings` solves this collision. And now a test can set what its terminal supports, as well as the `color` of the context in the same call.\n\nWith this addition, I can now test cases that were previously difficult or impossible to cover, such as verifying how the command behaves with different `Context` settings.\n\nThis was proposed 5 years ago in #2110 but at that time this change was evaluated as niche. Since then, we did a lot of color handling improvements in Click (#3505, #3653, #3739) which added a lot of color-related tests, so this is no longer a niche concern.\n\nFor evidence, I used the new `context_settings` parameter to extend and simplify existing checks. See `test_prompt_and_confirm_ansi_respects_color` and `test_tempfile_pager_handles_ansi`.",
+   "html_url": "https://github.com/pallets/click/pull/3896",
+   "merged_at": "2026-11-06T17:50:07Z",
+   "closed_at": "2026-11-06T17:50:07Z",
+   "created_at": "2026-10-26T09:56:27Z",
+   "user": {
+    "login": "kdeldycke"
+   },
+   "files": [
+    {
+     "filename": "CHANGES.md"
+    },
+    {
+     "filename": "docs/testing.md"
+    },
+    {
+     "filename": "src/click/testing.py"
+    },
+    {
+     "filename": "tests/test_termui.py"
+    },
+    {
+     "filename": "tests/test_testing.py"
+    }
+   ],
+   "reviews": [
+    {
+     "user": {
+      "login": "Rowlando13"
+     }
+    }
+   ]
+  },
+  {
+   "number": 3884,
+   "title": "Fix `show_envvar` output for a sequence or an empty `envvar`",
+   "body": "This PR fixes some awkward rendering in the `Error: Invalid value for '--units' (env var: xxxxx)` error message's hint for special cases of environment variables:\r\n\r\n| Parameter value | Hint before | Hint after |\r\n| --- | --- | --- |\r\n| `envvar=None` | Nothing | Nothing |\r\n| `envvar=\"\"` | `(env var: '')` | Nothing |\r\n| `envvar=[]` | `(env var: '[]')` | Nothing |\r\n| `envvar=[\"WEATHER_UNITS\", \"UNITS\"]` | `(env var: '['WEATHER_UNITS', 'UNITS']')` | `(env var: 'WEATHER_UNITS', 'UNITS')` |\r\n\r\nAlso fixes the rendering of help screen:\r\n| Parameter value | Help screen before | Help screen after |\r\n| --- | --- | --- |\r\n| `envvar=None` | Nothing | Nothing |\r\n| `envvar=\"\"` | `[env var: ]` | Nothing |\r\n| `envvar=[]` | `[env var: ]` | Nothing |\r\n\r\n",
+   "html_url": "https://github.com/pallets/click/pull/3884",
+   "merged_at": "2026-10-06T20:59:00Z",
+   "closed_at": "2026-10-06T20:59:00Z",
+   "created_at": "2026-10-06T13:28:53Z",
+   "user": {
+    "login": "kdeldycke"
+   },
+   "files": [
+    {
+     "filename": "CHANGES.md"
+    },
+    {
+     "filename": "src/click/core.py"
+    },
+    {
+     "filename": "tests/test_options.py"
+    }
+   ],
+   "reviews": [
+    {
+     "user": {
+      "login": "Rowlando13"
+     }
+    }
+   ]
+  },
+  {
+   "number": 3878,
+   "title": "Print `\\x04` and `\\x1a` input bytes as `^D` and `^Z` in `CliRunner`",
+   "body": "This PR change `CliRunner` to translate the control bytes and render them differently on output:\r\n\r\n| `<stdin>` byte | Echoed to `<stdout>` as | Pressed keys             |\r\n|----------------|-------------------------|--------------------------|\r\n| `\\x04`         | `^D\\n`                  | `Ctrl+D` on Unix    |\r\n| `\\x1a`         | `^Z\\n`                  | `Ctrl+Z` on Windows |\r\n\r\nIt also no longer passes these bytes to the command.\r\n\r\nAs this introduce behavioral changes, it targets 8.6.0.\r\n\r\nThis will remove an hard-coded patch in `pallets-sphinx-themes` and a follow-up PR is maintained at https://github.com/pallets/pallets-sphinx-themes/pull/133 so you can see the benefits of this change.",
+   "html_url": "https://github.com/pallets/click/pull/3878",
+   "merged_at": "2026-11-06T05:58:36Z",
+   "closed_at": "2026-11-06T05:58:36Z",
+   "created_at": "2026-09-24T06:46:22Z",
+   "user": {
+    "login": "kdeldycke"
+   },
+   "files": [
+    {
+     "filename": "CHANGES.md"
+    },
+    {
+     "filename": "docs/testing.md"
+    },
+    {
+     "filename": "src/click/testing.py"
+    },
+    {
+     "filename": "tests/test_testing.py"
+    }
+   ],
+   "reviews": [
+    {
+     "user": {
+      "login": "Wkhanex"
+     }
+    },
+    {
+     "user": {
+      "login": "OKAN-SOFTWARE"
+     }
+    },
+    {
+     "user": {
+      "login": "Muguett-DBY"
+     }
+    },
+    {
+     "user": {
+      "login": "Rowlando13"
+     }
+    }
+   ]
+  },
+  {
+   "number": 3877,
+   "title": "Add `Parameter.spec` and deprecate `human_readable_name`",
+   "body": "This a follow up of https://github.com/pallets/click/pull/3821 , where I introduced a new `Option.get_help_spec` utility.\r\n\r\nWhile discussing this change, [I realized we had 3 aspects](https://github.com/pallets/click/pull/3821#issuecomment-5510226827) of a parameter for 3 different audiences:\r\n- `decls`: what the developer provide to its argument or option\r\n- `spec`: what the user see in `--help` and what it provide to the CLI\r\n- `name`: what is used internally in Click to identify that argument or option\r\n\r\nAnd I just realize now that I can harmonize this vocabulary in the whole Click codebase with a small effort. This PR is that effort.\r\n\r\nFor illustration, here is the value of each property as taken from the documentation:\r\n\r\n| | `@click.argument('recipe')` | `@click.option('-g', '--gluten-free/--no-gluten-free')` |\r\n|---|---|---|\r\n| `decls` | `('recipe',)` | `('-g', '--gluten-free/--no-gluten-free')` |\r\n| `spec` | `RECIPE` | `--gluten-free` |\r\n| `name` | `recipe` | `gluten_free` |\r\n| `opts` | `['recipe']` | `['-g', '--gluten-free']` |\r\n| `secondary_opts` | `[]` | `['--no-gluten-free']` |\r\n\r\nThe effects this PR has:\r\n- Rename `Parameter.human_readable_name` to `Parameter.spec` and deprecate the former\r\n- Make `get_help_spec` more generic by moving it from `Option` to `Parameter`\r\n- Document `opts` and `opts `\r\n\r\nAnd as such targets 8.6.0.\r\n\r\nI still did not pushed my luck too much by proposing a rename of the `.name` property into `.id` or `.uid` as in [my original comment](https://github.com/pallets/click/pull/3821#issuecomment-5510226827) to keep this proposal reasonable. \ud83d\ude07",
+   "html_url": "https://github.com/pallets/click/pull/3877",
+   "merged_at": "2026-10-04T22:19:54Z",
+   "closed_at": "2026-10-04T22:19:54Z",
+   "created_at": "2026-09-23T16:40:41Z",
+   "user": {
+    "login": "kdeldycke"
+   },
+   "files": [
+    {
+     "filename": "CHANGES.md"
+    },
+    {
+     "filename": "docs/parameters.md"
+    },
+    {
+     "filename": "docs/upgrade-guides.md"
+    },
+    {
+     "filename": "src/click/core.py"
+    },
+    {
+     "filename": "tests/test_arguments.py"
+    },
+    {
+     "filename": "tests/test_deprecations.py"
+    },
+    {
+     "filename": "tests/test_options.py"
+    }
+   ],
+   "reviews": [
+    {
+     "user": {
+      "login": "Rowlando13"
+     }
+    }
+   ]
+  },
+  {
+   "number": 3876,
+   "title": "Merge stable into main",
+   "body": "<!--\nBefore opening a PR, open a ticket describing the issue or feature the\nPR will address. An issue is not required for fixing typos in\ndocumentation, or other simple non-code changes.\n\nReplace this comment with a description of the change. Describe how it\naddresses the linked ticket.\n-->\n\n<!--\nLink to relevant issues or previous PRs, one per line. Use \"fixes\" to\nautomatically close an issue.\n\nfixes #<issue number>\n-->\n\n<!--\nEnsure each step in CONTRIBUTING.rst is complete, especially the following:\n\n- Add tests that demonstrate the correct behavior of the change. Tests\n  should fail without the change.\n- Add or update relevant docs, in the docs folder and in code.\n- Add an entry in CHANGES.rst summarizing the change and linking to the issue.\n- Add `.. versionchanged::` entries in any relevant code docs.\n-->",
+   "html_url": "https://github.com/pallets/click/pull/3876",
+   "merged_at": "2026-09-21T18:54:48Z",
+   "closed_at": "2026-09-21T18:54:48Z",
+   "created_at": "2026-09-21T18:52:27Z",
+   "user": {
+    "login": "Rowlando13"
+   },
+   "files": [
+    {
+     "filename": "CHANGES.md"
+    },
+    {
+     "filename": "docs/arguments.md"
+    },
+    {
+     "filename": "docs/documentation.md"
+    },
+    {
+     "filename": "src/click/core.py"
+    },
+    {
+     "filename": "src/click/types.py"
+    },
+    {
+     "filename": "src/click/utils.py"
+    },
+    {
+     "filename": "tests/test_arguments.py"
+    },
+    {
+     "filename": "tests/test_info_dict.py"
+    },
+    {
+     "filename": "tests/test_types/test_Path.py"
+    },
+    {
+     "filename": "tests/test_utils/test_make_default_short_help.py"
+    },
+    {
+     "filename": "tests/typing/typing_path.py"
+    }
+   ],
+   "reviews": []
+  },
+  {
+   "number": 3866,
+   "title": "Deprecate parameter names that are: not a Python identifier, or a Python Keyword, or not lower-cased",
+   "body": "This PR prepares the ground for #3827, which is going to refuse parameter names that are not valid Python identifiers.\r\n\r\nThis add `DeprecationWarning` that detect when `Parameter`, `Argument` or `Option` gets a `name` that will be not allowed in the future 9.0.0 release:\r\n- a parameter that is not a Python identifier (check against `str.identifier`)\r\n- a parameter that is a Python keyword (check against `keyword.iskeyword`)\r\n- an option name that is nor lower-cased\r\n\r\nThis PR also copy the majority of tests that were originally proposed in #3827, so the behavior of the `name` is locked down and frozen. This will prevent tweaking or introducing regressions during the full 8.x cycle.\r\n\r\nThis PR also inaugurate the 8.6.0 release on `main`.\r\n\r\n### Historical details\r\n\r\nOf course, I fucked-up the same way I fucked-up 2 months ago with https://github.com/pallets/click/pull/3701 , when juggling between `main` and `stable` branches made me push to `stable`. \ud83d\ude2b\r\n\r\nSo:\r\n- I pushed by mistake https://github.com/pallets/click/commit/e2bddbc801dabc4efc3c3c1e32b53b3f938d3efc\r\n- I reverted my mistake on `stable` with https://github.com/pallets/click/commit/d036881798e34289a49b18a5c550c7cf687e5a7a\r\n- And this PR is what it should have been all along\r\n\r\nAnyway, this was resolved by resyncing both branches with https://github.com/pallets/click/pull/3876 .",
+   "html_url": "https://github.com/pallets/click/pull/3866",
+   "merged_at": "2026-09-23T04:07:18Z",
+   "closed_at": "2026-09-23T04:07:18Z",
+   "created_at": "2026-09-11T13:26:10Z",
+   "user": {
+    "login": "kdeldycke"
+   },
+   "files": [
+    {
+     "filename": "CHANGES.md"
+    },
+    {
+     "filename": "docs/upgrade-guides.md"
+    },
+    {
+     "filename": "pyproject.toml"
+    },
+    {
+     "filename": "src/click/core.py"
+    },
+    {
+     "filename": "tests/test_arguments.py"
+    },
+    {
+     "filename": "tests/test_deprecations.py"
+    },
+    {
+     "filename": "tests/test_options.py"
+    },
+    {
+     "filename": "uv.lock"
+    }
+   ],
+   "reviews": [
+    {
+     "user": {
+      "login": "Rowlando13"
+     }
+    }
+   ]
+  },
+  {
+   "number": 3865,
+   "title": "Fix short help abbreviation",
+   "body": "Just a small bug I encountered in my CLIs, where as `vs.` or `e.g.` was prematurely ending the shorten version of a help message produced by `_make_default_short_help`.\r\n\r\nAlso use the opportunity to simplify the calculations and depends on Python's `textwrap.shorten`.",
+   "html_url": "https://github.com/pallets/click/pull/3865",
+   "merged_at": "2026-09-12T02:35:08Z",
+   "closed_at": "2026-09-12T02:35:08Z",
+   "created_at": "2026-09-11T06:25:50Z",
+   "user": {
+    "login": "kdeldycke"
+   },
+   "files": [
+    {
+     "filename": "CHANGES.md"
+    },
+    {
+     "filename": "src/click/utils.py"
+    },
+    {
+     "filename": "tests/test_utils/test_make_default_short_help.py"
+    }
+   ],
+   "reviews": [
+    {
+     "user": {
+      "login": "Rowlando13"
+     }
+    }
+   ]
+  },
+  {
+   "number": 3861,
+   "title": "Move common `help` argument from `Option` and `Argument` to `Parameter`",
+   "body": "This is a small refactor which deduplicate the management of `help` argument from `Option` and `Argument` and move it to the common `Parameter` parent class.\r\n\r\nIts only side effect is that `Parameter.to_info_dict` now reports it.\r\n\r\nThis is a follow up on #3860.",
+   "html_url": "https://github.com/pallets/click/pull/3861",
+   "merged_at": "2026-09-10T19:29:50Z",
+   "closed_at": "2026-09-10T19:29:50Z",
+   "created_at": "2026-09-10T08:59:16Z",
+   "user": {
+    "login": "kdeldycke"
+   },
+   "files": [
+    {
+     "filename": "CHANGES.md"
+    },
+    {
+     "filename": "src/click/core.py"
+    },
+    {
+     "filename": "tests/test_info_dict.py"
+    }
+   ],
+   "reviews": [
+    {
+     "user": {
+      "login": "Rowlando13"
+     }
+    }
+   ]
+  },
+  {
+   "number": 3860,
+   "title": "Always list all positional arguments",
+   "body": "This is inconsistent with the way options are displayed, as every options are displayed including those without help.\r\n\r\nThe reason to display all arguments in the `Positional arguments` section is to not introduce subtle confusion, as an argument without help would only be noticeable in the usage line.\r\n\r\nCloup already renders the section this way (see https://github.com/janluke/cloup/issues/210) and is the source discussion with @janluke for that bug fix.\r\n\r\nIn this implementation, I refrained to always display the `Positional arguments` section. So I made the decision to not print the `Positional arguments` section in full if and only if at least one of its argument has an `help`. This decision is open to discussion.\r\n\r\nThis is a follow up on https://github.com/pallets/click/pull/3473",
+   "html_url": "https://github.com/pallets/click/pull/3860",
+   "merged_at": "2026-09-21T18:31:00Z",
+   "closed_at": "2026-09-21T18:31:00Z",
+   "created_at": "2026-09-09T09:31:22Z",
+   "user": {
+    "login": "kdeldycke"
+   },
+   "files": [
+    {
+     "filename": "CHANGES.md"
+    },
+    {
+     "filename": "docs/arguments.md"
+    },
+    {
+     "filename": "docs/documentation.md"
+    },
+    {
+     "filename": "src/click/core.py"
+    },
+    {
+     "filename": "tests/test_arguments.py"
+    }
+   ],
+   "reviews": [
+    {
+     "user": {
+      "login": "janluke"
+     }
+    },
+    {
+     "user": {
+      "login": "janluke"
+     }
+    },
+    {
+     "user": {
+      "login": "Rowlando13"
+     }
+    }
+   ]
+  },
+  {
+   "number": 3858,
+   "title": "Make `click.Path` generic on `path_type`",
+   "body": "This is an attempt to make `click.Path` generic on `path_type` following #3407.\r\n\r\nCloses #3822\r\n",
+   "html_url": "https://github.com/pallets/click/pull/3858",
+   "merged_at": "2026-09-08T19:48:10Z",
+   "closed_at": "2026-09-08T19:48:10Z",
+   "created_at": "2026-09-08T10:36:02Z",
+   "user": {
+    "login": "kdeldycke"
+   },
+   "files": [
+    {
+     "filename": "CHANGES.md"
+    },
+    {
+     "filename": "src/click/types.py"
+    },
+    {
+     "filename": "tests/test_types/test_Path.py"
+    },
+    {
+     "filename": "tests/typing/typing_path.py"
+    }
+   ],
+   "reviews": [
+    {
+     "user": {
+      "login": "Rowlando13"
+     }
+    },
+    {
+     "user": {
+      "login": "Courtneybrown11"
+     }
+    }
+   ]
+  },
+  {
+   "number": 3851,
+   "title": "Stable",
+   "body": "<!--\r\nBefore opening a PR, open a ticket describing the issue or feature the\r\nPR will address. An issue is not required for fixing typos in\r\ndocumentation, or other simple non-code changes.\r\n\r\nReplace this comment with a description of the change. Describe how it\r\naddresses the linked ticket.\r\n-->\r\n\r\n<!--\r\nLink to relevant issues or previous PRs, one per line. Use \"fixes\" to\r\nautomatically close an issue.\r\n\r\nfixes #<issue number>\r\n-->\r\n\r\n<!--\r\nEnsure each step in CONTRIBUTING.rst is complete, especially the following:\r\n\r\n- Add tests that demonstrate the correct behavior of the change. Tests\r\n  should fail without the change.\r\n- Add or update relevant docs, in the docs folder and in code.\r\n- Add an entry in CHANGES.rst summarizing the change and linking to the issue.\r\n- Add `.. versionchanged::` entries in any relevant code docs.\r\n-->\r\n",
+   "html_url": "https://github.com/pallets/click/pull/3851",
+   "merged_at": "2026-09-06T01:28:42Z",
+   "closed_at": "2026-09-06T01:28:42Z",
+   "created_at": "2026-09-06T01:24:59Z",
+   "user": {
+    "login": "Rowlando13"
+   },
+   "files": [
+    {
+     "filename": "CHANGES.md"
+    },
+    {
+     "filename": "docs/arguments.md"
+    },
+    {
+     "filename": "docs/complex.md"
+    },
+    {
+     "filename": "docs/contrib.md"
+    },
+    {
+     "filename": "docs/exceptions.md"
+    },
+    {
+     "filename": "docs/faqs.md"
+    },
+    {
+     "filename": "docs/parameter-types.md"
+    },
+    {
+     "filename": "docs/shell-completion.md"
+    },
+    {
+     "filename": "docs/utils.md"
+    },
+    {
+     "filename": "src/click/_utils.py"
+    },
+    {
+     "filename": "src/click/_winconsole.py"
+    },
+    {
+     "filename": "src/click/core.py"
+    },
+    {
+     "filename": "src/click/termui.py"
+    },
+    {
+     "filename": "tests/test_abort_interrupt.py"
+    },
+    {
+     "filename": "tests/test_basic.py"
+    },
+    {
+     "filename": "tests/test_defaults.py"
+    },
+    {
+     "filename": "tests/test_exceptions/__init__.py"
+    },
+    {
+     "filename": "tests/test_exceptions/test_FileError.py"
+    },
+    {
+     "filename": "tests/test_options.py"
+    },
+    {
+     "filename": "tests/test_types.py"
+    },
+    {
+     "filename": "tests/test_types/__init__.py"
+    },
+    {
+     "filename": "tests/test_types/test_Choice.py"
+    },
+    {
+     "filename": "tests/test_types/test_File.py"
+    },
+    {
+     "filename": "tests/test_types/test_FloatRange.py"
+    },
+    {
+     "filename": "tests/test_types/test_FuncParamType.py"
+    },
+    {
+     "filename": "tests/test_types/test_IntRange.py"
+    },
+    {
+     "filename": "tests/test_types/test_ParamType.py"
+    },
+    {
+     "filename": "tests/test_types/test_Path.py"
+    },
+    {
+     "filename": "tests/test_types/test_convert_type.py"
+    },
+    {
+     "filename": "tests/test_utils/test_sentinel.py"
+    }
+   ],
+   "reviews": []
+  },
+  {
+   "number": 3850,
+   "title": "Split out types tests.",
+   "body": "<!--\r\nBefore opening a PR, open a ticket describing the issue or feature the\r\nPR will address. An issue is not required for fixing typos in\r\ndocumentation, or other simple non-code changes.\r\n\r\nReplace this comment with a description of the change. Describe how it\r\naddresses the linked ticket.\r\n-->\r\n\r\n<!--\r\nLink to relevant issues or previous PRs, one per line. Use \"fixes\" to\r\nautomatically close an issue.\r\n\r\nfixes #<issue number>\r\n-->\r\n\r\n<!--\r\nEnsure each step in CONTRIBUTING.rst is complete, especially the following:\r\n\r\n- Add tests that demonstrate the correct behavior of the change. Tests\r\n  should fail without the change.\r\n- Add or update relevant docs, in the docs folder and in code.\r\n- Add an entry in CHANGES.rst summarizing the change and linking to the issue.\r\n- Add `.. versionchanged::` entries in any relevant code docs.\r\n-->\r\n",
+   "html_url": "https://github.com/pallets/click/pull/3850",
+   "merged_at": "2026-09-06T01:24:20Z",
+   "closed_at": "2026-09-06T01:24:20Z",
+   "created_at": "2026-09-06T01:23:12Z",
+   "user": {
+    "login": "Rowlando13"
+   },
+   "files": [
+    {
+     "filename": "tests/test_basic.py"
+    },
+    {
+     "filename": "tests/test_exceptions/__init__.py"
+    },
+    {
+     "filename": "tests/test_exceptions/test_FileError.py"
+    },
+    {
+     "filename": "tests/test_types.py"
+    },
+    {
+     "filename": "tests/test_types/__init__.py"
+    },
+    {
+     "filename": "tests/test_types/test_Choice.py"
+    },
+    {
+     "filename": "tests/test_types/test_File.py"
+    },
+    {
+     "filename": "tests/test_types/test_FloatRange.py"
+    },
+    {
+     "filename": "tests/test_types/test_FuncParamType.py"
+    },
+    {
+     "filename": "tests/test_types/test_IntRange.py"
+    },
+    {
+     "filename": "tests/test_types/test_ParamType.py"
+    },
+    {
+     "filename": "tests/test_types/test_Path.py"
+    },
+    {
+     "filename": "tests/test_types/test_convert_type.py"
+    }
+   ],
+   "reviews": []
+  },
+  {
+   "number": 3829,
+   "title": "Add missing a reference for Windows and use the `kbd` role",
+   "body": "While reviewing changes from documentation I introduced in #3818, I realized that I was missing a reference to `Ctrl+Z` on Windows. This PR adds it.\r\n\r\nAnd while doing that change, I use the [`kbd` Sphinx role](https://www.sphinx-doc.org/en/master/usage/restructuredtext/roles.html#role-kbd) to mark keystrokes sequences. Don't know if the theme currently use special CSS to render it, but that might be free styling if it supports it.",
+   "html_url": "https://github.com/pallets/click/pull/3829",
+   "merged_at": "2026-09-02T13:10:04Z",
+   "closed_at": "2026-09-02T13:10:04Z",
+   "created_at": "2026-09-02T07:29:18Z",
+   "user": {
+    "login": "kdeldycke"
+   },
+   "files": [
+    {
+     "filename": "docs/complex.md"
+    },
+    {
+     "filename": "docs/exceptions.md"
+    },
+    {
+     "filename": "docs/utils.md"
+    }
+   ],
+   "reviews": [
+    {
+     "user": {
+      "login": "Rowlando13"
+     }
+    }
+   ]
+  },
+  {
+   "number": 3826,
+   "title": "Add FAQ entry about tab completion in prompts",
+   "body": "This PR add a FAQ entry to:\r\n- show users how to use `readline` to customize completion within prompts\r\n- point them to Python documentation for more details about `readline` behavior on different platforms\r\n- add a list of popular third-party interactive input libraries for users looking for fancy features\r\n\r\nCloses #173 that is open since 2014. Its original request, completion when prompting for a path, works today: Click's prompt reads through `input()`, so `readline` handles the line.\r\n\r\nFancier interactive input at a prompt has been declined before:\r\n- #1122\r\n- #2047\r\n- #2795\r\n- #1411 (still open about a customization hook)",
+   "html_url": "https://github.com/pallets/click/pull/3826",
+   "merged_at": "2026-09-01T21:32:54Z",
+   "closed_at": "2026-09-01T21:32:54Z",
+   "created_at": "2026-09-01T10:29:55Z",
+   "user": {
+    "login": "kdeldycke"
+   },
+   "files": [
+    {
+     "filename": "docs/contrib.md"
+    },
+    {
+     "filename": "docs/faqs.md"
+    }
+   ],
+   "reviews": []
+  }
+ ],
+ "issues": [
+  {
+   "number": 3907,
+   "title": "Release 8.5.1",
+   "body": "[Pallets release steps](https://palletsprojects.com/contributing/release)\n\n- [x] Decide to make a release.\n- [x] Ensure the change log has entries for each user-facing non-docs change, with links to the related issue reports.\n- [x] Ensure each issue and PR is in the milestone. \n- [x] verify or trigger [nightly tests](https://github.com/pallets/click/actions/workflows/nightly.yaml)\n- [x] Create a release-A.B.C branch.\n- [x] Change \"Unreleased\" to \"Released YYYY-MM-DD\" in CHANGES.md.\n- [x] Remove the \".dev\" suffix from the version in pyproject.toml.\n- [x] Commit git commit -am 'release version A.B.C' and create a PR.\n- [x] Tag `git tag -am 'release version A.B.C' A.B.C` and push `git push upstream A.B.C.`\n- [x] Watch the tests pass and build jobs begin.\n- [x] Edit the generated draft release page with our standard message template.\n- [x] Approve the upload job.\n- [x] Merge the PR. Use \"create a merge commit\", not \"squash\" or \"rebase\"!\n- [x] Close the milestone.\n- [x] Publish the draft release page.\n- [x] Merge main into stable (or stable into main): \n- [ ] Start the next version(s), creating a change log section, bumping the version in pyproject.toml with the .dev suffix.\n- [ ] Done!\n",
+   "html_url": "https://github.com/pallets/click/issues/3907",
+   "created_at": "2026-11-06T06:12:33Z",
+   "user": {
+    "login": "Rowlando13"
+   }
+  },
+  {
+   "number": 3904,
+   "title": "[rejected AI] `IntRange`/`INT`/`FLOAT` leak `TypeError` and `OverflowError` instead of refusing with `BadParameter`",
+   "body": "**Versions:** click 8.1.7 (tested), still present in 8.5.0.\n**Component:** `click/types.py`, `_NumberParamTypeBase.convert` \u2014 so `click.INT`,\n`click.FLOAT`, `click.IntRange`, `click.FloatRange` and every subclass.\n**Python:** 3.14 (the three exception classes are CPython's own, so the version only\nchanges which values reach `int()`; the bug is version-independent).\n\n## What happens\n\n`_NumberParamTypeBase.convert` wraps the numeric cast in a `try` that catches **only**\n`ValueError`:\n\n```python\n    def convert(self, value, param, ctx):\n        try:\n            return self._number_class(value)\n        except ValueError:\n            self.fail(\n                _(\"{value!r} is not a valid {number_type}.\").format(\n                    value=value, number_type=self.name\n                ),\n                param,\n                ctx,\n            )\n```\n\n`int()` and `float()` raise two further classes for values `convert` is documented to\naccept:\n\n* **`TypeError`** \u2014 a value the constructor does not take at all: `None`, a `list`, a\n  `dict`, an arbitrary object. `int(None)` \u2192\n  `TypeError: int() argument must be a string, a bytes-like object or a real number, not 'NoneType'`.\n* **`OverflowError`** \u2014 `int(float(\"inf\"))` \u2192\n  `OverflowError: cannot convert float infinity to integer`.\n\nBoth leave `convert` unchanged, so they reach the caller as themselves rather than as the\n`click.BadParameter` that `ParamType.fail` exists to raise.\n\n`ParamType`'s own docstring names the call shape as supported \u2014 \"*It must be able to\nconvert a value if the `ctx` and `param` arguments are `None`. This can occur when\nconverting prompt input.*\" \u2014 and every other `ParamType.convert` in the library refuses\nbad input by calling `self.fail`.\n\n## Why it matters\n\n`Parameter.type_cast_value` passes a non-`None` value straight to `ParamType.__call__`,\nwhich passes it to `convert`. A `default=` the type cannot convert therefore ends the\nprogram with a traceback and **exit status 1 and no output**, where every other conversion\nfailure produces a usage message and **exit status 2**:\n\n```python\nimport click\n\n@click.command()\n@click.option(\"--n\", type=click.IntRange(0, 100), default=[1, \"2\"])\ndef cli(n):\n    click.echo(f\"n={n!r}\")\n\ncli()\n```\n\n```\n$ python cli.py\nTraceback (most recent call last):\n  ...\nTypeError: int() argument must be a string, a bytes-like object or a real number, not 'list'\n$ echo $?\n1\n```\n\nThe same happens with `default=float(\"inf\")` (`OverflowError`), with a `default` read from\n`ctx.default_map`, and with any object a caller installs as a default. A user who wrote\n`except click.ClickException` \u2014 the documented way to handle a CLI error \u2014 does not catch\neither.\n\n## Minimal fix\n\nCatch the two classes the cast can raise:\n\n```diff\n-        except ValueError:\n+        except (ValueError, TypeError, OverflowError):\n             self.fail(\n                 _(\"{value!r} is not a valid {number_type}.\").format(\n                     value=value, number_type=self.name\n                 ),\n                 param,\n                 ctx,\n             )\n```\n\n`fail` renders `{value!r}`, so the message is already useful for a non-numeric value:\n`\"<object object at 0x\u2026> is not a valid integer range.\"`.\n\nWith the patch, the example above prints\n\n```\nUsage: cli.py [OPTIONS]\nTry 'cli.py --help' for help.\n\nError: Invalid value for '--n': '[1, '2']' is not a valid integer range.\n```\n\nand exits 2.\n\n## Compatibility\n\nThe library's own suite is unchanged: **532 passed, 22 skipped, 1 xfailed** before and\nafter the patch (`tests/`, click 8.1.7's tree; `tests/test_basic.py` does not collect on\ncurrent pytest for an unrelated reason and is excluded from both runs).\n\nThe behaviour that changes is exactly the one that was a traceback: no currently-passing\nconversion starts failing, because a value that reaches the new `except` clause was\npreviously raising out of `convert` rather than returning.\n\n## Not affected\n\nA **string** input is not a way to trigger this: `int(str)` raises only `ValueError`, which\nis already caught, so `\"abc\"`, `\"\"`, `\"1e3\"` and an over-long digit literal all produce\n`BadParameter` correctly today.",
+   "html_url": "https://github.com/pallets/click/issues/3904",
+   "created_at": "2026-11-05T01:03:48Z",
+   "user": {
+    "login": "mtakaki"
+   }
+  },
+  {
+   "number": 3903,
+   "title": "Atomic file writes replace the original file when the context exits with an exception",
+   "body": "## Summary\n\nWhen using `click.open_file(..., atomic=True)`, an exception raised inside the file context still causes the temporary file to replace the original destination file.\n\nThis means a failed write can overwrite previously valid data with incomplete content.\n\n## Steps to reproduce\n\nRun this code:\n\n```python\nimport click\nfrom pathlib import Path\nimport tempfile\n\nwith tempfile.TemporaryDirectory() as directory:\n    target = Path(directory) / \"important.txt\"\n    target.write_text(\"ORIGINAL DATA\")\n\n    try:\n        with click.open_file(str(target), \"w\", atomic=True) as f:\n            f.write(\"PARTIAL DATA\")\n            raise RuntimeError(\"Simulated failure\")\n    except RuntimeError:\n        pass\n\n    print(target.read_text())\n```\n\n## Actual behavior\n\nThe output is:\n\n```text\nPARTIAL DATA\n```\n\nThe original file is overwritten despite the exception.\n\n## Expected behavior\n\nThe output should be:\n\n```text\nORIGINAL DATA\n```\n\nThe original file should remain unchanged when the operation fails.\n\n## Technical investigation\n\nIn `src/click/_compat.py`, `_AtomicFile.__exit__()` calls:\n\n```python\nself.close(delete=exc_type is not None)\n```\n\nHowever, `_AtomicFile.close()` ignores the `delete` argument and always executes:\n\n```python\nos.replace(self._tmp_filename, self._real_filename)\n```\n\nTherefore, the temporary file replaces the original even when an exception occurs.\n\n## Impact\n\nApplications using atomic file writing may lose previously valid file contents when an exception occurs during a write.\n\n\n## Environment\n\n- Operating system: macOS\n- Python version: 3.14.7\n- Click source commit: `2247b35ea1c47c727d7a06e51fa280e12a863ff6`\n- API: `click.open_file(..., atomic=True)`\n\n## Reproducibility\n\nSuccessfully reproduced locally using the repository source code.",
+   "html_url": "https://github.com/pallets/click/issues/3903",
+   "created_at": "2026-11-03T16:16:16Z",
+   "user": {
+    "login": "Shambhavi2306"
+   }
+  },
+  {
+   "number": 3895,
+   "title": "[rejected AI] `Choice.shell_complete` Unicode case-folding mismatch under `case_sensitive=False`",
+   "body": "#### Outline\nWhen `case_sensitive=False`, `Choice.normalize_choice` normalizes choice values using `.casefold()`. However, `Choice.shell_complete` normalizes the user's `incomplete` input string using `.lower()`. In Unicode, `.lower()` and `.casefold()` diverge for non-ASCII characters (e.g. `'\u00df'.lower() == '\u00df'`, while `'\u00df'.casefold() == 'ss'`). Consequently, completing a word containing such characters fails completely because the prefix comparison is performed between a casefolded choice and a lowercased prefix.\n\n#### Steps to Reproduce\n```python\nimport click\n\nchoice = click.Choice([\"GROSS\", \"GRO\u00df\"], case_sensitive=False)\ncmd = click.Command(\"cmd\")\nctx = click.Context(cmd)\nparam = click.Option([\"--type\"], type=choice)\n\ncompletions = choice.shell_complete(ctx, param, \"gro\u00df\")\nprint(\"Completions returned:\", [c.value for c in completions])\nassert len(completions) > 0, \"No completions returned for valid prefix 'gro\u00df'!\"\n```\n\n#### Traceback / Output\n```\nCompletions returned: []\nTraceback (most recent call last):\n  File \"test_choice.py\", line 10, in <module>\n    assert len(completions) > 0, \"No completions returned for valid prefix 'gro\u00df'!\"\nAssertionError: No completions returned for valid prefix 'gro\u00df'!\n```\n\n#### Expected Behavior\n`shell_complete` should normalize `incomplete` using `.casefold()` so that Unicode case-folding matches choices consistently.\n\n#### Root Cause Analysis\nIn `src/click/types.py`, lines 508\u2013514:\n```python\nstr_choices = [self.normalize_choice(choice, ctx) for choice in self.choices]\nif self.case_sensitive:\n    matched = (c for c in str_choices if c.startswith(incomplete))\nelse:\n    incomplete = incomplete.lower()\n    matched = (c for c in str_choices if c.lower().startswith(incomplete))\n```\n`normalize_choice` has already applied `.casefold()` to every element of `str_choices`. Using `incomplete.lower()` creates an algorithmic mismatch against the casefolded choices, causing `.startswith()` to return `False`.\n\n#### Proposed Fix\n```diff\n--- a/src/click/types.py\n+++ b/src/click/types.py\n@@ -509,8 +509,8 @@ class Choice(ParamType[_ValueT_co], t.Generic[_ValueT_co]):\n         if self.case_sensitive:\n             matched = (c for c in str_choices if c.startswith(incomplete))\n         else:\n-            incomplete = incomplete.lower()\n-            matched = (c for c in str_choices if c.lower().startswith(incomplete))\n+            incomplete = incomplete.casefold()\n+            matched = (c for c in str_choices if c.startswith(incomplete))\n \n         return [CompletionItem(c) for c in matched]\n```\n\n#### Regression Test\n```python\ndef test_choice_case_insensitive_casefold_completion():\n    choice = click.Choice([\"GROSS\", \"GRO\u00df\"], case_sensitive=False)\n    cmd = click.Command(\"cmd\")\n    ctx = click.Context(cmd)\n    param = click.Option([\"--type\"], type=choice)\n    completions = [item.value for item in choice.shell_complete(ctx, param, \"gro\u00df\")]\n    assert len(completions) == 2\n    assert completions == [\"gross\", \"gross\"]\n```\n\n#### Environment\n- Python version: 3.10 / 3.11 / 3.12 / 3.13 / 3.14\n- Click version: 8.0+ / 8.6.0a0 (`main`)\n\n---\n\n## Complete Verification & Test Run\n\nRunning the full pytest suite after applying the 5 fixes and 6 regression tests:\n\n```bash\n$ pytest tests/\n============================= test session starts =============================\nplatform win32 -- Python 3.14.7, pytest-9.1.1, pluggy-1.6.0\nrootdir: C:\\Users\\ritik\\.gemini\\antigravity\\scratch\\click\nconfigfile: pyproject.toml\ncollected 33293 items / 31000 deselected / 2293 selected\n\ntests\\test_abort_interrupt.py ........                                   [  0%]\ntests\\test_arguments.py ................................................ [  2%]\ntests\\test_basic.py .................................................... [ 11%]\ntests\\test_chain.py ...............x                                     [ 14%]\ntests\\test_command_decorators.py .........                               [ 15%]\ntests\\test_commands.py ................................................. [ 17%]\ntests\\test_compat.py ................................................... [ 21%]\ntests\\test_context.py ..............................                     [ 28%]\ntests\\test_custom_classes.py ......                                      [ 28%]\ntests\\test_defaults.py ..............................................    [ 30%]\ntests\\test_deprecations.py ............................................. [ 32%]\ntests\\test_formatting.py .......................................         [ 35%]\ntests\\test_info_dict.py .......................................          [ 37%]\ntests\\test_normalization.py ...                                          [ 37%]\ntests\\test_options.py .................................................. [ 39%]\ntests\\test_parser.py .......                                             [ 68%]\ntests\\test_shell_completion.py ......................................... [ 70%]\ntests\\test_stream_lifecycle.py ........................                  [ 71%]\ntests\\test_termui.py ................................................... [ 74%]\ntests\\test_testing.py .................................................. [ 86%]\ntests\\test_types\\test_Choice.py .                                        [ 86%]\ntests\\test_types\\test_File.py ..                                         [ 86%]\ntests\\test_types\\test_FloatRange.py ........                             [ 86%]\ntests\\test_types\\test_IntRange.py ..............                         [ 87%]\ntests\\test_types\\test_Path.py .s.s.....                                  [ 87%]\ntests\\test_types\\test_convert_type.py ..............................     [ 89%]\ntests\\test_utils\\test_style.py ......................................... [ 97%]\n\n======= 2184 passed, 108 skipped, 31000 deselected, 1 xfailed in 5.19s ========\n```\n",
+   "html_url": "https://github.com/pallets/click/issues/3895",
+   "created_at": "2026-10-23T04:43:58Z",
+   "user": {
+    "login": "codeCraft-Ritik"
+   }
+  },
+  {
+   "number": 3894,
+   "title": "[rejected AI] Short options with attached `=` (e.g. `-u=admin`) corrupt the parsed value to include the `=` sign",
+   "body": "#### Outline\nStandard POSIX CLI conventions and Python's `argparse` allow passing short options with attached arguments using `=` (e.g. `-u=admin` or `-f=file.txt`). In Click, passing `-u=admin` when `-u` is declared as an option taking a value results in `u` being assigned the string `'=admin'` with a leading equals sign. Furthermore, if `-v` is a boolean flag, passing `-v=foo` fails with `NoSuchOption: No such option: -=` rather than reporting that the option does not accept a value.\n\n#### Steps to Reproduce\n```python\nimport click\nfrom click.testing import CliRunner\n\n@click.command()\n@click.option(\"-u\", type=str)\ndef cli(u):\n    click.echo(f\"u: {u!r}\")\n\nrunner = CliRunner()\nres = runner.invoke(cli, [\"-u=admin\"])\nprint(\"Actual output:\", res.output.strip())\nassert res.output.strip() == \"u: 'admin'\", f\"Expected 'admin' but received {res.output.strip()}\"\n```\n\n#### Traceback / Output\n```\nActual output: u: '=admin'\nTraceback (most recent call last):\n  File \"test_short_opt.py\", line 12, in <module>\n    assert res.output.strip() == \"u: 'admin'\", f\"Expected 'admin' but received {res.output.strip()}\"\nAssertionError: Expected 'admin' but received u: '=admin'\n```\n\n#### Expected Behavior\nThe attached `=` sign should be recognized as the option/argument delimiter, assigning `u = 'admin'` (matching `argparse` and GNU/POSIX semantics). If the option is a flag, Click should raise `BadOptionUsage: Option '-v' does not take a value.`\n\n#### Root Cause Analysis\nIn `src/click/parser.py`:\n1. `_process_opts` splits `arg` on `=` to test for attached values (`long_opt, explicit_value = \"-u\", \"admin\"`).\n2. It attempts `self._match_long_opt(\"-u\", explicit_value, state)`, which raises `NoSuchOption` because `\"-u\"` is in `_short_opt`, not `_long_opt`.\n3. In `except NoSuchOption:`, it invokes `self._match_short_opt(arg, state)` with the original string `arg = \"-u=admin\"`.\n4. Inside `_match_short_opt`:\n   ```python\n   if option.takes_value:\n       if i < len(arg):\n           state.rargs.insert(0, arg[i:])\n           stop = True\n       value = self._get_value_from_state(opt, option, state)\n   ```\n   `i` is 2, so `arg[i:]` is `\"=admin\"`. Click inserts `\"=admin\"` into `state.rargs`, and `_get_value_from_state` consumes it directly.\n\n#### Proposed Fix\n```diff\n--- a/src/click/parser.py\n+++ b/src/click/parser.py\n@@ -407,11 +407,19 @@ class _OptionParser:\n                 # Any characters left in arg?  Pretend they're the\n                 # next arg, and stop consuming characters of arg.\n                 if i < len(arg):\n-                    state.rargs.insert(0, arg[i:])\n+                    opt_val = arg[i:]\n+                    if opt_val.startswith(\"=\"):\n+                        opt_val = opt_val[1:]\n+                    state.rargs.insert(0, opt_val)\n                     stop = True\n \n                 value = self._get_value_from_state(opt, option, state)\n \n+            elif i < len(arg) and arg[i] == \"=\":\n+                raise BadOptionUsage(\n+                    opt, _(\"Option {name!r} does not take a value.\").format(name=opt)\n+                )\n+\n             else:\n                 value = UNSET\n```\n\n#### Regression Test\n```python\ndef test_short_option_with_attached_equals(runner):\n    @click.command()\n    @click.option(\"-u\", type=str)\n    def cli(u):\n        click.echo(f\"u: {u}\")\n\n    result = runner.invoke(cli, [\"-u=admin\"])\n    assert result.exit_code == 0\n    assert result.output.strip() == \"u: admin\"\n\n\ndef test_short_flag_with_attached_equals_errors(runner):\n    @click.command()\n    @click.option(\"-v\", is_flag=True)\n    def cli(v):\n        pass\n\n    result = runner.invoke(cli, [\"-v=foo\"])\n    assert result.exit_code == 2\n    assert \"Option '-v' does not take a value\" in result.output\n```\n\n#### Environment\n- Python version: 3.10 / 3.11 / 3.12 / 3.13 / 3.14\n- Click version: 8.0+ / 8.6.0a0 (`main`)\n\n---",
+   "html_url": "https://github.com/pallets/click/issues/3894",
+   "created_at": "2026-10-23T04:43:09Z",
+   "user": {
+    "login": "codeCraft-Ritik"
+   }
+  },
+  {
+   "number": 3893,
+   "title": "[rejected AI] `click.Path.to_info_dict()` omits `executable` and `resolve_path` configurations",
+   "body": "#### Outline\n`click.Path` accepts `executable: bool` (added in Click 8.1) and `resolve_path: bool`. However, `PathInfoDict` and `Path.to_info_dict()` were never updated to include either attribute. When introspecting or serializing CLI metadata via `param.type.to_info_dict()` or `Context.to_info_dict()`, both `executable` and `resolve_path` are dropped from the dictionary.\n\n#### Steps to Reproduce\n```python\nimport click\n\npath_param = click.Path(executable=True, resolve_path=True)\ninfo = path_param.to_info_dict()\n\nprint(\"Serialized dict:\", info)\nassert \"executable\" in info, \"'executable' missing from to_info_dict()\"\nassert \"resolve_path\" in info, \"'resolve_path' missing from to_info_dict()\"\n```\n\n#### Traceback / Output\n```\nSerialized dict: {'exists': False, 'file_okay': True, 'dir_okay': True, 'writable': False, 'readable': True, 'allow_dash': False, 'param_type': 'Path', 'name': 'path'}\nTraceback (most recent call last):\n  File \"test_info.py\", line 7, in <module>\n    assert \"executable\" in info, \"'executable' missing from to_info_dict()\"\nAssertionError: 'executable' missing from to_info_dict()\n```\n\n#### Expected Behavior\nThe returned `PathInfoDict` must contain the `executable` and `resolve_path` fields:\n```python\n{\n    'param_type': 'Path',\n    'name': 'path',\n    'exists': False,\n    'file_okay': True,\n    'dir_okay': True,\n    'writable': False,\n    'readable': True,\n    'allow_dash': False,\n    'executable': True,\n    'resolve_path': True,\n}\n```\n\n#### Root Cause Analysis\nIn `src/click/types.py`:\n- `PathInfoDict` (lines 1050\u20131056) omits `executable: bool` and `resolve_path: bool`.\n- `Path.to_info_dict()` (lines 1136\u20131145) only unpacks `exists`, `file_okay`, `dir_okay`, `writable`, `readable`, and `allow_dash`.\n\n#### Proposed Fix\n```diff\n--- a/src/click/types.py\n+++ b/src/click/types.py\n@@ -1054,6 +1054,8 @@ class PathInfoDict(ParamTypeInfoDict):\n     writable: bool\n     readable: bool\n     allow_dash: bool\n+    executable: bool\n+    resolve_path: bool\n \n \n class Path(ParamType[_PathT_co, str | os.PathLike[str]], t.Generic[_PathT_co]):\n@@ -1141,6 +1143,8 @@ class Path(ParamType[_PathT_co, str | os.PathLike[str]], t.Generic[_PathT_co]):\n             \"writable\": self.writable,\n             \"readable\": self.readable,\n             \"allow_dash\": self.allow_dash,\n+            \"executable\": self.executable,\n+            \"resolve_path\": self.resolve_path,\n             **super().to_info_dict(),\n         }\n```\n\n#### Regression Test\n```python\ndef test_path_to_info_dict_preserves_executable_and_resolve_path():\n    path_type = click.Path(executable=True, resolve_path=True)\n    info = path_type.to_info_dict()\n    assert info[\"executable\"] is True\n    assert info[\"resolve_path\"] is True\n```\n\n#### Environment\n- Python version: 3.10 / 3.11 / 3.12 / 3.13 / 3.14\n- Click version: 8.1.0+ / 8.6.0a0 (`main`)\n\n---",
+   "html_url": "https://github.com/pallets/click/issues/3893",
+   "created_at": "2026-10-23T04:41:54Z",
+   "user": {
+    "login": "codeCraft-Ritik"
+   }
+  },
+  {
+   "number": 3892,
+   "title": "[rejected AI] `HelpFormatter.write_dl`: raises `TypeError: Expected two columns for definition list` on empty sequence",
+   "body": "#### Outline\nCalling `HelpFormatter.write_dl(rows)` with an empty sequence `rows = []` crashes with `TypeError: Expected two columns for definition list`. An empty definition list should be a valid no-op. Because `write_dl` lacks an empty-sequence guard, internal callers (`format_options`, `format_commands`) and third-party extensions are forced to maintain redundant `if records:` guards to avoid crashing.\n\n#### Steps to Reproduce\n```python\nfrom click.formatting import HelpFormatter\n\nformatter = HelpFormatter()\nformatter.write_dl([])\n```\n\n#### Traceback\n```\nTraceback (most recent call last):\n  File \"<string>\", line 4, in <module>\n    formatter.write_dl([])\n  File \"src/click/formatting.py\", line 246, in write_dl\n    raise TypeError(\"Expected two columns for definition list\")\nTypeError: Expected two columns for definition list\n```\n\n#### Expected Behavior\n`write_dl([])` should return cleanly without appending to the buffer.\n\n#### Root Cause Analysis\nIn `src/click/formatting.py`, lines 243\u2013246:\n```python\nrows = list(rows)\nwidths = measure_table(rows)\nif len(widths) != 2:\n    raise TypeError(\"Expected two columns for definition list\")\n```\nWhen `rows` is empty, `measure_table(rows)` returns `()` (length 0). The check `if len(widths) != 2` erroneously raises `TypeError` instead of allowing an empty list of rows to complete gracefully.\n\n#### Proposed Fix\n```diff\n--- a/src/click/formatting.py\n+++ b/src/click/formatting.py\n@@ -241,6 +247,8 @@ class HelpFormatter:\n                             second column.\n         \"\"\"\n         rows = list(rows)\n+        if not rows:\n+            return\n         widths = measure_table(rows)\n         if len(widths) != 2:\n             raise TypeError(\"Expected two columns for definition list\")\n```\n\n#### Regression Test\n```python\ndef test_write_dl_empty_rows():\n    from click.formatting import HelpFormatter\n    formatter = HelpFormatter()\n    formatter.write_dl([])\n    assert formatter.getvalue() == \"\"\n```\n\n#### Environment\n- Python version: 3.10 / 3.11 / 3.12 / 3.13 / 3.14\n- Click version: 8.5.x / 8.6.0a0 (`main`)\n\n---",
+   "html_url": "https://github.com/pallets/click/issues/3892",
+   "created_at": "2026-10-23T04:41:07Z",
+   "user": {
+    "login": "codeCraft-Ritik"
+   }
+  },
+  {
+   "number": 3891,
+   "title": "[rejected AI] `wrap_text` collapses paragraphs into a single line when blank lines contain whitespace",
+   "body": "#### Outline\nWhen formatting docstrings or command help texts with `wrap_text(text, preserve_paragraphs=True)`, empty lines that contain whitespace characters (e.g. trailing spaces or tabs on an otherwise blank line) fail to trigger paragraph flushing. Instead of separating paragraphs, Click treats the whitespace line as an indented continuation of the active paragraph, strips the line to `\"\"`, and joins the surrounding paragraphs with a space. This causes multi-paragraph documentation to be collapsed into a single run-on paragraph with extraneous spacing.\n\n#### Steps to Reproduce\nRun the following script:\n\n```python\nfrom click.formatting import wrap_text\n\n# Blank line contains 3 spaces\nhelp_text = \"First paragraph of instructions.\\n   \\nSecond paragraph of instructions.\"\nwrapped = wrap_text(help_text, preserve_paragraphs=True)\n\nprint(\"Result:\\n\" + repr(wrapped))\nassert \"\\n\\n\" in wrapped, \"Paragraph separation was lost!\"\n```\n\n#### Traceback / Output\n```\nResult:\n'First paragraph of instructions.     Second paragraph of instructions.'\nTraceback (most recent call last):\n  File \"test_wrap.py\", line 8, in <module>\n    assert \"\\n\\n\" in wrapped, \"Paragraph separation was lost!\"\nAssertionError: Paragraph separation was lost!\n```\n\n#### Expected Behavior\nLines containing only whitespace should be recognized as paragraph boundaries. The output should preserve the double newline between paragraphs:\n```\n'First paragraph of instructions.\\n\\nSecond paragraph of instructions.'\n```\n\n#### Root Cause Analysis\nIn `src/click/formatting.py`, lines 87\u201396:\n```python\nfor line in text.splitlines():\n    if not line:\n        _flush_par()\n        indent = None\n    else:\n        if indent is None:\n            orig_len = term_len(line)\n            line = line.lstrip()\n            indent = orig_len - term_len(line)\n        buf.append(line)\n_flush_par()\n```\nWhen `line` consists only of spaces (e.g. `\"   \"`), `if not line:` evaluates to `False`. The loop enters the `else:` branch, measures `indent`, sets `line = \"\"` via `line.lstrip()`, and appends `\"\"` to `buf`. Because `buf` is not flushed, the next paragraph's lines are appended to the same buffer and joined with `\" \"`.\n\n#### Proposed Fix\n```diff\n--- a/src/click/formatting.py\n+++ b/src/click/formatting.py\n@@ -88,6 +88,12 @@ def wrap_text(\n         if not line:\n             _flush_par()\n             indent = None\n+        elif line.isspace():\n+            if buf:\n+                _flush_par()\n+                indent = None\n+            else:\n+                buf.append(\"\")\n         else:\n             if indent is None:\n                 orig_len = term_len(line)\n```\n\n#### Regression Test\n```python\ndef test_wrap_text_whitespace_blank_lines():\n    from click.formatting import wrap_text\n    text = \"First paragraph.\\n   \\nSecond paragraph.\"\n    wrapped = wrap_text(text, preserve_paragraphs=True)\n    assert \"\\n\\n\" in wrapped\n    assert wrapped.split(\"\\n\\n\") == [\"First paragraph.\", \"Second paragraph.\"]\n```\n\n#### Environment\n- Python version: 3.10 / 3.11 / 3.12 / 3.13 / 3.14\n- Click version: 8.5.x / 8.6.0a0 (`main`)\n\n---",
+   "html_url": "https://github.com/pallets/click/issues/3891",
+   "created_at": "2026-10-23T04:40:15Z",
+   "user": {
+    "login": "codeCraft-Ritik"
+   }
+  },
+  {
+   "number": 3890,
+   "title": "[rejected AI] Test explicit envvar list priority when multiple names are set",
+   "body": "The `Parameter.resolve_envvar_value` contract says an explicit `envvar` list returns its first non-empty value. Existing tests exercise the spelling of each name separately but do not set two entries at the same time. Reversing the list iteration in an isolated worktree leaves the unchanged suite green (2,262 passed), so the priority behavior is not protected by a regression test.\n\nI have a test-only change ready that checks both the priority when two entries are set and fallback when the first entry is empty. The corrected test rejects the reversed-priority regression by assertion and passes on current production code. The full suite, Ruff, and mypy pass.\n",
+   "html_url": "https://github.com/pallets/click/issues/3890",
+   "created_at": "2026-10-22T20:44:49Z",
+   "user": {
+    "login": "renanmpimentel"
+   }
+  },
+  {
+   "number": 3888,
+   "title": "use the path_type to perform the other click.Path checks",
+   "body": "click.Path exposes a path_type but does currently not use it for path sanity checks such as exists, file_okay, dir_okay etc.\nIf path_type is for instance a cloudpathlib.AnyPath and the cli user points to a S3 those checks will always go wrong since they expect path_type to handle only local paths.\nIssue #2661 addressed similar thoughts but when the path_type itself is pathlib compliant, I would hope that click.Path would honor the users wish to supply their own path_type.\n",
+   "html_url": "https://github.com/pallets/click/issues/3888",
+   "created_at": "2026-10-20T13:13:35Z",
+   "user": {
+    "login": "hoshimura"
+   }
+  },
+  {
+   "number": 3887,
+   "title": "ANSI escape codes break style()",
+   "body": "When using `style()` or `secho()` to write colored logs on the shell, it can sometimes be short-circuited if the log we try to apply color to is already colored with ANSI escape codes. \n\nThis is an issue when trying to color output from a file for example, when you want to highlight certain words (think of grep).\n\n## Replicate\n```\nansi_red = \"\\033[0;31m\"\nansi_endcolor = \"\\033[0m\"\nclick.secho(f\"{ansi_red}This should be blue{ansi_endcolor}\", fg=\"blue\")\n```\n### output :\n$\\color{red}\\textsf{This should be blue}$\n\n### Expected output :\n$\\color{blue}\\textsf{This should be blue}$\n\nEnvironment:\n\n- Python version: 3.9.25\n- Click version: 8.1.8\n\n_Also present in latest :_\n\n- Python version: 3.10.0\n- Click version: 8.5.0",
+   "html_url": "https://github.com/pallets/click/issues/3887",
+   "created_at": "2026-10-15T08:38:50Z",
+   "user": {
+    "login": "asandoz-cea"
+   }
+  },
+  {
+   "number": 3886,
+   "title": "Prevent Click from terminating when less is interrupted",
+   "body": "Today, if I stream output to `less` from Click, I can enter follow mode (`F`):\n> ```\n>        F      Scroll  forward,  and  keep  trying to read when the end of file is reached.  Normally this command would be used when already at the end of the file.  It is a way to monitor the\n>               tail of a file which is growing while it is being viewed.  (The behavior is similar to the \"tail -f\" command.)  To stop waiting for more data, enter the interrupt character (usu\u2010\n>               ally ^C).  On some systems you can also use ^X.\n> ```\n\nAs described, SIGINT is used to exit that mode... That kills Click, though (i.e. no more output is produced)!\nThis behavior appears to be intentional, but there does not appear to be a way to have output continue.\nIf we were to suppress background interrupts, I could still get Click to terminate by exiting the pager.\n\nIs this something the project would entertain (i.e. adding SIGINT isolation during paging), perhaps behind a flag if both behaviors are desirable?",
+   "html_url": "https://github.com/pallets/click/issues/3886",
+   "created_at": "2026-10-14T21:10:41Z",
+   "user": {
+    "login": "tucked"
+   }
+  },
+  {
+   "number": 3885,
+   "title": "Click shell completion can trigger parameter callbacks unexpectedly",
+   "body": "### Description\n\nShell completion can execute parameter callbacks while Click is only trying to\ndetermine completion information.\n\nThis can cause application code to run during tab completion even though the\ncommand has not been invoked.\n\n### Minimal reproduction\n\n```python\nimport click\n\ndef callback(ctx, param, value):\n    print(\"CALLBACK EXECUTED\", file=__import__(\"sys\").stderr)\n    return value\n\n@click.command()\n@click.option(\"--name\", callback=callback)\ndef cli(name):\n    click.echo(name)\n\nif __name__ == \"__main__\":\n    cli()",
+   "html_url": "https://github.com/pallets/click/issues/3885",
+   "created_at": "2026-10-08T05:33:01Z",
+   "user": {
+    "login": "archiep867-sys"
+   }
+  },
+  {
+   "number": 3882,
+   "title": "Support redirecting `--help` to a man page",
+   "body": "### Context\n\nWe have a rather complicated `--help` documentation which would like to forward it to sphinx for the generation. We would still like to have the complete help shown initially, and the closest thing would be to redirect it to a `man ...` call similar to how `git ... --help` does.\n\n### Current state\n\nIt can be hacked around to support this by manually handling the `--help`, but a first-party integration would be more appreciated. Probably also a plugin could be made to support in the meantime.\n\nEdit: although that is not very straightforward \ud83d\ude43\n\n### Design suggestion\n\nOn the user side this should support:\n- redirecting `--help` to a `man` page (or any other redirect)\n- check a environment variable to decide if the long help or short help should be shown/trigerred\n- `get_help` etc. should continue to give the short help version",
+   "html_url": "https://github.com/pallets/click/issues/3882",
+   "created_at": "2026-10-05T12:41:48Z",
+   "user": {
+    "login": "LecrisUT"
+   }
+  },
+  {
+   "number": 3881,
+   "title": "[rejected AI] click.Path.to_info_dict() and PathInfoDict omit resolve_path and executable",
+   "body": "`click.Path.to_info_dict()` and its typing definition `PathInfoDict` in `src/click/types.py` do not serialize the `resolve_path` and `executable` attributes.\n\nWhile the other boolean parameters (`exists`, `file_okay`, `dir_okay`, `writable`, `readable`, `allow_dash`) are included, `resolve_path` and `executable` are missing from both `Path.to_info_dict()` and `PathInfoDict`.\n\n### Reproduction\n\n```python\nimport click\n\np = click.Path(executable=True, resolve_path=True)\ninfo = p.to_info_dict()\n\n# Missing keys in output:\nassert \"executable\" in info, \"executable missing from to_info_dict\"\nassert \"resolve_path\" in info, \"resolve_path missing from to_info_dict\"\n```\n\n### Actual Behavior\n\n```python\n{\n    'exists': False, \n    'file_okay': True, \n    'dir_okay': True, \n    'writable': False, \n    'readable': True, \n    'allow_dash': False, \n    'param_type': 'Path', \n    'name': 'path'\n}\n```\n\n### Expected Behavior\n\n`info` should include `'resolve_path': True` and `'executable': True` (and default to `False`), and `PathInfoDict` should declare `resolve_path: bool` and `executable: bool`.\n\n### Environment\n\n- Python version: 3.13 (reproducible on all versions)\n- Click version: `main` / `8.1.8`\n\n---\n\nI have a patch with regression test coverage in `tests/test_info_dict.py` verified against the test suite and would be happy to submit a PR if this is welcome.",
+   "html_url": "https://github.com/pallets/click/issues/3881",
+   "created_at": "2026-09-24T18:02:13Z",
+   "user": {
+    "login": "Aditya-XR"
+   }
+  },
+  {
+   "number": 3879,
+   "title": "[rejected AI] Case-insensitive Choice completion misses Unicode case-folding matches",
+   "body": "### Description\n\n`Choice` uses `casefold()` for case-insensitive conversion, but `shell_complete()` lowercases the incomplete value and compares it with `lower()`. This makes completion fail for Unicode case-folding expansions.\n\nFor example, `Choice([\"\u1e9e\"], case_sensitive=False)` accepts `\"\u00df\"` during conversion because both values case-fold to `\"ss\"`, but completion for the incomplete value `\"\u00df\"` returns no suggestion because `\"ss\".lower().startswith(\"\u00df\")` is false.\n\n### Steps to reproduce\n\n```python\nfrom click import Choice\n\nchoice = Choice([\"\u1e9e\"], case_sensitive=False)\nassert choice.convert(\"\u00df\", None, None) == \"\u1e9e\"\n\n# A completion callback using this Choice receives incomplete=\"\u00df\".\n# It currently produces no completion item, even though the normalized choice is \"ss\".\n```\n\nThe relevant implementation is `Choice.shell_complete()` in `src/click/types.py`; it uses `lower()` while `normalize_choice()` uses `casefold()`.\n\n### Expected behavior\n\nCase-insensitive shell completion should use the same Unicode-aware normalization as conversion and return the normalized `\"ss\"` suggestion for incomplete `\"\u00df\"`.\n\n### Actual behavior\n\nNo completion item is returned.\n\n### Environment\n\n- Latest `main` at the time of filing\n- Python 3.12+\n- Click shell completion\n\nI searched existing issues and pull requests for Unicode casefolding and Choice completion and did not find a matching report. A regression test covering `\u1e9e`/`\u00df` would prevent this from recurring.\n",
+   "html_url": "https://github.com/pallets/click/issues/3879",
+   "created_at": "2026-09-24T15:06:17Z",
+   "user": {
+    "login": "januththedev"
+   }
+  },
+  {
+   "number": 3875,
+   "title": "[rejected AI] test permission probe please ignore",
+   "body": "Sorry \u2014 this was an accidental API permission probe while trying to open a pull request for #3362. Closing immediately.\n\nThe real work is on branch Pitchfork-and-Torch:fix/usage-hyphen-wrap (cannot open the PR via API from this token; will open via the web UI).",
+   "html_url": "https://github.com/pallets/click/issues/3875",
+   "created_at": "2026-09-17T23:47:59Z",
+   "user": {
+    "login": "Pitchfork-and-Torch"
+   }
+  },
+  {
+   "number": 3847,
+   "title": "More private utilities that need to be marked and public api deprecated",
+   "body": "In types.py\n- [ ]  `convert_type` - rename to _convert_type - currently has no top level import\n- [ ] `FuncParamType` - maybe typing thing? - currently has no top level import\n\nIn _ ?,\n- [ ] consider deprecating 'open_file'",
+   "html_url": "https://github.com/pallets/click/issues/3847",
+   "created_at": "2026-09-06T00:43:13Z",
+   "user": {
+    "login": "Rowlando13"
+   }
+  },
+  {
+   "number": 3846,
+   "title": "[rejected AI] `BOOL` raises `AttributeError` on numeric input since 8.2.2",
+   "body": "`BOOL` crashes with `AttributeError` when it receives a number instead of a\nstring. Command line values are always strings, so this only shows up when a\nnumber reaches the converter from inside the program: a boolean option with\n`default=1` or `default=0`, a `default_map` loaded from a config file where a\nboolean came through as a number, or `click.prompt(type=bool)` with a numeric\ndefault. `--help` still works, so the failure only appears at invocation.\n\nClick 8.0 through 8.2.1 accepted `0` and `1` through the `value in {False, True}`\nguard added in e79c2b4. #2956 (released in 8.2.2) replaced it with\n`isinstance(value, bool)` while reworking `str_to_bool`, so numbers now fall\nthrough to `value.strip()`. \n\nMinimal reproduction:\n\n```python\nimport click\nclick.BOOL(1)\n```\n\nAs a command:\n\n```python\nimport click\n\n\n@click.command()\n@click.option(\"--verbose\", is_flag=True, default=1)\ndef cli(verbose):\n    click.echo(f\"verbose={verbose}\")\n\n\nif __name__ == \"__main__\":\n    cli()\n```\n\n```text\n$ python cli.py\nTraceback (most recent call last):\n  ...\n  File \".../click/core.py\", line 2565, in type_cast_value\n    return convert(value)\n  File \".../click/core.py\", line 2540, in convert\n    return self.type(value, param=self, ctx=ctx)\n  File \".../click/types.py\", line 90, in __call__\n    return self.convert(value, param, ctx)\n  File \".../click/types.py\", line 860, in convert\n    normalized = self.str_to_bool(value)\n  File \".../click/types.py\", line 857, in str_to_bool\n    return BoolParamType.bool_states.get(value.strip().lower())\n                                         ^^^^^^^^^^^\nAttributeError: 'int' object has no attribute 'strip'\n```\n\nExpected: `click.BOOL(1)` returns `True` and `click.BOOL(0)` returns `False`,\nas in 8.0 through 8.2.1, and the command above prints `verbose=True`. Any\nother non-string value should produce the normal\n`... is not a valid boolean` usage error rather than a traceback.\n\nEnvironment:\n\n- Python version: 3.12.13\n- Click version: 8.5.0 and `main` (36baa15); every release since 8.2.2",
+   "html_url": "https://github.com/pallets/click/issues/3846",
+   "created_at": "2026-09-06T00:32:26Z",
+   "user": {
+    "login": "Wahib294"
+   }
+  },
+  {
+   "number": 3843,
+   "title": "[rejected AI] Envvar for multiple=True + nargs>1 silently drops incomplete trailing tokens",
+   "body": "\ufeffWhen an option uses `multiple=True` and `nargs > 1`, an environment-variable value whose whitespace-split token count is **not a multiple of `nargs`** is accepted with exit code 0, and the trailing incomplete group is **silently discarded**.\n\nThe same values on the CLI are rejected (e.g. `Got unexpected extra argument`). Non-multiple `nargs > 1` options already reject incomplete envvar values with `BadParameter` (`Takes N values but M were given.`). The `multiple=True` path should do the same instead of truncating.\n\nRoot cause: `Option.value_from_envvar()` calls `batch()`, which uses `zip(..., strict=False)` and drops remainder tokens.\n\n## Reproduction\n\n```python\nimport click\nfrom click.testing import CliRunner\n\nrunner = CliRunner()\n\n@click.command()\n@click.option(\"--arg\", nargs=2, multiple=True)\ndef cli(arg):\n    click.echo(repr(arg))\n\n# Envvar: silently drops \"c\"\nr = runner.invoke(cli, [], auto_envvar_prefix=\"TEST\", env={\"TEST_ARG\": \"a b c\"})\nprint(r.exit_code, r.output.strip())\n# Actual: 0  \"(('a', 'b'),)\"\n\n# CLI: rejects the extra token\nr2 = runner.invoke(cli, [\"--arg\", \"a\", \"b\", \"c\"])\nprint(r2.exit_code)\nprint(r2.output)\n# Actual: exit 2, \"Got unexpected extra argument (c)\"\n```\n\nAlso reproduces with `envvar=\"ARG\"` and `env={\"ARG\": \"a b c\"}`.\n\nWith five tokens (`\"a b c d e\"`), the result is `(('a', 'b'), ('c', 'd'))` \u2014 `e` is silently discarded.\n\n## Expected behavior\n\nEnvvar parsing should raise `BadParameter` (same family of arity error used for non-multiple `nargs` envvars), instead of silently dropping tokens and exiting 0.\n\n## Environment\n\n- Python version: 3.12.10\n- Click version: main @ 36baa15 (8.5.1 unreleased)\n\n**AI assistance disclosure:** This bug report was prepared with assistance from Cursor (AI coding agent). I reproduced and validated the behavior locally.\r\n",
+   "html_url": "https://github.com/pallets/click/issues/3843",
+   "created_at": "2026-09-05T21:56:57Z",
+   "user": {
+    "login": "ShamikOfficial"
+   }
+  },
+  {
+   "number": 3841,
+   "title": "[rejected AI] count=True ignores non-zero default when counting flags",
+   "body": "<!--\r\nThis issue tracker is a tool to address bugs in Click itself. Please use\r\nGitHub Discussions or the Pallets Discord for questions about your own code.\r\n\r\nReplace this comment with a clear outline of what the bug is.\r\n-->\r\n\r\nWhen an option uses `count=True` with a non-zero `default`, each occurrence of the flag counts from **0** instead of from the configured default. Passing fewer flags than the default can therefore produce a value **lower than the default** (or leave `default=1` unchanged when the flag is passed once).\r\n\r\nThis differs from `argparse.ArgumentParser` with `action=\"count\"`, which increments relative to the default (for example `default=3` plus one flag occurrence yields `4`).\r\n\r\n<!--\r\nDescribe how to replicate the bug.\r\n\r\nInclude a minimal reproducible example that demonstrates the bug.\r\nInclude the full traceback if there was an exception.\r\n-->\r\n\r\n```python\r\nimport argparse\r\nimport click\r\nfrom click.testing import CliRunner\r\n\r\n# argparse (expected-aligned behavior)\r\np = argparse.ArgumentParser()\r\np.add_argument(\"-v\", action=\"count\", default=3)\r\nprint(\"argparse no flags\", p.parse_args([]).v)        # 3\r\nprint(\"argparse one flag\", p.parse_args([\"-v\"]).v)    # 4\r\nprint(\"argparse two flags\", p.parse_args([\"-vv\"]).v)  # 5\r\n\r\n# click\r\n@click.command()\r\n@click.option(\"-v\", count=True, default=3)\r\ndef cli(v):\r\n    click.echo(v)\r\n\r\nrunner = CliRunner()\r\nprint(\"click no flags\", runner.invoke(cli, []).output.strip())       # 3\r\nprint(\"click one flag\", runner.invoke(cli, [\"-v\"]).output.strip())   # 1  \u2190 bug\r\nprint(\"click two flags\", runner.invoke(cli, [\"-vv\"]).output.strip()) # 2  \u2190 bug\r\n```\r\n\r\nRoot cause appears to be in `click/parser.py`, where the count action always starts from `0`:\r\n\r\n```python\r\nstate.opts[self.dest] = state.opts.get(self.dest, 0) + 1\r\n```\r\n\r\nOnce a command-line count is present, `consume_value()` takes that value and never applies the option default as a baseline.\r\n\r\n<!--\r\nDescribe the expected behavior that should have happened but didn't.\r\n-->\r\n\r\nExpected (argparse-compatible): command-line counts are **additive** on top of the option default.\r\n\r\n| Invocation | Expected | Actual (Click) |\r\n|---|---|---|\r\n| `(none)` | `3` | `3` |\r\n| one `-v` | `4` | `1` |\r\n| `-vv` | `5` | `2` |\r\n| `-vvv` | `6` | `3` |\r\n\r\nWith `default=1`, a single flag occurrence should yield `2`, but currently yields `1` (same as omitting the flag).\r\n\r\nEnvironment:\r\n\r\n- Python version: 3.12.10\r\n- Click version: 8.5.1.dev0 (main)\r\n",
+   "html_url": "https://github.com/pallets/click/issues/3841",
+   "created_at": "2026-09-05T21:53:04Z",
+   "user": {
+    "login": "ShamikOfficial"
+   }
+  },
+  {
+   "number": 3840,
+   "title": "`click.edit` on Windows throws WinError 14001 or 87",
+   "body": "I found this bug while testing my own Click application. In about half the times `click.edit()` is attempted on Windows, `notepad.exe` will fail to launch with one of these two error messages (output under spoilers):\n\n<details>\n<summary>OSError: [WinError 87] The parameter is incorrect</summary>\n\n```\nPS C:\\Users\\Emory> python .\\click-notepad-me.py\nTraceback (most recent call last):\n  File \"C:\\Users\\Emory\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\site-packages\\click\\_termui_impl.py\", line 729, in edit_files\n    c = subprocess.Popen(\n        args=shlex.split(editor) + list(filenames),\n        env=environ,\n    )\n  File \"C:\\Users\\Emory\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\subprocess.py\", line 1038, in __init__\n    self._execute_child(args, executable, preexec_fn, close_fds,\n    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n                        pass_fds, cwd, env,\n                        ^^^^^^^^^^^^^^^^^^^\n    ...<5 lines>...\n                        gid, gids, uid, umask,\n                        ^^^^^^^^^^^^^^^^^^^^^^\n                        start_new_session, process_group)\n                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\Emory\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\subprocess.py\", line 1552, in _execute_child\n    hp, ht, pid, tid = _winapi.CreateProcess(executable, args,\n                       ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^\n                             # no special security\n                             ^^^^^^^^^^^^^^^^^^^^^\n    ...<4 lines>...\n                             cwd,\n                             ^^^^\n                             startupinfo)\n                             ^^^^^^^^^^^^\nOSError: [WinError 87] The parameter is incorrect\n\nThe above exception was the direct cause of the following exception:\n\nTraceback (most recent call last):\n  File \"C:\\Users\\Emory\\click-notepad-me.py\", line 3, in <module>\n    _ = click.edit()\n  File \"C:\\Users\\Emory\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\site-packages\\click\\termui.py\", line 904, in edit\n    return ed.edit(text)\n           ~~~~~~~^^^^^^\n  File \"C:\\Users\\Emory\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\site-packages\\click\\_termui_impl.py\", line 783, in edit\n    self.edit_files((name,))\n    ~~~~~~~~~~~~~~~^^^^^^^^^\n  File \"C:\\Users\\Emory\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\site-packages\\click\\_termui_impl.py\", line 739, in edit_files\n    raise ClickException(\n        _(\"{editor}: Editing failed: {e}\").format(editor=editor, e=e)\n    ) from e\nclick.exceptions.ClickException: notepad: Editing failed: [WinError 87] The parameter is incorrect\n```\n</details>\n\nor\n\n<details>\n<summary>OSError: [WinError 14001] The application has failed to start because its side-by-side configuration is incorrect. Please see the application event log or use the command-line sxstrace.exe tool for more detail</summary>\n\n```\nPS C:\\Users\\Emory> python .\\click-notepad-me.py\nTraceback (most recent call last):\n  File \"C:\\Users\\Emory\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\site-packages\\click\\_termui_impl.py\", line 729, in edit_files\n    c = subprocess.Popen(\n        args=shlex.split(editor) + list(filenames),\n        env=environ,\n    )\n  File \"C:\\Users\\Emory\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\subprocess.py\", line 1038, in __init__\n    self._execute_child(args, executable, preexec_fn, close_fds,\n    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n                        pass_fds, cwd, env,\n                        ^^^^^^^^^^^^^^^^^^^\n    ...<5 lines>...\n                        gid, gids, uid, umask,\n                        ^^^^^^^^^^^^^^^^^^^^^^\n                        start_new_session, process_group)\n                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\Emory\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\subprocess.py\", line 1552, in _execute_child\n    hp, ht, pid, tid = _winapi.CreateProcess(executable, args,\n                       ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^\n                             # no special security\n                             ^^^^^^^^^^^^^^^^^^^^^\n    ...<4 lines>...\n                             cwd,\n                             ^^^^\n                             startupinfo)\n                             ^^^^^^^^^^^^\nOSError: [WinError 14001] The application has failed to start because its side-by-side configuration is incorrect. Please see the application event log or use the command-line sxstrace.exe tool for more detail\n\nThe above exception was the direct cause of the following exception:\n\nTraceback (most recent call last):\n  File \"C:\\Users\\Emory\\click-notepad-me.py\", line 3, in <module>\n    _ = click.edit()\n  File \"C:\\Users\\Emory\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\site-packages\\click\\termui.py\", line 904, in edit\n    return ed.edit(text)\n           ~~~~~~~^^^^^^\n  File \"C:\\Users\\Emory\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\site-packages\\click\\_termui_impl.py\", line 783, in edit\n    self.edit_files((name,))\n    ~~~~~~~~~~~~~~~^^^^^^^^^\n  File \"C:\\Users\\Emory\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\site-packages\\click\\_termui_impl.py\", line 739, in edit_files\n    raise ClickException(\n        _(\"{editor}: Editing failed: {e}\").format(editor=editor, e=e)\n    ) from e\nclick.exceptions.ClickException: notepad: Editing failed: [WinError 14001] The application has failed to start because its side-by-side configuration is incorrect. Please see the application event log or use the command-line sxstrace.exe tool for more detail\n```\n</details>\n\nTo replicate, run this script until you get one of these:\n\n```py\nimport click\n_ = click.edit()\nprint(\"If you got here, no crash occurred\")\n```\n\nEnvironment:\n\n- Python version: 3.12.14 / also reproduced on my system 3.14 install\n- Click version: 8.5.0\n- OS: Windows 11 (64-bit)\n",
+   "html_url": "https://github.com/pallets/click/issues/3840",
+   "created_at": "2026-09-05T13:49:09Z",
+   "user": {
+    "login": "emorynb"
+   }
+  },
+  {
+   "number": 3838,
+   "title": "[rejected AI] Literal mutable default silently accumulates mutations across CliRunner.invoke() calls with a pass-through ParamType",
+   "body": "**AI disclosure:** this was investigated and written with the assistance of Claude (Anthropic). I independently reproduced it against a fresh clone of `main` myself before filing.\n\n## Summary\n\nA literal mutable default (e.g. `default=[]`, `default={}`) on an `Option` silently accumulates mutations across separate command invocations within one process, when combined with a `ParamType` whose `convert()` validates and returns the value unchanged (e.g. `type=click.UNPROCESSED`, or any custom type handling structured data like a JSON/dict param).\n\nThis is the classic Python mutable-default-argument trap \u2014 Click's own docs correctly recommend `default=list`/`default=dict` (a callable factory) as the safe pattern, and that path genuinely works. But a literal mutable default only gets protected from this trap by accident, when the default type-coercion path happens to stringify/rebuild the value (e.g. plain `--items` with no `type=` routes through `StringParamType`). Nothing actually copies the default before handing it to the callback.\n\n## Reproduction\n\n```python\nimport click\nfrom click.testing import CliRunner\n\n@click.command()\n@click.option(\"--items\", type=click.UNPROCESSED, default=[])\ndef cmd(items):\n    items.append(\"x\")\n    click.echo(f\"len={len(items)}\")\n\nrunner = CliRunner()\nprint(runner.invoke(cmd, []).output.strip())  # len=1\nprint(runner.invoke(cmd, []).output.strip())  # len=2  <- same list object, not reset\nprint(runner.invoke(cmd, []).output.strip())  # len=3\n```\n\nConfirmed against current `main`: `id(items)` is identical across all three calls.\n\n## Root cause\n\n`Parameter.get_default()` (`click/core.py:2445-2476`) only special-cases *callable* defaults (`if call and callable(value): value = value()`, line 2473) \u2014 a literal default value is returned as-is, no copy. `type_cast_value`/`consume_value` never copy it either before it reaches the callback.\n\nThe reason a plain `default=[]` doesn't normally show this (and why it's easy to miss): Click's type-inference (`click/types.py` `_guess_type`) routes an untyped list default through `StringParamType`, which effectively rebuilds the value rather than passing the same object through. `type=click.UNPROCESSED` (documented, and the natural choice for custom structured-data types) explicitly opts out of that coercion \u2014 and loses the incidental protection along with it.\n\n## Scope\n\nOnly manifests in a long-running process that invokes the same command repeatedly \u2014 a test suite using `CliRunner.invoke()` in a loop, a REPL-style tool, or any host process embedding Click commands. A single-shot CLI invocation never notices, since the process exits after one call.\n\nChecked `gh search issues --repo pallets/click` for \"mutable default\", \"default list shared\", \"get_default copy\" \u2014 no matching prior report found.\n\nHappy to put together a PR (something like: deep-copy a literal mutable default via `copy.deepcopy` in `get_default()`, mirroring the protection callable defaults already get) if this is confirmed worth fixing.\n",
+   "html_url": "https://github.com/pallets/click/issues/3838",
+   "created_at": "2026-09-04T16:49:15Z",
+   "user": {
+    "login": "tritsystem"
+   }
+  },
+  {
+   "number": 3832,
+   "title": "Terminal escape-sequence injection in error messages",
+   "body": "### Summary\nClick is vulnerable to terminal escape-sequence injection because command-line tokens are interpolated raw into error messages that are written to the user's terminal without control-character filtering.\n\nVerified on Click at commit https://github.com/pallets/click/commit/36baa15ff831b939a22bc527cd76ce653ef6f66d (8.5.1.dev0).\n### Details\nClick reflects unsanitised `argv` tokens into error output at two locations:\n\n`click/src/click/core.py:1391` interpolates the raw tokens:\n\n```python\nngettext(\n    \"Got unexpected extra argument ({args})\",\n    \"Got unexpected extra arguments ({args})\",\n    len(args),\n).format(args=\" \".join(map(str, args)))\n```\n\n`click/src/click/types.py:1013` interpolates the raw filename:\n\n```python\nself.fail(\n    f\"'{format_filename(value)}': {e.strerror}\",\n    param,\n    ctx,\n)\n```\n\nBoth reach the terminal through `echo()` (`utils.py:324`), whose only sanitisation is `strip_ansi()`. That sanitisation does not apply here, for two independent reasons:\n\n- `should_strip_ansi()` (`_compat.py:499-506`) returns `not isatty(stream)`, so stripping is skipped entirely when the stream is a terminal.\n- `_ansi_re` (`_compat.py:19`) is `r\"\\033\\[[0-?]*[ -/]*[@-~]\"`, which matches only 7-bit CSI. OSC, DCS, APC, 8-bit C1 (`\\x9b`), `ESC c`, and bare C0 controls (`\\r`, `\\b`) are never stripped.\n\nConsequently an attacker-supplied token is delivered to the terminal emulator byte-for-byte. This permits window-title spoofing (OSC 0), forged program output by moving the cursor and overwriting earlier lines (CSI / `\\r`), attacker-controlled hyperlinks under arbitrary anchor text (OSC 8), and \u2014 on terminals where clipboard write is enabled \u2014 silently staging a shell command in the victim's clipboard for their next paste (OSC 52).\n\n### PoC\n1. Create a file named `poc.py` with the following content:\n```python\nimport click\n \n@click.command()\n@click.option(\"--f\", type=click.File(\"r\"))\ndef cli(f):\n    click.echo(\"ok\")\n \nif __name__ == \"__main__\":\n    cli()\n```\n2. Run the Python script:\n```\npython3 poc.py $(echo -en '\\x0dOVERWRITTEN USING ESCAPE SEQUENCE')\n```\n3. Observe that the raw escape bytes reach the terminal.\n\n### Suggested Remediation\nApply `!r` at both reflection sites, matching the convention already used everywhere else in the codebase:\n\n```diff\ndiff --git a/src/click/core.py b/src/click/core.py\nindex de129ec..5c6c9de 100644\n--- a/src/click/core.py\n+++ b/src/click/core.py\n@@ -1391,7 +1391,7 @@ class Command:\n                     \"Got unexpected extra argument ({args})\",\n                     \"Got unexpected extra arguments ({args})\",\n                     len(args),\n-                ).format(args=\" \".join(map(str, args)))\n+                ).format(args=\" \".join(map(repr, args)))\n             )\n \n         ctx.args = args\ndiff --git a/src/click/types.py b/src/click/types.py\nindex 0eb8462..2d9e30f 100644\n--- a/src/click/types.py\n+++ b/src/click/types.py\n@@ -1010,7 +1010,7 @@ class File(ParamType[t.IO[t.Any]]):\n             return f\n         except OSError as e:\n             self.fail(\n-                f\"'{format_filename(value)}': {e.strerror}\",\n+                f\"'{format_filename(value)!r}': {e.strerror}\",\n                 param,\n                 ctx,\n             )\ndiff --git a/tests/test_arguments.py b/tests/test_arguments.py\nindex fea48cc..5a0e3e3 100644\n--- a/tests/test_arguments.py\n+++ b/tests/test_arguments.py\n@@ -76,7 +76,7 @@ def test_nargs_err(runner):\n \n     result = runner.invoke(copy, [\"foo\", \"bar\"])\n     assert result.exit_code == 2\n-    assert \"Got unexpected extra argument (bar)\" in result.output\n+    assert \"Got unexpected extra argument ('bar')\" in result.output\n \n \n def test_bytes_args(runner, monkeypatch):\n```\n\n### Credits\nFound by [OSTIF](https://ostif.org/) using AI with their own harness.\nManually verified, fixed, and reported by [Shielder](https://www.shielder.com/).",
+   "html_url": "https://github.com/pallets/click/issues/3832",
+   "created_at": "2026-09-03T12:14:29Z",
+   "user": {
+    "login": "ndaprela"
+   }
+  },
+  {
+   "number": 3831,
+   "title": "Nightly \"Stress\" jobs run the normal test suite; the stress tests never execute",
+   "body": "The four `test_stress_*` tests do not run in CI, or anywhere else. The nightly Stress jobs run the ordinary test suite with those tests deselected.\n\n### Why\n\n`pyproject.toml:91` deselects them globally:\n\n```toml\naddopts = \"-m 'not stress'\"\n```\n\n`pyproject.toml:178-183` defines an environment that overrides it, and that environment is correct:\n\n```toml\n[tool.tox.env.stress]\ncommands = [[\"pytest\", \"-v\", \"--tb=short\", \"-x\", \"-m\", \"stress\",\n             \"--basetemp={env_tmp_dir}\", \"--override-ini=addopts=\", ...]]\n```\n\nBut `nightly.yaml:27-29` does not run `stress`. It runs `stress-py3.14` and `stress-py3.14t`, which are listed in `env_list` at `pyproject.toml:150`:\n\n```yaml\n- {name: Stress 3.14,     python: '3.14',  tox: stress-py3.14}\n- {name: Stress 3.14t,    python: '3.14t', tox: stress-py3.14t}\n- {name: Stress Mac 3.14t, python: '3.14t', tox: stress-py3.14t, os: macos-latest}\n```\n\ntox's TOML source does not decompose factors for `[tool.tox.env.<name>]`, so `stress-py3.14` does not inherit from `[tool.tox.env.stress]`. It is generated from `env_run_base` instead.\n\n### Reproducing\n\nWith tox 4.52.0 (the version in `uv.lock:1370`) and tox-uv:\n\n```\n$ tox config -e stress-py3.14\ncommands = pytest -v --tb=short --basetemp=<workdir>/stress-py3.14/tmp\nbase     = tool.tox.env_run_base\n\n$ tox config -e stress\ncommands = pytest -v --tb=short -x -m stress --basetemp=<workdir>/stress/tmp --override-ini=addopts=\n```\n\n`stress-py3.14` gets neither `-m stress` nor `--override-ini=addopts=`, so it inherits `-m 'not stress'` and runs the normal suite. The `py3.14` factor *is* honoured (`base_python = py3.14`), which is what makes the name look like it worked; the `stress-` prefix matches nothing.\n\nNo warning is emitted \u2014 stderr is empty, and `tox -vv config -e stress-py3.14` produces no mention of an unmatched name. `tox config -e totally-made-up-env` does fail with \"provided environments not found in configuration file\", so the name resolves specifically because `env_list` contains it.\n\n### Not running anywhere\n\n- `tests/test_stream_lifecycle.py:495` `test_stress_thread_pool_with_exit`\n- `tests/test_stream_lifecycle.py:512` `test_stress_logging_sequential_invocations`\n- `tests/test_stream_lifecycle.py:528` `test_stress_gc_between_invocations`\n- `tests/test_utils/test_echo_via_pager.py:231` `test_stress_echo_via_pager_exception_cleanup`\n\nHappy to open a PR if you have a preference on the fix \u2014 the matrix could name `stress`, or the environments could be defined per-Python.",
+   "html_url": "https://github.com/pallets/click/issues/3831",
+   "created_at": "2026-09-02T22:50:29Z",
+   "user": {
+    "login": "RAJUSHANIGARAPU"
+   }
+  }
+ ],
+ "commits": [
+  {
+   "sha": "8abb77a8432e03ed14a95f972b44f905279415a7",
+   "author": {
+    "login": "Rowlando13"
+   },
+   "commit": {
+    "message": "Merge stable into main (#3911)",
+    "author": {
+     "name": "Rowlando13",
+     "date": "2026-11-06T17:58:14Z"
+    }
+   }
+  },
+  {
+   "sha": "2e2fcd59e6873d9eb6f302b93f951f276634f76b",
+   "author": {
+    "login": "Rowlando13"
+   },
+   "commit": {
+    "message": "Document Click UI scope and direction (#3898)",
+    "author": {
+     "name": "Rowlando13",
+     "date": "2026-11-06T17:56:04Z"
+    }
+   }
+  },
+  {
+   "sha": "fdb65f4809719580436acb067410cec64433e5de",
+   "author": {
+    "login": "Rowlando13"
+   },
+   "commit": {
+    "message": "Add `context_settings` parameter to `CliRunner.invoke` (#3896)",
+    "author": {
+     "name": "Rowlando13",
+     "date": "2026-11-06T17:50:06Z"
+    }
+   }
+  },
+  {
+   "sha": "e57387dc36b03720a3fa721f46f60700e1e8e345",
+   "author": {
+    "login": "Rowlando13"
+   },
+   "commit": {
+    "message": "Add Python 3.15 to the test matrix (#3909)",
+    "author": {
+     "name": "Rowlando13",
+     "date": "2026-11-06T17:49:02Z"
+    }
+   }
+  },
+  {
+   "sha": "dd149eb3129d887a22202c3fafa5ceb0e0d7018d",
+   "author": {
+    "login": "Rowlando13"
+   },
+   "commit": {
+    "message": "Merge stable into main (#3910)",
+    "author": {
+     "name": "Rowlando13",
+     "date": "2026-11-06T17:48:11Z"
+    }
+   }
+  },
+  {
+   "sha": "831a687bc823391fa9897536081e0f81b0f7057b",
+   "author": {
+    "login": "Rowlando13"
+   },
+   "commit": {
+    "message": "Merge branch 'main' into stable",
+    "author": {
+     "name": "Rowlando13",
+     "date": "2026-11-06T17:45:05Z"
+    }
+   }
+  },
+  {
+   "sha": "57d9ac6c2cf793217c7d7b5386281539f17d701c",
+   "author": {
+    "login": "davidism"
+   },
+   "commit": {
+    "message": "Release 8.5.1 (#3908)",
+    "author": {
+     "name": "David Lord",
+     "date": "2026-11-06T17:37:26Z"
+    }
+   }
+  },
+  {
+   "sha": "94ad94f33ca7e0a04748cf9c084e343e7a608dfa",
+   "author": {
+    "login": "kdeldycke"
+   },
+   "commit": {
+    "message": "Document Click UI scope and give `click-contrib` its own section",
+    "author": {
+     "name": "Kevin Deldycke",
+     "date": "2026-10-29T07:59:49Z"
+    }
+   }
+  },
+  {
+   "sha": "90a2973f85fffc4d8a20effb2bcdff3f394c5e62",
+   "author": {
+    "login": "kdeldycke"
+   },
+   "commit": {
+    "message": "Add `context_settings` parameter to `CliRunner.invoke`\n\nCloses #2110",
+    "author": {
+     "name": "Kevin Deldycke",
+     "date": "2026-10-26T08:58:01Z"
+    }
+   }
+  },
+  {
+   "sha": "40134e1a8521d655984877abfbe80b87e3e67b49",
+   "author": {
+    "login": "kdeldycke"
+   },
+   "commit": {
+    "message": "Add Python 3.15 to the test matrix",
+    "author": {
+     "name": "Kevin Deldycke",
+     "date": "2026-11-06T06:31:03Z"
+    }
+   }
+  },
+  {
+   "sha": "cf19179e8e2fd54c601378cec9e0d21bb12b6fb1",
+   "author": {
+    "login": "Rowlando13"
+   },
+   "commit": {
+    "message": "Release version 8.5.1",
+    "author": {
+     "name": "Eddie Girling",
+     "date": "2026-11-06T06:25:43Z"
+    }
+   }
+  },
+  {
+   "sha": "1ff766d6a38cf80d9b881e629ec5037e793c2bcf",
+   "author": {
+    "login": "Rowlando13"
+   },
+   "commit": {
+    "message": "Remove documentation changelog entry.",
+    "author": {
+     "name": "Eddie Girling",
+     "date": "2026-11-06T06:24:46Z"
+    }
+   }
+  },
+  {
+   "sha": "16da191cb11639a6386178303c1d6ceaa1967bad",
+   "author": {
+    "login": "Rowlando13"
+   },
+   "commit": {
+    "message": "Add a standalone application guide for Nuitka (#3897)",
+    "author": {
+     "name": "Rowlando13",
+     "date": "2026-11-06T06:02:02Z"
+    }
+   }
+  },
+  {
+   "sha": "ac0e297ec2d7d78455a7d18ce306996e668c4a85",
+   "author": {
+    "login": "Rowlando13"
+   },
+   "commit": {
+    "message": "Print `\\x04` and `\\x1a` input bytes as `^D` and `^Z` in `CliRunner` (#3878)",
+    "author": {
+     "name": "Rowlando13",
+     "date": "2026-11-06T05:58:35Z"
+    }
+   }
+  },
+  {
+   "sha": "473f65225cfc65f996ab005e488d4fd4a0e5b0bd",
+   "author": {
+    "login": "kdeldycke"
+   },
+   "commit": {
+    "message": "Remove issue and PR references outside the changelog (#3905)",
+    "author": {
+     "name": "Kevin Deldycke",
+     "date": "2026-11-06T05:15:17Z"
+    }
+   }
+  },
+  {
+   "sha": "df7fe0b97297d07748dc2f88008e2bd136e0cf43",
+   "author": {
+    "login": "kdeldycke"
+   },
+   "commit": {
+    "message": "Remove issue and PR references outside the changelog",
+    "author": {
+     "name": "Kevin Deldycke",
+     "date": "2026-11-05T08:10:10Z"
+    }
+   }
+  },
+  {
+   "sha": "4fd4206320e521878c1a8b532a6e1abe03622e9f",
+   "author": {
+    "login": "davidism"
+   },
+   "commit": {
+    "message": "Bump `pypa/gh-action-pypi-publish` to `v1.14.3` (#3906)",
+    "author": {
+     "name": "David Lord",
+     "date": "2026-11-05T13:51:54Z"
+    }
+   }
+  },
+  {
+   "sha": "9048ab0c885f3a5a320f00559d0cbb8769113741",
+   "author": {
+    "login": "kdeldycke"
+   },
+   "commit": {
+    "message": "Bump `pypa/gh-action-pypi-publish` to `v1.14.3`",
+    "author": {
+     "name": "Kevin Deldycke",
+     "date": "2026-11-05T11:36:50Z"
+    }
+   }
+  },
+  {
+   "sha": "ff0c3692a06e3bbf464ab31fe745cce02dfd16ca",
+   "author": {
+    "login": "kdeldycke"
+   },
+   "commit": {
+    "message": "Add a standalone application guide for Nuitka\n\nAdopt the same template as the Briefcase tutorial proposed in #3315.",
+    "author": {
+     "name": "Kevin Deldycke",
+     "date": "2026-10-27T08:13:58Z"
+    }
+   }
+  },
+  {
+   "sha": "5125851aaa19840c82b9811193b2c2d6cf245326",
+   "author": {
+    "login": "Rowlando13"
+   },
+   "commit": {
+    "message": "Stop passing a deprecated command's help text through `gettext` (#3901)",
+    "author": {
+     "name": "Rowlando13",
+     "date": "2026-11-04T18:53:30Z"
+    }
+   }
+  },
+  {
+   "sha": "6d34602f4b0668a61873af1c547bfd40cb7deffc",
+   "author": {
+    "login": "Rowlando13"
+   },
+   "commit": {
+    "message": "Additional round-trip tests for `unstyle()` (#3899)",
+    "author": {
+     "name": "Rowlando13",
+     "date": "2026-11-01T17:57:56Z"
+    }
+   }
+  },
+  {
+   "sha": "c4dd0cd968f61d0ee7a163af810bd695ed893ec3",
+   "author": {
+    "login": "kdeldycke"
+   },
+   "commit": {
+    "message": "Stop passing a deprecated command's help text through `gettext`",
+    "author": {
+     "name": "Kevin Deldycke",
+     "date": "2026-09-09T10:01:24Z"
+    }
+   }
+  },
+  {
+   "sha": "5e7cf6b6db197de4259e91b299bd4313beb481b4",
+   "author": {
+    "login": "Rowlando13"
+   },
+   "commit": {
+    "message": "Document `less` interruption behavior (#3900)",
+    "author": {
+     "name": "Rowlando13",
+     "date": "2026-10-30T20:59:14Z"
+    }
+   }
+  },
+  {
+   "sha": "5c1963ae06bf17094f67dcb8f64c089ef1e52209",
+   "author": {
+    "login": "kdeldycke"
+   },
+   "commit": {
+    "message": "Document `less` interruption behavior\n\nCloses #3886",
+    "author": {
+     "name": "Kevin Deldycke",
+     "date": "2026-10-29T10:59:16Z"
+    }
+   }
+  },
+  {
+   "sha": "685dadf1499d785082ab2c0b8e7c226b200b968d",
+   "author": {
+    "login": "kdeldycke"
+   },
+   "commit": {
+    "message": "Add more round-trip tests for `unstyle()`\n\nAdd explicit exception unstyling test to cover #2419",
+    "author": {
+     "name": "Kevin Deldycke",
+     "date": "2026-10-29T09:25:57Z"
+    }
+   }
+  }
+ ]
+}

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import re
 import time
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
@@ -17,6 +18,9 @@ if TYPE_CHECKING:  # keeps the scoring logic importable without the DB driver
     from .db import TraceDB
 
 logger = logging.getLogger(__name__)
+
+# an id in the question is exact, so finding it mustn't depend on NER or similarity
+_ID_RE = re.compile(r"\b(pr|issue)\s*#\s*(\d+)", re.IGNORECASE)
 
 # Dedicated, bounded pool for the CPU-heavy embedding step. torch releases the
 # GIL during encode, so threads parallelize; bounding the workers keeps a burst
@@ -121,6 +125,11 @@ class TraceRouter:
     def _link_query_entities(self, query: str, meta: dict[str, dict]) -> list[str]:
         """Extract query entities and match them to graph nodes by exact label."""
         ids: list[str] = []
+        for kind, number in _ID_RE.findall(query):
+            label = f"{'PR' if kind.lower() == 'pr' else 'Issue'} #{number}"
+            for node in self.db.find_nodes_by_label(label):
+                meta.setdefault(node["id"], {"label": node["label"], "type": node["type"]})
+                ids.append(node["id"])
         try:
             entities = self._get_extractor().extract(query)
         except Exception as exc:  # noqa: BLE001 — never let linking break a query

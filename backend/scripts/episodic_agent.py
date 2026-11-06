@@ -48,9 +48,12 @@ class State(TypedDict, total=False):
     episodes: list[Document]
     evidence: list[Document]
     answer: str
+    usage: dict
 
 
-def build_agent(graph_retriever: TraceRAGRetriever, memory_dir: str, use_memory: bool, llm):
+def build_agent(
+    graph_retriever: TraceRAGRetriever, memory_dir: str, use_memory: bool, llm, suffix: str = ""
+):
     episode_retriever = EpisodeRetriever(dir=memory_dir)
 
     def recall_node(state: State, config: RunnableConfig) -> State:
@@ -59,20 +62,26 @@ def build_agent(graph_retriever: TraceRAGRetriever, memory_dir: str, use_memory:
         return {"episodes": episode_retriever.invoke(state["question"], config=config)}
 
     def retrieve_node(state: State, config: RunnableConfig) -> State:
-        return {"evidence": graph_retriever.invoke(state["question"], config=config)}
+        # a recalled episode names entities the question didn't, so search with them too
+        recalled = " ".join(d.page_content for d in state["episodes"])
+        return {"evidence": graph_retriever.invoke(f"{state['question']} {recalled}".strip(), config=config)}
 
     def generate_node(state: State) -> State:
         prompt = PROMPT.format(
             question=state["question"],
             episodes="\n\n".join(d.page_content for d in state["episodes"]) or "(none)",
             evidence="\n\n".join(d.page_content for d in state["evidence"]) or "(none)",
-        )
+        ) + suffix
         resp = llm.chat.completions.create(
             model=engine_config.OPENROUTER_MODEL,
             messages=[{"role": "user", "content": prompt}],
             temperature=0,
         )
-        return {"answer": (resp.choices[0].message.content or "").strip()}
+        return {
+            "answer": (resp.choices[0].message.content or "").strip(),
+            "usage": {"prompt_tokens": resp.usage.prompt_tokens,
+                      "completion_tokens": resp.usage.completion_tokens},
+        }
 
     graph = StateGraph(State)
     graph.add_node("recall", recall_node)
