@@ -1,9 +1,12 @@
-import { useEffect } from "react";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { useEffect, useRef } from "react";
+import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import { MotionConfig } from "framer-motion";
+import * as Sentry from "@sentry/react";
 import { Analytics } from "@vercel/analytics/react";
 import { ClerkProvider, useAuth } from "@clerk/clerk-react";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "sonner";
+import { PageMessage } from "@/components/PageMessage";
 import { LandingPage } from "@/components/landing/LandingPage";
 import { MemoryImport } from "@/components/memory/MemoryImport";
 import { MemoryPreview } from "@/components/memory/MemoryPreview";
@@ -43,6 +46,21 @@ const SHOW_STUDIO =
 // default must stay off. Only the Vercel site sets the flag.
 const SHOW_ANALYTICS = import.meta.env.VITE_ENABLE_ANALYTICS === "1";
 
+// a client-side route change resets nothing on its own
+function RouteFocus() {
+  const { pathname } = useLocation();
+  const first = useRef(true);
+  useEffect(() => {
+    if (first.current) {
+      first.current = false;
+      return;
+    }
+    window.scrollTo(0, 0);
+    document.querySelector<HTMLElement>("main")?.focus({ preventScroll: true });
+  }, [pathname]);
+  return null;
+}
+
 function AppRoutes() {
   return (
     <Routes>
@@ -66,6 +84,15 @@ function AppRoutes() {
           <Route path="/sign-up/*" element={<SignUpPage />} />
         </>
       )}
+      <Route
+        path="*"
+        element={
+          <PageMessage
+            title="Page not found"
+            body="That link doesn't match a page here. The live demo runs without a backend."
+          />
+        }
+      />
     </Routes>
   );
 }
@@ -75,11 +102,22 @@ export default function App() {
   // dashboard never hard-crashes before a key is configured.
   const routed = (
     <BrowserRouter>
-      <AppRoutes />
+      <RouteFocus />
+      <Sentry.ErrorBoundary
+        fallback={
+          <PageMessage
+            title="This view crashed"
+            body="Something in the page or the trace couldn't be rendered. Reload, or open a different trace."
+          />
+        }
+      >
+        <AppRoutes />
+      </Sentry.ErrorBoundary>
     </BrowserRouter>
   );
 
   return (
+    <MotionConfig reducedMotion="user">
     <TooltipProvider delayDuration={150} skipDelayDuration={300}>
       {clerkEnabled ? (
         <ClerkProvider
@@ -105,5 +143,6 @@ export default function App() {
         }}
       />
     </TooltipProvider>
+    </MotionConfig>
   );
 }

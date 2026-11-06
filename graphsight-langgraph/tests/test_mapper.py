@@ -51,6 +51,11 @@ def test_retrieved_vs_used_active_flags():
     assert "unused" not in subtitles["c_1"]
 
 
+def test_answer_reaches_the_viewer():
+    assert to_tracestate(make_trace())["answer"] == "an answer"
+    assert to_tracestate(make_trace(answer=None))["answer"] is None
+
+
 def test_no_answer_means_no_usage_claims():
     trace = make_trace(answer=None)
     for r in trace.retrievals:

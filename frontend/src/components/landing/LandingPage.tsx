@@ -1,21 +1,20 @@
-import { useCallback, useEffect, useState, type FormEvent, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   Brain,
   Check,
-  Cloud,
   Coins,
   GitBranch,
   GitPullRequest,
   Github,
-  ListTodo,
+  HardDrive,
   MousePointer2,
+  Pause,
+  Play,
   Route,
   Terminal,
   Ticket,
-  Webhook,
-  Wind,
   Zap,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -29,14 +28,11 @@ const BRAND = "Graphsight";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-function scrollToForm() {
-  document.getElementById("waitlist")?.scrollIntoView({ behavior: "smooth", block: "center" });
-}
-
 // "Get started" means the install command, not the MCP notify form — that one is
 // for a thing that doesn't exist yet.
 function scrollToInstall() {
-  document.getElementById("install")?.scrollIntoView({ behavior: "smooth", block: "center" });
+  // no explicit behavior: the reduced-motion-aware CSS decides
+  document.getElementById("install")?.scrollIntoView({ block: "center" });
 }
 
 function WaitlistForm({ inputId, center }: { inputId: string; center?: boolean }) {
@@ -45,7 +41,7 @@ function WaitlistForm({ inputId, center }: { inputId: string; center?: boolean }
   const [offerMailto, setOfferMailto] = useState(false);
   const [sending, setSending] = useState(false);
   const [done, setDone] = useState(false);
-  const [shakeNonce, setShakeNonce] = useState(0);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
@@ -54,7 +50,7 @@ function WaitlistForm({ inputId, center }: { inputId: string; center?: boolean }
     if (!EMAIL_RE.test(value)) {
       setError("Enter a valid work email.");
       setOfferMailto(false);
-      setShakeNonce((n) => n + 1);
+      inputRef.current?.focus();
       return;
     }
     setError(null);
@@ -66,9 +62,9 @@ function WaitlistForm({ inputId, center }: { inputId: string; center?: boolean }
     } catch (err) {
       // keep the address in the field so a retry costs nothing
       const failure = err as WaitlistError;
-      setError(failure?.message ?? "Something went wrong. Try again.");
+      setError(failure?.message ?? "Signup failed. Try again.");
       setOfferMailto(Boolean(failure?.unconfigured) && Boolean(FALLBACK_EMAIL));
-      setShakeNonce((n) => n + 1);
+      inputRef.current?.focus();
     } finally {
       setSending(false);
     }
@@ -103,20 +99,21 @@ function WaitlistForm({ inputId, center }: { inputId: string; center?: boolean }
         </label>
         <input
           id={inputId}
-          key={shakeNonce}
+          ref={inputRef}
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="you@company.com"
           autoComplete="email"
           spellCheck={false}
-          disabled={sending}
+          readOnly={sending}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={`${inputId}-error`}
           className={cn(
-            "w-full flex-1 rounded-lg border border-[#131316] bg-white px-3.5 py-2.5 text-sm text-[#131316]",
-            "placeholder:text-zinc-400 transition-shadow duration-150",
+            "w-full flex-1 rounded-lg border border-[#131316] bg-white px-3.5 py-2.5 text-base text-[#131316] sm:text-sm",
+            "placeholder:text-zinc-500 transition-shadow duration-150",
             "focus:outline-none focus:shadow-[3px_4px_0_0_#059669]",
-            sending && "opacity-60",
-            shakeNonce > 0 && error && "lp-shake"
+            sending && "opacity-60"
           )}
         />
         <button
@@ -131,7 +128,7 @@ function WaitlistForm({ inputId, center }: { inputId: string; center?: boolean }
           {sending ? "Adding you…" : "Notify me"}
         </button>
       </form>
-      <div aria-live="polite" className="mt-2 text-[13px] font-medium text-red-500">
+      <div id={`${inputId}-error`} aria-live="polite" className="mt-2 text-[13px] font-medium text-red-600">
         {error}
         {offerMailto && FALLBACK_EMAIL && (
           <>
@@ -157,32 +154,41 @@ function WaitlistForm({ inputId, center }: { inputId: string; center?: boolean }
 
 /* copyable shell command, terminal-styled */
 function CopyCommand({ command, compact }: { command: string; compact?: boolean }) {
-  const [copied, setCopied] = useState(false);
+  const [status, setStatus] = useState<"copy" | "copied" | "copy failed">("copy");
   const copy = useCallback(() => {
-    navigator.clipboard?.writeText(command).then(() => {
-      setCopied(true);
-      window.setTimeout(() => setCopied(false), 1600);
-    });
+    const flash = (next: "copied" | "copy failed") => {
+      setStatus(next);
+      window.setTimeout(() => setStatus("copy"), 1600);
+    };
+    // clipboard is missing on plain http, and the user can deny it
+    (navigator.clipboard?.writeText(command) ?? Promise.reject()).then(
+      () => flash("copied"),
+      () => flash("copy failed")
+    );
   }, [command]);
   return (
-    <button
-      type="button"
-      onClick={copy}
-      aria-label={`Copy command: ${command}`}
-      className={cn(
-        "group flex w-full items-center justify-between gap-3 rounded-lg border border-zinc-700 bg-[#131316] text-left font-mono text-zinc-100 transition-colors duration-150 hover:border-zinc-500",
-        compact ? "px-3.5 py-2 text-[12.5px]" : "px-4 py-3 text-[13px]"
-      )}
-    >
-      {/* min-w-0 lets the flex child shrink; wrapping keeps the command readable on phones */}
-      <span className="min-w-0 flex-1 break-words">
-        <span className="text-zinc-500">$ </span>
-        {command}
+    <>
+      <button
+        type="button"
+        onClick={copy}
+        className={cn(
+          "group flex w-full items-center justify-between gap-3 rounded-lg border border-zinc-700 bg-[#131316] text-left font-mono text-zinc-100 transition-colors duration-150 hover:border-zinc-500",
+          compact ? "px-3.5 py-2 text-[12.5px]" : "px-4 py-3 text-[13px]"
+        )}
+      >
+        {/* min-w-0 lets the flex child shrink; wrapping keeps the command readable on phones */}
+        <span className="min-w-0 flex-1 break-words">
+          <span className="text-zinc-400">$ </span>
+          {command}
+        </span>
+        <span className="shrink-0 text-[10.5px] font-bold uppercase tracking-wide text-zinc-400 transition-colors duration-150 group-hover:text-lime-300">
+          {status}
+        </span>
+      </button>
+      <span role="status" className="sr-only">
+        {status === "copy" ? "" : status}
       </span>
-      <span className="shrink-0 text-[10.5px] font-bold uppercase tracking-wide text-zinc-500 transition-colors duration-150 group-hover:text-lime-300">
-        {copied ? "copied" : "copy"}
-      </span>
-    </button>
+    </>
   );
 }
 
@@ -218,7 +224,7 @@ function Hero() {
         <div className="pointer-events-none absolute inset-0 hidden lg:block" aria-hidden="true">
           <Sticker className="left-4 top-36 -rotate-6 xl:left-10">
             <div className="flex items-center gap-2.5 rounded-xl border border-[#131316] bg-white px-3.5 py-2.5 shadow-[3px_4px_0_0_#131316]">
-              <GitPullRequest className="h-4 w-4 text-emerald-600" strokeWidth={2.25} />
+              <GitPullRequest className="h-4 w-4 text-emerald-700" strokeWidth={2.25} />
               <div className="leading-tight">
                 <p className="text-[12.5px] font-bold text-[#131316]">PR #4821</p>
                 <p className="text-[10.5px] text-zinc-500">merged · checkout fix</p>
@@ -252,7 +258,7 @@ function Hero() {
             <div className="flex items-center gap-2 rounded-xl border border-[#131316] bg-white px-3.5 py-2.5 shadow-[3px_4px_0_0_#131316]">
               <Ticket className="h-4 w-4 text-sky-500" strokeWidth={2.25} />
               <p className="text-[12px] font-bold text-[#131316]">
-                JIRA-982 <span className="text-zinc-400">→</span> PR #4821
+                Issue #982 <span className="text-zinc-500">→</span> PR #4821
               </p>
             </div>
           </Sticker>
@@ -286,7 +292,7 @@ function Hero() {
 
           <Reveal delay={0.12}>
             <p className="mx-auto mt-6 max-w-xl text-[16px] leading-[1.65] text-zinc-600">
-              {BRAND} turns your GitHub PRs, tickets, and commits into a queryable
+              {BRAND} turns your GitHub PRs, issues, and commits into a queryable
               graph, then shows which of it your agent retrieved and which it actually
               used. Runs locally. MCP access for Claude Code and Cursor is next.
             </p>
@@ -328,19 +334,17 @@ function Hero() {
 /* ══════════ tilted logo marquee (two rows, opposite drift) ═══════ */
 
 const MARQUEE_ITEMS = [
+  { icon: Route, label: "LangGraph" },
+  { icon: Brain, label: "LangChain" },
+  { icon: Github, label: "GitHub" },
+  { icon: GitBranch, label: "MCP" },
   { icon: Terminal, label: "Claude Code" },
   { icon: MousePointer2, label: "Cursor" },
-  { icon: Wind, label: "Windsurf" },
-  { icon: Github, label: "GitHub" },
-  { icon: Ticket, label: "Jira" },
-  { icon: ListTodo, label: "Linear" },
-  { icon: Webhook, label: "Webhooks" },
-  { icon: GitBranch, label: "MCP" },
 ];
 
 function MarqueeRow({ reverse }: { reverse?: boolean }) {
   // items duplicated once so the -50% translate loops seamlessly
-  const items = [...MARQUEE_ITEMS, ...MARQUEE_ITEMS];
+  const items = [...MARQUEE_ITEMS, ...MARQUEE_ITEMS, ...MARQUEE_ITEMS, ...MARQUEE_ITEMS];
   return (
     <div className={cn("flex w-max items-center gap-10 py-3.5 pr-10", "lp2-marquee", reverse && "lp2-marquee-rev")}>
       {items.map((item, i) => (
@@ -355,10 +359,19 @@ function MarqueeRow({ reverse }: { reverse?: boolean }) {
   );
 }
 
-function Marquee() {
+function Marquee({ paused, onToggle }: { paused: boolean; onToggle: () => void }) {
   // both bars tilt as one block so they stay parallel; -mx-12 clips their ends off-screen
   return (
     <section className="relative overflow-hidden py-12" aria-label="Works with">
+      {/* looping motion past 5s needs a way to stop it (WCAG 2.2.2) */}
+      <button
+        type="button"
+        onClick={onToggle}
+        className="absolute right-5 top-1 z-10 flex items-center gap-1.5 rounded-lg border border-[#131316] bg-white px-2.5 py-1 text-xs font-bold text-[#131316] motion-reduce:hidden"
+      >
+        {paused ? <Play className="h-3 w-3" /> : <Pause className="h-3 w-3" />}
+        {paused ? "Play motion" : "Pause motion"}
+      </button>
       <div className="-mx-12 -rotate-2 space-y-3">
         <div className="overflow-hidden border-y border-[#131316] bg-white">
           <MarqueeRow />
@@ -394,7 +407,7 @@ function CodeShowcase() {
                 type="button"
                 onClick={() => setActive(i)}
                 className={cn(
-                  "block w-full rounded-lg border p-3.5 text-left transition-all duration-150",
+                  "block w-full rounded-lg border p-3.5 text-left transition-[background-color,border-color,box-shadow] duration-150",
                   i === active
                     ? "border-emerald-600 bg-emerald-50 shadow-[2px_3px_0_0_#059669]"
                     : "border-transparent hover:border-zinc-300 hover:bg-white"
@@ -412,30 +425,30 @@ function CodeShowcase() {
               <span className="h-2.5 w-2.5 rounded-full bg-[#FF5F57]" />
               <span className="h-2.5 w-2.5 rounded-full bg-[#FEBC2E]" />
               <span className="h-2.5 w-2.5 rounded-full bg-[#28C840]" />
-              <span className="ml-2 text-[10px] text-zinc-500">zsh</span>
+              <span className="ml-2 text-[10px] text-zinc-400">zsh · example output</span>
             </div>
             <p className="text-zinc-400">
-              <span className="text-zinc-600">$</span> claude mcp add graphsight{" "}
-              <span className="text-[#6EE7B7]">https://mcp.graphsight.dev/v1</span>
+              <span className="text-zinc-400">$</span> claude mcp add --transport http graphsight{" "}
+              <span className="text-[#6EE7B7]">http://localhost:8000/mcp</span>
             </p>
-            <p className="text-emerald-400">✓ graphsight connected · 128,406 nodes</p>
+            <p className="text-emerald-400">✓ graphsight connected · 1,274 nodes</p>
             <p aria-hidden="true">&nbsp;</p>
-            <p className="text-zinc-600">{"//"} ask anything with full history</p>
+            <p className="text-zinc-400">{"//"} ask anything with full history</p>
             <p className="text-zinc-300">
-              <span className="text-zinc-600">$</span> claude{" "}
+              <span className="text-zinc-400">$</span> claude{" "}
               <span className="text-[#7DD3FC]">
                 &quot;{USE_CASE_ITEMS[active].body.toLowerCase().replace(/\?$/, "")}?&quot;
               </span>
             </p>
             <p aria-hidden="true">&nbsp;</p>
             <p className="text-zinc-400">
-              → <span className="text-[#38BDF8]">query_graph</span>(&quot;checkout regression&quot;)
+              → <span className="text-[#38BDF8]">trace_impact</span>(&quot;checkout-service&quot;)
             </p>
             <p className="pl-4 text-zinc-300">
               <span className="text-[#7DD3FC]">PR #4821</span> → checkout-service →{" "}
-              <span className="text-[#7DD3FC]">JIRA-982</span>
+              <span className="text-[#7DD3FC]">Issue #982</span>
             </p>
-            <p className="pl-4 text-zinc-500">
+            <p className="pl-4 text-zinc-400">
               traced in <span className="text-emerald-400">71ms</span> · 3 hops · confidence 0.94
             </p>
           </div>
@@ -473,8 +486,8 @@ function SourceCards() {
   return (
     <div className="space-y-3">
       {[
-        { icon: GitPullRequest, tint: "bg-emerald-500", label: "GitHub App", sub: "PRs, commits, reviews" },
-        { icon: Ticket, tint: "bg-sky-500", label: "Jira webhooks", sub: "tickets, sprints, links" },
+        { icon: GitPullRequest, tint: "bg-emerald-500", label: "Pull requests", sub: "authors, reviews, files" },
+        { icon: Ticket, tint: "bg-sky-500", label: "Issues and commits", sub: "what fixed what, and when" },
       ].map((c) => (
         <div key={c.label} className="rounded-lg border border-zinc-200 bg-[#FAFAFB] p-3">
           <div className="mb-2.5 space-y-1.5">
@@ -500,12 +513,12 @@ function LogFeed() {
   return (
     <div className="space-y-3">
       {[
-        { time: "14:23:45", tag: "INFO", tint: "bg-sky-500", text: "Webhook received. PR #4821 merged into main." },
+        { time: "14:23:45", tag: "INFO", tint: "bg-sky-500", text: "Fetched PR #4821 from GitHub." },
         { time: "14:23:47", tag: "TRACE", tint: "bg-emerald-500", text: "Graph updated. 12 new edges, 3 entities linked." },
       ].map((l) => (
         <div key={l.time} className="flex gap-2.5 rounded-lg border border-zinc-200 bg-[#FAFAFB] p-3">
           <span className={cn("mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full", l.tint)}>
-            <Webhook className="h-2.5 w-2.5 text-white" />
+            <GitPullRequest className="h-2.5 w-2.5 text-white" />
           </span>
           <div className="min-w-0">
             <p className="font-mono text-[11px] font-bold text-[#131316]">
@@ -555,18 +568,18 @@ function AgentRadar() {
 
 const USE_CASES = [
   {
-    title: "Connect your sources",
-    body: "GitHub and Jira push PRs, tickets, and commits into the graph as they land.",
+    title: "Point it at a repo",
+    body: "One command reads a GitHub repo's PRs, issues, commits, and reviews into the graph.",
     art: <SourceCards />,
   },
   {
     title: "Inspect what landed",
-    body: "Every event becomes typed entities and edges. Check what your agents will read before they read it.",
+    body: "Every PR and issue becomes typed entities and edges. Check what your agents will read before they read it.",
     art: <LogFeed />,
   },
   {
     title: "One graph, every agent",
-    body: "Claude Code, Cursor, and Windsurf read the same graph over MCP.",
+    body: "Any MCP client can read the same graph. Packaged Claude Code and Cursor setup is next.",
     art: <AgentRadar />,
   },
 ];
@@ -598,19 +611,19 @@ function UseCases() {
 const INTEGRATION_TILES = [
   { icon: Github, bg: "#131316" },
   { icon: Zap, bg: "#10B981" },
-  { icon: Ticket, bg: "#0EA5E9" },
+  { icon: Route, bg: "#0EA5E9" },
   { icon: GitBranch, bg: "#F97316" },
-  { icon: Webhook, bg: "#EC4899" },
+  { icon: Terminal, bg: "#EC4899" },
 ];
 
 function IntegrateCard() {
   return (
     <div className={cn(CARD, "flex h-full flex-col overflow-hidden")}>
       <div className="p-6 pb-4">
-        <h3 className="font-display text-xl font-bold text-[#131316]">Integrate with everything</h3>
+        <h3 className="font-display text-xl font-bold text-[#131316]">Fits the stack you have</h3>
         <p className="mt-2 max-w-lg text-[13.5px] leading-relaxed text-zinc-600">
-          GitHub, Jira, and any MCP-compatible agent. New sources land as typed
-          entities and edges. No adapters to write.
+          Any LangGraph agent today, or build a trace by hand from your own
+          retrieval loop. GitHub feeds the graph, and MCP clients can query it.
         </p>
       </div>
       <div className="mt-auto grid grid-cols-3 border-t border-[#131316] sm:grid-cols-6">
@@ -636,9 +649,9 @@ function IntegrateCard() {
 
 function CollabCard() {
   const cursors = [
-    { name: "Priya", x: "14%", y: "18%", tint: "text-sky-500", chip: "border-sky-300 bg-sky-50" },
-    { name: "Marcus", x: "66%", y: "12%", tint: "text-emerald-500", chip: "border-emerald-300 bg-emerald-50" },
-    { name: "Ana", x: "58%", y: "62%", tint: "text-orange-500", chip: "border-orange-300 bg-orange-50" },
+    { name: "Run A", x: "14%", y: "18%", tint: "text-sky-500", chip: "border-sky-300 bg-sky-50" },
+    { name: "Run B", x: "66%", y: "12%", tint: "text-emerald-500", chip: "border-emerald-300 bg-emerald-50" },
+    { name: "Run C", x: "58%", y: "62%", tint: "text-orange-500", chip: "border-orange-300 bg-orange-50" },
   ];
   return (
     <div className={cn(CARD, "flex h-full flex-col overflow-hidden")}>
@@ -662,10 +675,10 @@ function CollabCard() {
         ))}
       </div>
       <div className="p-6">
-        <h3 className="font-display text-xl font-bold text-[#131316]">One memory, whole team</h3>
+        <h3 className="font-display text-xl font-bold text-[#131316]">Compare any two runs</h3>
         <p className="mt-2 text-[13.5px] leading-relaxed text-zinc-600">
-          Everyone&apos;s agents read the same graph. No per-laptop indexes drifting
-          out of sync.
+          Every capture lands in <code>.graphsight/</code>. Tick two runs to see what
+          retrieval added, dropped, or rescored.
         </p>
       </div>
     </div>
@@ -675,8 +688,8 @@ function CollabCard() {
 const BENEFITS = [
   { icon: Brain, tint: "text-emerald-500", title: "Query, don't re-read", body: "Agents hit the graph instead of grepping the repo again." },
   { icon: GitBranch, tint: "text-sky-500", title: "Causal chains", body: "ticket → PR → file, read from the API rather than guessed." },
-  { icon: Cloud, tint: "text-orange-500", title: "No local index", body: "One graph per team. Nothing to build on every laptop." },
-  { icon: Webhook, tint: "text-pink-500", title: "Webhook ingest", body: "PRs and tickets reach the graph seconds after they merge." },
+  { icon: HardDrive, tint: "text-orange-500", title: "Local by default", body: "One graph file per repo. No server to run, nothing to sync." },
+  { icon: Github, tint: "text-pink-500", title: "GitHub ingest", body: "One command turns a repo's PRs, issues, and commits into a graph." },
   { icon: Route, tint: "text-teal-500", title: "Traced answers", body: "Every answer ships the path and the scores that produced it." },
   { icon: Coins, tint: "text-amber-500", title: "Retrieved vs used", body: "See which context the answer used, and what it ignored." },
 ];
@@ -687,7 +700,7 @@ function Benefits() {
       <div className="mx-auto max-w-6xl px-5 py-20">
         <SectionHead
           eyebrow="Why Graphsight"
-          title="What changes with a shared graph"
+          title="What changes when retrieval is traceable"
           sub="Six things that stop being your problem once retrieval is traceable."
         />
 
@@ -781,15 +794,15 @@ function Install() {
                 <span className="h-2.5 w-2.5 rounded-full bg-emerald-400" />
               </div>
               <div className="flex flex-col gap-3">
-                <p className="font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-zinc-500">
+                <p className="font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-zinc-300">
                   1 · install
                 </p>
                 <CopyCommand command='pip install graphsight "graphsight-langgraph[example]"' />
-                <p className="mt-1 font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-zinc-500">
+                <p className="mt-1 font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-zinc-300">
                   2 · trace your repo
                 </p>
                 <CopyCommand command='graphsight-github-trace your-org/your-repo "who touched auth recently?"' />
-                <p className="mt-1 font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-zinc-500">
+                <p className="mt-1 font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-zinc-300">
                   3 · open the graph
                 </p>
                 <CopyCommand command="graphsight graphsight_out/trace_state.json" />
@@ -849,6 +862,7 @@ function Install() {
 
 export function LandingPage() {
   const [scrolled, setScrolled] = useState(false);
+  const [paused, setPaused] = useState(false);
 
   useEffect(() => {
     document.title = `${BRAND} · Graph memory for AI coding agents`;
@@ -861,9 +875,13 @@ export function LandingPage() {
   const goToInstall = useCallback(scrollToInstall, []);
 
   return (
-    <div className="min-h-dvh overflow-x-hidden bg-white font-sans text-zinc-700 antialiased [letter-spacing:-0.011em]">
+    <div
+      data-motion={paused ? "paused" : undefined}
+      className="min-h-dvh overflow-x-hidden bg-white font-sans text-zinc-700 antialiased [letter-spacing:-0.011em]"
+    >
       {/* ── nav ────────────────────────────────────────────────── */}
       <nav
+        aria-label="Main"
         className={cn(
           "fixed inset-x-0 top-0 z-50 h-16 border-b transition-colors duration-200",
           scrolled ? "border-zinc-200 bg-white/95 backdrop-blur-sm" : "border-transparent"
@@ -902,9 +920,9 @@ export function LandingPage() {
         </div>
       </nav>
 
-      <main>
+      <main tabIndex={-1} className="outline-none">
         <Hero />
-        <Marquee />
+        <Marquee paused={paused} onToggle={() => setPaused((v) => !v)} />
         <CodeShowcase />
         <TraceXray />
         <Install />
@@ -929,6 +947,9 @@ export function LandingPage() {
             <Link to="/memory/preview" className="transition-colors duration-150 hover:text-[#131316]">
               Live demo
             </Link>
+            <Link to="/docs/concepts" className="transition-colors duration-150 hover:text-[#131316]">
+              How it works
+            </Link>
             <a
               href="https://pypi.org/project/graphsight/"
               target="_blank"
@@ -947,9 +968,6 @@ export function LandingPage() {
             </a>
             <a href="mailto:hello@graphsight.dev" className="transition-colors duration-150 hover:text-[#131316]">
               Contact
-            </a>
-            <a href="#" className="transition-colors duration-150 hover:text-[#131316]">
-              Privacy
             </a>
           </p>
         </div>

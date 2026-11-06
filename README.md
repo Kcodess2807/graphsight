@@ -267,7 +267,6 @@ frontend/                   # Vite + React 18, landing + Graphsight Studio
 └── src/components/
     ├── landing/            # marketing page at `/`
     ├── memory/             # Studio at `/studio`: CommandPanel · GraphCanvas · Inspector
-    └── right/              # EntityNode (age + recency), TracedEdge (relation labels)
 
 graphsight-langgraph/       # standalone tracer: any LangGraph agent → AgentTrace v0.2
 graphsight/                 # pip-installable local viewer (bundled UI + stdlib server)
@@ -315,7 +314,7 @@ bug: enabling `--files` gave real PRs enough `TOUCHES` edges to trip a per-node 
 
 **Everything is recorded.** `trace_log` carries the intent weights, the vector seeds, every hop
 with its `relation`, and a per-node recency breakdown (`age_days`, `factor`). The Studio renders
-relation labels on edges and an age chip on nodes, so you can see *why* something ranked.
+relation labels on traced edges and an age chip on nodes, so you can see *why* something ranked.
 
 ---
 
@@ -362,7 +361,8 @@ so the whole job finishes in seconds.
 
 The web surface (`/studio`) renders a query's traced path: the node graph laid out with dagre,
 the execution stepper, the fused scores, and clickable citations that pan the camera to the
-cited node. Nodes show an age chip and recency multiplier; edges show their relation.
+cited node. Nodes show their age, the inspector shows the recency multiplier, and traced edges
+show their relation.
 
 Other routes: `/memory/preview` (mock data, no backend), `/memory/import` (render an external
 LangGraph trace with no backend at all).

@@ -1,5 +1,5 @@
 import { ArrowLeft, ArrowRight, Minus, Plus } from "lucide-react";
-import { MEMORY_ENTITY_STYLES } from "./entityTheme";
+import { entityStyle, usageLabel } from "./entityTheme";
 import { cn } from "@/lib/utils";
 import type { TraceState, TraceNode } from "@/types/trace";
 
@@ -40,13 +40,9 @@ function fmtScore(s: number | null | undefined) {
   return s == null ? "—" : s.toFixed(2);
 }
 
-function usage(n: TraceNode) {
-  return n.active ? "used" : "unused";
-}
-
 function NodeRow({ delta }: { delta: NodeDelta }) {
   const { node, other, change } = delta;
-  const style = MEMORY_ENTITY_STYLES[node.type];
+  const style = entityStyle(node.type);
   const Icon = style.icon;
   const scoreChanged = other && fmtScore(node.score) !== fmtScore(other.score);
   const usageChanged = other && node.active !== other.active;
@@ -54,7 +50,7 @@ function NodeRow({ delta }: { delta: NodeDelta }) {
   return (
     <div
       className={cn(
-        "flex items-center gap-3 rounded-xl border bg-white px-3.5 py-2.5",
+        "flex flex-wrap items-center gap-x-3 gap-y-1.5 rounded-xl border bg-white px-3.5 py-2.5",
         change === "kept"
           ? "border-zinc-300 shadow-[2px_3px_0_0_rgba(19,19,22,0.12)]"
           : "border-[#131316] shadow-[2px_3px_0_0_#131316]"
@@ -64,24 +60,24 @@ function NodeRow({ delta }: { delta: NodeDelta }) {
         <Icon className={cn("h-4 w-4", style.glyph)} strokeWidth={2.25} />
       </span>
 
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-[13px] font-bold text-[#131316]">{node.label}</p>
-        <p className="font-mono text-[9.5px] uppercase tracking-[0.15em] text-zinc-400">{style.label}</p>
+      <div className="min-w-0 flex-1 basis-40">
+        <p className="break-words text-[13px] font-bold text-[#131316]">{node.label}</p>
+        <p className="font-mono text-[9.5px] uppercase tracking-[0.15em] text-zinc-500">{style.label}</p>
       </div>
 
       {change === "kept" && other ? (
-        <div className="flex shrink-0 items-center gap-2 font-mono text-[11px]">
+        <div className="flex flex-wrap items-center gap-2 font-mono text-[11px]">
           <span className={cn(scoreChanged ? "font-bold text-[#131316]" : "text-zinc-500")}>
             {fmtScore(node.score)} → {fmtScore(other.score)}
           </span>
           <span
             className={cn(
-              "rounded-full border px-2 py-0.5 text-[10px] font-bold",
-              usageChanged ? "border-[#131316] text-[#131316]" : "border-zinc-300 text-zinc-400"
+              "rounded-xl border px-2 py-0.5 text-[10px] font-bold",
+              usageChanged ? "border-[#131316] text-[#131316]" : "border-zinc-300 text-zinc-500"
             )}
             style={usageChanged ? { backgroundColor: LIME } : undefined}
           >
-            {usage(node)} → {other && usage(other)}
+            {usageLabel(node)} → {usageLabel(other)}
           </span>
         </div>
       ) : (
@@ -106,9 +102,9 @@ function RunCard({
     <button
       type="button"
       onClick={onOpen}
-      className="flex-1 rounded-xl border border-[#131316] bg-white p-4 text-left shadow-[3px_4px_0_0_#131316] transition-transform duration-150 hover:-translate-y-0.5"
+      className="min-w-0 flex-1 break-words rounded-xl border border-[#131316] bg-white p-4 text-left shadow-[3px_4px_0_0_#131316] transition-transform duration-150 hover:-translate-y-0.5"
     >
-      <p className="font-mono text-[10px] font-bold uppercase tracking-[0.3em] text-zinc-400">
+      <p className="font-mono text-[10px] font-bold uppercase tracking-[0.3em] text-zinc-500">
         run {tag}
       </p>
       <p className="mt-1 text-[13.5px] font-bold leading-snug text-[#131316]">{trace.query}</p>
@@ -130,7 +126,7 @@ export function RunDiff({ a, b, onBack, onOpen }: RunDiffProps) {
   );
 
   return (
-    <div className="m-light min-h-dvh bg-paper px-5 py-10 font-sans antialiased">
+    <main tabIndex={-1} className="m-light min-h-dvh bg-paper px-5 py-10 font-sans antialiased outline-none">
       <div className="mx-auto max-w-2xl">
         <button
           type="button"
@@ -154,14 +150,14 @@ export function RunDiff({ a, b, onBack, onOpen }: RunDiffProps) {
         <div className="mt-6 flex flex-col gap-3 sm:flex-row">
           <RunCard tag="A" label={a.label} trace={a.trace} onOpen={() => onOpen(a.trace)} />
           <span className="hidden items-center sm:flex">
-            <ArrowRight className="h-5 w-5 text-zinc-400" />
+            <ArrowRight className="h-5 w-5 text-zinc-500" />
           </span>
           <RunCard tag="B" label={b.label} trace={b.trace} onOpen={() => onOpen(b.trace)} />
         </div>
 
         {removed.length > 0 && (
           <section className="mt-8">
-            <h2 className="font-mono text-[11px] font-bold uppercase tracking-[0.25em] text-zinc-400">
+            <h2 className="font-mono text-[11px] font-bold uppercase tracking-[0.25em] text-zinc-500">
               retrieved only in A
             </h2>
             <div className="mt-3 flex flex-col gap-2">
@@ -172,7 +168,7 @@ export function RunDiff({ a, b, onBack, onOpen }: RunDiffProps) {
 
         {added.length > 0 && (
           <section className="mt-8">
-            <h2 className="font-mono text-[11px] font-bold uppercase tracking-[0.25em] text-zinc-400">
+            <h2 className="font-mono text-[11px] font-bold uppercase tracking-[0.25em] text-zinc-500">
               retrieved only in B
             </h2>
             <div className="mt-3 flex flex-col gap-2">
@@ -182,7 +178,7 @@ export function RunDiff({ a, b, onBack, onOpen }: RunDiffProps) {
         )}
 
         <section className="mt-8">
-          <h2 className="font-mono text-[11px] font-bold uppercase tracking-[0.25em] text-zinc-400">
+          <h2 className="font-mono text-[11px] font-bold uppercase tracking-[0.25em] text-zinc-500">
             in both — score A → B · usage A → B
           </h2>
           <div className="mt-3 flex flex-col gap-2">
@@ -193,6 +189,6 @@ export function RunDiff({ a, b, onBack, onOpen }: RunDiffProps) {
           </div>
         </section>
       </div>
-    </div>
+    </main>
   );
 }

@@ -21,6 +21,7 @@ import { Wordmark } from "@/components/Wordmark";
 import { MermaidDiagram } from "@/components/docs/MermaidDiagram";
 import { ARCHITECTURE_CHART } from "@/components/docs/architectureChart";
 import { cn } from "@/lib/utils";
+import { usePageTitle } from "@/lib/usePageTitle";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 14 },
@@ -82,7 +83,7 @@ function WorkedExample() {
           <HelpCircle className="h-4.5 w-4.5" />
         </span>
         <div>
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-zinc-400">
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-zinc-500">
             The question
           </p>
           <p className="font-medium text-zinc-900">
@@ -94,7 +95,7 @@ function WorkedExample() {
       <div className="space-y-6 p-6">
         {/* skimmer */}
         <div className="flex gap-3">
-          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 ring-1 ring-indigo-100">
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600 ring-1 ring-emerald-100">
             <ScanSearch className="h-4 w-4" />
           </span>
           <div>
@@ -104,7 +105,7 @@ function WorkedExample() {
             <p className="mt-0.5 text-sm leading-relaxed text-zinc-600">
               Vector Search scans the corpus and surfaces the single most
               relevant artifact — the{" "}
-              <span className="font-medium text-indigo-700">
+              <span className="font-medium text-emerald-700">
                 Payment Error Log
               </span>{" "}
               — out of millions of lines.
@@ -129,15 +130,15 @@ function WorkedExample() {
               <ChainStep
                 icon={AlertTriangle}
                 label="Error Log"
-                accent="text-rose-500"
+                accent="text-rose-600"
               />
               <ArrowRight className="h-4 w-4 shrink-0 text-zinc-300" />
-              <ChainStep icon={Ticket} label="Jira Ticket" accent="text-sky-500" />
+              <ChainStep icon={Ticket} label="Ticket" accent="text-sky-500" />
               <ArrowRight className="h-4 w-4 shrink-0 text-zinc-300" />
               <ChainStep
                 icon={GitPullRequest}
                 label="PR #402"
-                accent="text-indigo-500"
+                accent="text-emerald-500"
               />
               <ArrowRight className="h-4 w-4 shrink-0 text-zinc-300" />
               <ChainStep icon={User} label="Priya (Dev)" accent="text-amber-500" />
@@ -147,7 +148,7 @@ function WorkedExample() {
 
         {/* answer */}
         <div className="flex items-center gap-3 rounded-xl border border-emerald-100 bg-emerald-50/60 p-4 ring-4 ring-emerald-500/5">
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white text-emerald-600 shadow-soft ring-1 ring-emerald-100">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white text-emerald-700 shadow-soft ring-1 ring-emerald-100">
             <ShieldCheck className="h-5 w-5" />
           </span>
           <div>
@@ -182,10 +183,10 @@ function ConceptCard({
 }: ConceptCardProps) {
   const styles = {
     indigo: {
-      card: "bg-indigo-50/60 border-indigo-100 ring-indigo-500/10",
-      chip: "bg-white text-indigo-600 ring-1 ring-indigo-100",
-      eyebrow: "text-indigo-600",
-      glow: "bg-indigo-200/40",
+      card: "bg-emerald-50/60 border-emerald-100 ring-emerald-500/10",
+      chip: "bg-white text-emerald-600 ring-1 ring-emerald-100",
+      eyebrow: "text-emerald-600",
+      glow: "bg-emerald-200/40",
     },
     cyan: {
       card: "bg-cyan-50/60 border-cyan-100 ring-cyan-500/10",
@@ -242,6 +243,7 @@ function ConceptCard({
 }
 
 export default function GraphsightConceptsDoc() {
+  usePageTitle("How it works");
   return (
     <div className="min-h-[100dvh] bg-zinc-50">
       {/* top bar */}
@@ -255,7 +257,7 @@ export default function GraphsightConceptsDoc() {
           >
             <Link to="/">
               <ArrowLeft className="h-4 w-4" />
-              Back to Dashboard
+              Back to home
             </Link>
           </Button>
           <Wordmark />
@@ -266,7 +268,7 @@ export default function GraphsightConceptsDoc() {
       <div className="relative overflow-hidden border-b border-border">
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-0 bg-gradient-to-b from-indigo-50/70 via-white to-zinc-50"
+          className="pointer-events-none absolute inset-0 bg-gradient-to-b from-emerald-50/70 via-white to-zinc-50"
         />
         <div
           aria-hidden
@@ -278,14 +280,12 @@ export default function GraphsightConceptsDoc() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
           >
-            <Badge variant="indigo" className="mb-5 gap-1.5">
+            <Badge variant="emerald" className="mb-5 gap-1.5">
               <Sparkles className="h-3 w-3" />
               Concepts · How it works
             </Badge>
-            <h1 className="text-balance text-4xl font-extrabold tracking-tight sm:text-5xl">
-              <span className="bg-gradient-to-r from-indigo-600 via-violet-600 to-cyan-500 bg-clip-text text-transparent">
-                Understanding Graphsight
-              </span>
+            <h1 className="text-balance font-display text-4xl font-bold tracking-tight text-[#131316] sm:text-5xl">
+              Understanding Graphsight
             </h1>
             <p className="mt-5 max-w-2xl text-pretty text-lg leading-relaxed text-zinc-500">
               Why this tool exists, and how it turns an AI that{" "}
@@ -301,7 +301,7 @@ export default function GraphsightConceptsDoc() {
       </div>
 
       {/* body */}
-      <main className="mx-auto max-w-4xl px-6 py-14">
+      <main tabIndex={-1} className="mx-auto max-w-4xl px-6 py-14 outline-none">
         <article className="prose prose-zinc max-w-none prose-headings:scroll-mt-24 prose-headings:font-semibold prose-headings:tracking-tight prose-h2:mb-3 prose-h2:text-2xl prose-p:leading-relaxed prose-p:text-zinc-600 prose-strong:text-zinc-900 prose-em:text-zinc-700">
           <Section index={0}>
             <h2>The Problem: AI That Guesses</h2>
@@ -387,7 +387,7 @@ export default function GraphsightConceptsDoc() {
           >
             <p>
               Like a detective’s cork board strung together with red thread, it
-              follows the <em>hard, factual connections</em> — Error Log to Jira
+              follows the <em>hard, factual connections</em> — Error Log to
               Ticket to Pull Request to the developer who shipped it — until it
               reaches a precise, defensible answer.
             </p>
@@ -426,7 +426,7 @@ export default function GraphsightConceptsDoc() {
         {/* closing */}
         <Section index={6} className="mt-12">
           <Card className="flex items-start gap-4 border-emerald-100 bg-emerald-50/50 p-6 ring-4 ring-emerald-500/5">
-            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white text-emerald-600 shadow-soft ring-1 ring-emerald-100">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white text-emerald-700 shadow-soft ring-1 ring-emerald-100">
               <ShieldCheck className="h-5 w-5" />
             </span>
             <div>
@@ -446,7 +446,7 @@ export default function GraphsightConceptsDoc() {
             <Button asChild size="lg">
               <Link to="/">
                 <ArrowLeft className="h-4 w-4" />
-                Back to the Studio
+                Back to home
               </Link>
             </Button>
           </div>

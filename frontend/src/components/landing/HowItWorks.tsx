@@ -61,7 +61,7 @@ function ContextBudget() {
           <span
             className={cn(
               "w-24 shrink-0 text-right font-mono text-[10px] font-bold",
-              r.used ? "text-emerald-700" : "text-zinc-400"
+              r.used ? "text-emerald-700" : "text-zinc-500"
             )}
           >
             {r.used ? "in the answer" : "unused"}
@@ -87,13 +87,13 @@ export function HowItWorks() {
           {PIPELINE.map((p, i) => (
             <div key={p.title} className="flex min-w-0 flex-1 items-stretch gap-3">
               <div className={cn(CARD, "min-w-0 flex-1 p-4")}>
-                <p.icon className="h-5 w-5 text-emerald-600" strokeWidth={2.25} />
+                <p.icon className="h-5 w-5 text-emerald-700" strokeWidth={2.25} />
                 <p className="mt-2.5 text-[14px] font-bold text-[#131316]">{p.title}</p>
                 <p className="mt-1 text-[12.5px] leading-relaxed text-zinc-600">{p.body}</p>
               </div>
               {i < PIPELINE.length - 1 && (
                 <ArrowRight
-                  className="hidden h-5 w-5 shrink-0 self-center text-zinc-400 sm:block"
+                  className="hidden h-5 w-5 shrink-0 self-center text-zinc-500 sm:block"
                   strokeWidth={2.25}
                 />
               )}
@@ -147,7 +147,7 @@ export function HowItWorks() {
             </p>
           </div>
           <div className="min-w-0">
-            <p className="mb-3 font-mono text-[10px] font-bold uppercase tracking-[0.25em] text-zinc-400">
+            <p className="mb-3 font-mono text-[10px] font-bold uppercase tracking-[0.25em] text-zinc-500">
               context share · demo trace
             </p>
             <ContextBudget />

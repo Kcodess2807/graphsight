@@ -1,4 +1,4 @@
-# TraceRAG Design System — Light Neubrutalist
+# Graphsight Design System — Light Neubrutalist
 
 One system across the whole product surface: the landing page (`/`), the
 Studio (`/studio`), and their shared components. The thesis: **you are not
@@ -13,9 +13,9 @@ never decorative.
 | Paper | `#FAFAFB` | Canvas background (`--m-paper`). |
 | Surface | `#FFFFFF` | Sidebar, cards, inputs. |
 | Ink | `#131316` | Text, borders, primary buttons. All structural borders are 1px ink — no gray hairlines. |
-| Dim / Ghost | `zinc-600` / `zinc-400` | Body copy / labels, hints, idle states. |
+| Dim / Ghost | `zinc-600` / `zinc-500` | Body copy / labels, hints, idle states. `zinc-400` fails contrast on white, so it is for dark panels only. |
 | **Lime** | `#C8F169` | Marker-highlights (hero headline, "MEMORY" chip, score stickers) and **citation-focus** shadows. |
-| **Emerald** | `#059669` | All interactive + traced states: focus shadows, traced edges/arrowheads, active list items, live dots, latency readout. |
+| **Emerald** | `#059669` | All interactive + traced states: focus shadows, traced edges/arrowheads, active list items, live dots. Text uses `emerald-700`, which passes 4.5:1. |
 | Entity tints | 600-weight hues in 10%-alpha wells | Per-type identity on nodes (see `entityTheme.ts`). Multicolor is confined to icon glyphs. |
 
 **Semantic shadows on the canvas** — the load-bearing rule:

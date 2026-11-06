@@ -2,6 +2,8 @@ import type { Config } from "tailwindcss";
 
 const config: Config = {
   darkMode: ["class"],
+  // v3's hover: fires on touch and sticks after a tap
+  future: { hoverOnlyWhenSupported: true },
   content: ["./index.html", "./src/**/*.{ts,tsx}"],
   theme: {
     extend: {
@@ -75,38 +77,10 @@ const config: Config = {
         sm: "calc(var(--radius) - 4px)",
       },
       boxShadow: {
-        soft: "0 1px 2px 0 rgb(0 0 0 / 0.03), 0 1px 3px 0 rgb(0 0 0 / 0.05)",
-        lifted:
-          "0 4px 12px -2px rgb(0 0 0 / 0.08), 0 2px 6px -2px rgb(0 0 0 / 0.05)",
-        node: "0 6px 20px -6px rgb(79 70 229 / 0.35), 0 2px 6px -2px rgb(0 0 0 / 0.08)",
-        // memory layer — accent glow tiers for traced paths and pills
-        glow: "0 0 0 1px rgb(var(--m-accent) / 0.4), 0 0 28px -6px rgb(var(--m-accent) / 0.4)",
-        "glow-sm": "0 0 0 1px rgb(var(--m-accent) / 0.25), 0 0 14px -3px rgb(var(--m-accent) / 0.3)",
-        "panel-dark":
-          "0 0 0 1px rgb(var(--m-line) / 0.08), 0 16px 48px -12px rgb(0 0 0 / 0.45)",
+        soft: "2px 3px 0 0 #131316",
+        lifted: "3px 4px 0 0 #131316",
       },
       keyframes: {
-        "accordion-down": {
-          from: { height: "0" },
-          to: { height: "var(--radix-accordion-content-height)" },
-        },
-        "accordion-up": {
-          from: { height: "var(--radix-accordion-content-height)" },
-          to: { height: "0" },
-        },
-        "dash-flow": {
-          to: { strokeDashoffset: "-16" },
-        },
-        shimmer: {
-          "100%": { transform: "translateX(100%)" },
-        },
-        "fade-in-up": {
-          from: { opacity: "0", transform: "translateY(6px)" },
-          to: { opacity: "1", transform: "translateY(0)" },
-        },
-        "border-spin": {
-          "100%": { transform: "rotate(360deg)" },
-        },
         // memory layer — expanding sonar ring on nodes while the graph "searches"
         "trace-ping": {
           "0%": { transform: "scale(1)", opacity: "0.5" },
@@ -117,22 +91,10 @@ const config: Config = {
           "0%": { transform: "translateX(-100%)" },
           "100%": { transform: "translateX(100vw)" },
         },
-        // memory layer — soft breathing glow for citation pills
-        "glow-pulse": {
-          "0%, 100%": { boxShadow: "0 0 0 1px rgb(var(--m-accent) / 0.25), 0 0 10px -2px rgb(var(--m-accent) / 0.28)" },
-          "50%": { boxShadow: "0 0 0 1px rgb(var(--m-accent) / 0.5), 0 0 18px -2px rgb(var(--m-accent) / 0.5)" },
-        },
       },
       animation: {
-        "accordion-down": "accordion-down 0.2s ease-out",
-        "accordion-up": "accordion-up 0.2s ease-out",
-        "dash-flow": "dash-flow 0.6s linear infinite",
-        shimmer: "shimmer 2s infinite",
-        "fade-in-up": "fade-in-up 0.4s ease-out forwards",
-        "border-spin": "border-spin 4s linear infinite",
         "trace-ping": "trace-ping 1.4s cubic-bezier(0, 0, 0.2, 1) infinite",
         scan: "scan 2.4s cubic-bezier(0.4, 0, 0.2, 1) infinite",
-        "glow-pulse": "glow-pulse 2.2s ease-in-out infinite",
       },
     },
   },

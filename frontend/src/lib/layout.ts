@@ -1,9 +1,9 @@
 import dagre from "dagre";
 import type { TraceEdge, TraceNode } from "@/types/trace";
 
-// approximate rendered EntityNode card size; keep in sync with EntityNode.tsx
-const NODE_W = 224;
-const NODE_H = 72;
+// rendered MemoryNode card size; keep in sync with MemoryNode.tsx
+const NODE_W = 240;
+const NODE_H = 74;
 
 // dagre layered layout, left-to-right; returns a new array with position filled in
 export function layoutGraph(
