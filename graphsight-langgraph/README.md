@@ -67,7 +67,7 @@ graphsight-github-trace langchain-ai/langgraph "who fixed the recent streaming b
 graphsight graphsight_out/trace_state.json
 ```
 
-Your browser opens on a live graph of that repository's recent activity:
+Your browser opens on an interactive graph of that repository's recent activity:
 the PRs that matched the question, the people who authored them, the issues
 they resolve, every node clickable, scores shown, execution timeline
 included.

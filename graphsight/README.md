@@ -158,7 +158,7 @@ producers:
   ```
 
 - **The Graphsight graph-memory engine**, the backend this project grew out
-  of: GitHub events become a live knowledge graph with typed, timestamped
+  of: GitHub PRs, issues, and commits become a knowledge graph with typed, timestamped
   edges (`AUTHORED`, `RESOLVES`, `TOUCHES`), queried by a hybrid
   vector + graph router. Its `/api/trace` responses are the same shape. See
   the [main repository](https://github.com/Kcodess2807/graphsight).
