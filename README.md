@@ -391,19 +391,21 @@ can see what changed between them.
 
 ## Benchmarks & known constraints
 
-**Current evaluation:** 81 tasks on a frozen `pallets/click` snapshot, graded by exact match
-against GitHub's records. [Method, caveats and every per-question result](backend/eval/README.md).
+**Current evaluation:** 175 tasks on frozen snapshots of two repos, graded by exact match
+against GitHub's records. `pytest` is held out: its tasks were committed before it was ever run.
+[Method, caveats and every per-question result](backend/eval/README.md).
 
-| Setup | Correct | Avg prompt tokens |
-|---|---|---|
-| Full context | 80/81 | 32,622 |
-| BM25 | 75/81 | 5,531 |
-| Graph | 69/81 | 2,379 |
-| Vector | 42/81 | 3,449 |
+| Setup | click (dev) | pytest (held-out) | Both |
+|---|---|---|---|
+| Full context | 80/81 | 91/94 | 171/175 |
+| BM25 | 75/81 | 80/94 | 155/175 |
+| Graph | 69/81 | 85/94 | 154/175 |
+| Vector | 42/81 | 46/94 | 88/175 |
 
-BM25 beats the graph on accuracy, and the graph uses 43% of its tokens. The graph ties BM25 on
-lookups, multi-hop and list questions, and loses on questions asked by meaning. These are
-development numbers: the graph was fixed against these same tasks, and there is no held-out set yet.
+The graph and BM25 are tied: each was alone in being right on 18 and 19 tasks, and they split
+the two repos. The graph clearly beats plain vector search. Token savings against BM25 ran from
+57% on click to 16% on pytest, so they don't generalize. Episodic recall improved 4 follow-up
+tasks and worsened none, on tasks built so a past run could help, which isn't proof yet.
 
 The older benchmark below is kept for the record.
 

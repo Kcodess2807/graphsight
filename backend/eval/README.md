@@ -2,46 +2,54 @@
 
 Does the graph help, and does memory help? 81 tasks on a frozen snapshot of
 `pallets/click` (25 PRs, 25 issues, 25 commits), with the same model and prompt
-for every setup.
+for every setup, and the same 81-task recipe repeated as 94 held-out tasks on
+`pytest-dev/pytest`.
 
-## Latest result
+## Result
 
-`anthropic/claude-haiku-5.5`, from `results/linked-ids.md`:
+`anthropic/claude-haiku-5.5`, one run per repo. `pytest` is the held-out set: its tasks
+were committed before any evaluation ran on it, and the engine wasn't changed afterwards.
 
-| Setup | lookup | multi_hop | enumerate | described | followup | unanswerable | all | avg prompt tokens |
-|---|---|---|---|---|---|---|---|---|
-| full_context | 20/20 | 10/10 | 11/11 | 21/21 | 13/13 | 5/6 | 80/81 | 32,622 |
-| bm25 | 20/20 | 10/10 | 11/11 | 18/21 | 11/13 | 5/6 | 75/81 | 5,531 |
-| graph | 20/20 | 10/10 | 11/11 | 14/21 | 8/13 | 6/6 | 69/81 | 2,379 |
-| vector | 3/20 | 1/10 | 5/11 | 18/21 | 9/13 | 6/6 | 42/81 | 3,449 |
-| graph_no_facts | 0/20 | 3/10 | 0/11 | 14/21 | 0/13 | 6/6 | 23/81 | 2,113 |
+| Setup | click (dev) | pytest (held-out) | both | pytest avg prompt tokens |
+|---|---|---|---|---|
+| full_context | 80/81 | 91/94 | 171/175 | 82,713 |
+| bm25 | 75/81 | 80/94 | 155/175 | 12,704 |
+| graph | 69/81 | 85/94 | 154/175 | 10,637 |
+| vector | 42/81 | 46/94 | 88/175 | 10,507 |
 
-- **BM25 beats the graph on accuracy.** The graph ties it on lookups, multi-hop and
-  list questions, and loses on questions asked by meaning, because it still embeds
-  only names and titles, not text.
-- **The graph uses 43% of BM25's tokens,** at $0.00047 per correct answer against
-  $0.00078. Full context is the most accurate and costs $0.00349.
-- **Graph facts are what make the graph work:** 23/81 without them, 69/81 with them.
+- **The graph and BM25 are tied.** Across 175 tasks the graph alone was right on 18 and
+  BM25 alone on 19. BM25 led on click and the graph led on pytest, and neither gap is more
+  than noise (sign test p=0.24 and p=0.36).
+- **Token savings don't generalize.** The graph used 43% of BM25's tokens on click and 84%
+  on pytest. The click figure should not be quoted on its own.
+- **Both beat vector search clearly:** the graph won 79 tasks to 13 (p<0.001). Plain
+  embeddings can find a PR by meaning but can't answer who wrote it.
+- **Graph facts carry the graph:** 92 tasks won to 1 against the same retrieval without them.
+- **Full context is the most accurate,** at about eight times the tokens on pytest. It only
+  fits because 75 records fit in a prompt.
 
-**Memory.** On the 13 follow-up tasks, recall moved the graph from 8/13 to 10/13 and
-raised prompt tokens from 2,568 to 5,601. Two tasks changed. That is too few to show
-memory helps. Three seed runs failed, so those tasks had nothing to recall.
+**Memory.** On follow-up tasks, recall moved the graph from 8/13 to 10/13 on click and from
+9/14 to 11/14 on pytest, with similar token use on pytest. That is 4 tasks improved and none
+made worse (p=0.125), which is promising but not proof. These tasks were built so a past
+run could help, so they test whether recall works when it should, not how often that happens.
 
-**Poisoned memory.** A wrong answer planted as a successful run was followed 0 of 10
-times. All 10 were lookups where the graph held the right fact, so this says nothing
-about a wrong memory when the graph has no answer.
+**Poisoned memory.** A wrong answer planted as a successful run was followed 0 of 20 times
+across both repos. In all 20 the graph held the right fact, so this says nothing about a
+wrong memory when the graph has no answer.
 
 ## How to read these numbers
 
-- **No held-out set.** The fixes below were made against these same tasks, so the graph
-  scores are development numbers. They need confirming on tasks that played no part.
-- **The corpus is small.** All 75 records fit in one prompt, which a real repo's history
-  would not. Larger corpora are untested.
+- **click is a development set.** The fixes below were made against those tasks, so its
+  graph score is optimistic. Only pytest is held out, and it is one repo.
+- **The corpora are small.** 75 records each, all of which fit in one prompt, which a real
+  repo's history would not. Larger corpora are untested.
 - **BM25 is deliberately strong.** Its records spell out author, reviewers and files as
   text. BM25 over raw PR prose was not tested.
-- **One gold answer is debatable.** Both "unanswerable" misses are `Who reviewed PR #3906?`,
-  answered "nobody" where the gold is "unknown". The baselines' records literally say
-  "Reviewed by: nobody", so this is not a hallucination.
+- **Two gold answers are debatable, and both were left as they are.** "Who reviewed" a PR
+  with no reviews was answered "nobody" where the gold is "unknown", because the baselines'
+  records say "Reviewed by: nobody". On pytest, the fix for #15284 is PR #15285 plus its
+  backport #15301, and answering both counts as wrong. Counting these as right would give
+  BM25 159/175 and the graph 155/175, which is still within noise.
 - **Task bias.** The 34 described and follow-up tasks use hand-written descriptions. The
   rest, and every gold answer, come from GitHub's records, in `make_tasks.py`.
 
@@ -57,13 +65,13 @@ about a wrong memory when the graph has no answer.
 ## Run it
 
 ```bash
-python eval/make_tasks.py     # only if the snapshot or task list changes
+python eval/make_tasks.py pallets_click     # only if the snapshot or task list changes
 python scripts/ingest_github.py --repo pallets/click --reset \
     --snapshot eval/corpus/pallets_click.json --db eval/click.lbug
-python eval/run.py --db eval/click.lbug --label my-run
+python eval/run.py --corpus pallets_click --db eval/click.lbug --label my-run
 ```
 
-A full run makes about 430 model calls and cost $0.46. Grading is in `grade.py`: the
+A full run makes 430 to 500 model calls and cost $0.46 on click and $1.31 on pytest. Grading is in `grade.py`: the
 final `ANSWER:` line must be exactly the right set, with no LLM judge. Every question's
 context size, answer and grade is in `results/*.jsonl`, so each number above can be
 checked by hand.
