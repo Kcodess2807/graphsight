@@ -2,7 +2,7 @@
 
     python scripts/ingest_github.py --repo pallets/click --reset \
         --snapshot eval/corpus/pallets_click.json --db eval/click.lbug
-    python eval/run.py --db eval/click.lbug --label first-run
+    python eval/run.py --corpus pallets_click --db eval/click.lbug --label first-run
 
 Writes every question's context size, answer and grade to eval/results/, so each
 number in the summary can be checked by hand.
@@ -94,14 +94,16 @@ class BM25:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser.add_argument("--corpus", default="pallets_click", help="name in eval/corpus/")
     parser.add_argument("--db", type=Path, required=True)
     parser.add_argument("--label", required=True, help="name for the result files")
     parser.add_argument("--workers", type=int, default=6)
     args = parser.parse_args()
     logging.disable(logging.INFO)
 
-    corpus = json.loads((HERE / "corpus/pallets_click.json").read_text(encoding="utf-8"))
-    tasks = [json.loads(line) for line in (HERE / "tasks.jsonl").read_text(encoding="utf-8").splitlines()]
+    corpus = json.loads((HERE / f"corpus/{args.corpus}.json").read_text(encoding="utf-8"))
+    tasks_file = HERE / f"tasks/{args.corpus}.jsonl"
+    tasks = [json.loads(line) for line in tasks_file.read_text(encoding="utf-8").splitlines()]
     docs = records(corpus)
     bm25 = BM25(docs)
 
