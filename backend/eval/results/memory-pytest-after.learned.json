@@ -1,0 +1,320 @@
+[
+ {
+  "task": "new-1",
+  "statement": "The fixtures team owns src/_pytest/tmpdir.py.",
+  "stored": [
+   {
+    "subject": "file:pytest-dev/pytest:src/_pytest/tmpdir.py",
+    "relation": "OWNED_BY",
+    "object": "mem:fixtures-team",
+    "replaced": 0
+   }
+  ]
+ },
+ {
+  "task": "new-2",
+  "statement": "bluetech has the final say on anything in src/_pytest/approx.py.",
+  "stored": [
+   {
+    "subject": "file:pytest-dev/pytest:src/_pytest/approx.py",
+    "relation": "OWNED_BY",
+    "object": "person:bluetech",
+    "replaced": 0
+   }
+  ]
+ },
+ {
+  "task": "new-3",
+  "statement": "PR #15255 cannot merge until Issue #15341 is resolved.",
+  "stored": [
+   {
+    "subject": "pr:pytest-dev/pytest#15255",
+    "relation": "BLOCKED_BY",
+    "object": "issue:pytest-dev/pytest#15341",
+    "replaced": 0
+   }
+  ]
+ },
+ {
+  "task": "new-4",
+  "statement": "Issue #15346 has been handed to the xdist team.",
+  "stored": [
+   {
+    "subject": "issue:pytest-dev/pytest#15346",
+    "relation": "ASSIGNED_TO",
+    "object": "mem:xdist-team",
+    "replaced": 0
+   }
+  ]
+ },
+ {
+  "task": "new-5",
+  "statement": "Pierre-Sassoulas is the release captain for pytest 10.0.",
+  "stored": [
+   {
+    "subject": "mem:pytest-10-0",
+    "relation": "MANAGED_BY",
+    "object": "person:Pierre-Sassoulas",
+    "replaced": 0
+   }
+  ]
+ },
+ {
+  "task": "new-6",
+  "statement": "Flaky test reports for pytest go to the QA-88 board.",
+  "stored": [
+   {
+    "subject": "mem:pytest-flaky-test-reports",
+    "relation": "TRACKED_IN",
+    "object": "mem:qa-88-board",
+    "replaced": 0
+   }
+  ]
+ },
+ {
+  "task": "new-7",
+  "statement": "Changes to src/_pytest/deprecated.py must be approved by RonnyPfannschmidt and nicoddemus.",
+  "stored": [
+   {
+    "subject": "file:pytest-dev/pytest:src/_pytest/deprecated.py",
+    "relation": "APPROVED_BY",
+    "object": "person:RonnyPfannschmidt",
+    "replaced": 0
+   },
+   {
+    "subject": "file:pytest-dev/pytest:src/_pytest/deprecated.py",
+    "relation": "APPROVED_BY",
+    "object": "person:nicoddemus",
+    "replaced": 0
+   }
+  ]
+ },
+ {
+  "task": "new-8",
+  "statement": "PR #15193 was written together with webknjaz.",
+  "stored": [
+   {
+    "subject": "pr:pytest-dev/pytest#15193",
+    "relation": "CO_AUTHORED_BY",
+    "object": "person:webknjaz",
+    "replaced": 0
+   }
+  ]
+ },
+ {
+  "task": "new-9",
+  "statement": "Issue #15335 is a duplicate of Issue #15314.",
+  "stored": [
+   {
+    "subject": "issue:pytest-dev/pytest#15335",
+    "relation": "DUPLICATE_OF",
+    "object": "issue:pytest-dev/pytest#15314",
+    "replaced": 0
+   }
+  ]
+ },
+ {
+  "task": "new-10",
+  "statement": "The pytest docs site is hosted on readthedocs.",
+  "stored": [
+   {
+    "subject": "mem:pytest-docs-site",
+    "relation": "HOSTED_ON",
+    "object": "mem:readthedocs",
+    "replaced": 0
+   }
+  ]
+ },
+ {
+  "task": "upd-1",
+  "statement": "nicoddemus is the contact for Issue #15295.",
+  "stored": [
+   {
+    "subject": "issue:pytest-dev/pytest#15295",
+    "relation": "CONTACT",
+    "object": "person:nicoddemus",
+    "replaced": 0
+   }
+  ]
+ },
+ {
+  "task": "upd-2",
+  "statement": "PR #15202 is waiting on Issue #15237.",
+  "stored": [
+   {
+    "subject": "pr:pytest-dev/pytest#15202",
+    "relation": "BLOCKED_BY",
+    "object": "issue:pytest-dev/pytest#15237",
+    "replaced": 0
+   }
+  ]
+ },
+ {
+  "task": "upd-3",
+  "statement": "The CI dashboard for pytest lives on Grafana.",
+  "stored": [
+   {
+    "subject": "mem:ci-dashboard-for-pytest",
+    "relation": "HOSTED_ON",
+    "object": "mem:grafana",
+    "replaced": 0
+   }
+  ]
+ },
+ {
+  "task": "upd-4",
+  "statement": "pytest 10.0 is planned for February.",
+  "stored": [
+   {
+    "subject": "mem:pytest-10-0",
+    "relation": "SCHEDULED_FOR",
+    "object": "mem:february",
+    "replaced": 0
+   }
+  ]
+ },
+ {
+  "task": "upd-5",
+  "statement": "src/_pytest/terminal.py is owned by the assertion team.",
+  "stored": [
+   {
+    "subject": "file:pytest-dev/pytest:src/_pytest/terminal.py",
+    "relation": "OWNED_BY",
+    "object": "mem:the-assertion-team",
+    "replaced": 0
+   }
+  ]
+ },
+ {
+  "task": "upd-6",
+  "statement": "Issue #15237 is assigned to gerlero.",
+  "stored": [
+   {
+    "subject": "issue:pytest-dev/pytest#15237",
+    "relation": "ASSIGNED_TO",
+    "object": "person:gerlero",
+    "replaced": 0
+   }
+  ]
+ },
+ {
+  "task": "ret-1",
+  "statement": "src/_pytest/timing.py is owned by the plugins team.",
+  "stored": [
+   {
+    "subject": "file:pytest-dev/pytest:src/_pytest/timing.py",
+    "relation": "OWNED_BY",
+    "object": "mem:the-plugins-team",
+    "replaced": 0
+   }
+  ]
+ },
+ {
+  "task": "ret-2",
+  "statement": "Issue #15341 is blocked by Issue #15346.",
+  "stored": [
+   {
+    "subject": "issue:pytest-dev/pytest#15341",
+    "relation": "BLOCKED_BY",
+    "object": "issue:pytest-dev/pytest#15346",
+    "replaced": 0
+   }
+  ]
+ },
+ {
+  "task": "upd-1",
+  "statement": "The contact for Issue #15295 changed from nicoddemus to bluetech.",
+  "stored": [
+   {
+    "subject": "issue:pytest-dev/pytest#15295",
+    "relation": "CONTACT",
+    "object": "person:bluetech",
+    "replaced": 1
+   }
+  ]
+ },
+ {
+  "task": "upd-2",
+  "statement": "PR #15202 no longer waits on Issue #15237. It now waits on Issue #15329.",
+  "stored": [
+   {
+    "subject": "pr:pytest-dev/pytest#15202",
+    "relation": "BLOCKED_BY",
+    "object": "issue:pytest-dev/pytest#15329",
+    "replaced": 1
+   }
+  ]
+ },
+ {
+  "task": "upd-3",
+  "statement": "The pytest CI dashboard was moved from Grafana to Datadog.",
+  "stored": [
+   {
+    "subject": "mem:pytest-ci-dashboard",
+    "relation": "HOSTED_IN",
+    "object": "mem:datadog",
+    "replaced": 0
+   }
+  ]
+ },
+ {
+  "task": "upd-4",
+  "statement": "pytest 10.0 has been pushed back from February to April.",
+  "stored": [
+   {
+    "subject": "mem:pytest-10-0",
+    "relation": "SCHEDULED_FOR",
+    "object": "mem:april",
+    "replaced": 1
+   }
+  ]
+ },
+ {
+  "task": "upd-5",
+  "statement": "The reporting team took over src/_pytest/terminal.py from the assertion team.",
+  "stored": [
+   {
+    "subject": "file:pytest-dev/pytest:src/_pytest/terminal.py",
+    "relation": "OWNED_BY",
+    "object": "mem:reporting-team",
+    "replaced": 1
+   }
+  ]
+ },
+ {
+  "task": "upd-6",
+  "statement": "Issue #15237 now belongs to Pierre-Sassoulas instead of gerlero.",
+  "stored": [
+   {
+    "subject": "issue:pytest-dev/pytest#15237",
+    "relation": "ASSIGNED_TO",
+    "object": "person:Pierre-Sassoulas",
+    "replaced": 1
+   }
+  ]
+ },
+ {
+  "task": "ret-1",
+  "statement": "src/_pytest/timing.py no longer has an owning team.",
+  "stored": [
+   {
+    "subject": "src/_pytest/timing.py",
+    "relation": "OWNED_BY",
+    "object": null,
+    "retracted": 1
+   }
+  ]
+ },
+ {
+  "task": "ret-2",
+  "statement": "Issue #15341 is not blocked by anything anymore.",
+  "stored": [
+   {
+    "subject": "Issue #15341",
+    "relation": "BLOCKED_BY",
+    "object": null,
+    "retracted": 1
+   }
+  ]
+ }
+]

@@ -180,3 +180,28 @@ def test_learn_passes_replace_through(db):
 
 def test_learn_survives_a_reply_that_is_not_json(db):
     assert AgentMemory(db, embed).learn("x", FakeLLM("I can't help with that."), "m", source="s") == []
+
+
+def test_an_agent_fact_survives_a_busy_node(db):
+    """The walk keeps the top k neighbours by weight; an agent fact must not be cut."""
+    for i in range(8):
+        db.upsert_node(f"pr:a/b#{i + 10}", f"PR #{i + 10}", "PR", embed(f"PR #{i + 10}"))
+        db.add_relationship(f"pr:a/b#{i + 10}", "service:checkout", relation=config.RELATION_AUTHORED, ts=1)
+    AgentMemory(db, embed).remember("checkout-service", "owned by", "payments team", source="run-1")
+    neighbours = db.expand_frontier(["service:checkout"], k=5, max_degree=20)["service:checkout"]
+    assert "mem:payments-team" in [n["id"] for n in neighbours]
+
+
+def test_retract_ends_a_fact_with_nothing_in_its_place(db):
+    memory = AgentMemory(db, embed)
+    memory.remember("checkout-service", "owned by", "payments team", source="run-1")
+    assert memory.retract("checkout-service", "OWNED_BY") == 1
+    assert not any("payments team" in f for f in facts(db, "checkout-service"))
+    assert [e["ended"] > 0 for e in agent_edges(db)] == [True]
+
+
+def test_learn_passes_a_retraction_through(db):
+    memory = AgentMemory(db, embed)
+    memory.remember("checkout-service", "OWNED_BY", "payments team", source="msg-1")
+    reply = '{"facts": [{"subject": "checkout-service", "relation": "OWNED_BY", "object": null, "retracts": true}]}'
+    assert memory.learn("no owner now", FakeLLM(reply), "m", source="msg-2")[0]["retracted"] == 1

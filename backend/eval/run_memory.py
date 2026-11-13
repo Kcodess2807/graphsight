@@ -6,6 +6,7 @@ questions, under three setups that share the same agent, model and prompt:
   graph_memory  facts extracted from each statement and written into the graph
 
     python eval/run_memory.py --db eval/click.lbug --label memory-first-run
+    python eval/run_memory.py --tasks memory_pytest --db eval/pytest.lbug --label memory-pytest
 
 The graph file is copied, never written in place.
 """
@@ -40,12 +41,13 @@ from tracerag.router import TraceRouter  # noqa: E402
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser.add_argument("--tasks", default="memory_click", help="name in eval/tasks/")
     parser.add_argument("--db", type=Path, required=True)
     parser.add_argument("--label", required=True)
     args = parser.parse_args()
     logging.disable(logging.WARNING)
 
-    tasks = json.loads((HERE / "tasks/memory_click.json").read_text(encoding="utf-8"))["tasks"]
+    tasks = json.loads((HERE / f"tasks/{args.tasks}.json").read_text(encoding="utf-8"))["tasks"]
     work = Path(tempfile.mkdtemp(prefix="graphsight-memeval-"))
     shutil.copy(args.db, work / "graph.lbug")
     db = TraceDB(work / "graph.lbug")
@@ -114,18 +116,20 @@ def summarize(rows: list[dict], learned: list[dict], model: str) -> str:
     for r in rows:
         table[r["condition"], r["category"]].append(r)
         table[r["condition"], "all"].append(r)
-    cats = ["new_info", "update", "never_stated", "all"]
+    cats = [c for c in ("new_info", "update", "retracted", "never_stated")
+            if any(k == c for _, k in table)] + ["all"]
 
     def cell(c, k):
         got = table[c, k]
         return f"{sum(r['correct'] for r in got)}/{len(got)}"
 
     lines = [f"Model: `{model}`. Correct means the exact answer set.\n",
-             "| Setup | " + " | ".join(cats) + " | stale answers on update |",
+             "| Setup | " + " | ".join(cats) + " | stale answers on changed facts |",
              "|---|" + "---|" * (len(cats) + 1)]
     for c in ("none", "episodic", "graph_memory"):
-        stale = sum(r["stale"] for r in table[c, "update"])
-        lines.append(f"| {c} | " + " | ".join(cell(c, k) for k in cats) + f" | {stale}/{len(table[c, 'update'])} |")
+        changed = table[c, "update"] + table[c, "retracted"]
+        stale = sum(r["stale"] for r in changed)
+        lines.append(f"| {c} | " + " | ".join(cell(c, k) for k in cats) + f" | {stale}/{len(changed)} |")
     facts = sum(len(x["stored"]) for x in learned)
     empty = sum(not x["stored"] for x in learned)
     lines.append(f"\nExtraction stored {facts} facts from {len(learned)} statements; {empty} statements stored nothing.")

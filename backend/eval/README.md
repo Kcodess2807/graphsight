@@ -71,8 +71,37 @@ statements as things the user said might close much of this gap. That is unteste
 only the top 5 neighbours by weight, so on busy nodes the agent's fact is cut. The sixth,
 "sigstore toolchain" against the gold "sigstore", is arguably right.
 
-**Limits.** 23 tasks, one repo, and both the tasks and the facts are mine. There is no held-out
-set for this part yet.
+**Limits.** 23 tasks, one repo, and both the tasks and the facts are mine.
+
+### Held-out memory tasks, and the fixes
+
+22 tasks on `pytest-dev/pytest` (`tasks/memory_pytest.json`), committed in 7775ab7 before any
+memory run on that repo. They add retractions, where the right answer becomes unknown, and
+near-miss questions that sound like a stated fact. The baseline ran on unchanged code (687f876).
+Three fixes followed, written from the click run (7a30f2b): agent facts stay in reach on busy
+nodes, retraction, and an agent prompt that uses a past run where the graph is silent. Then
+one more run on each set.
+
+| Setup | pytest before | pytest after | click before | click after |
+|---|---|---|---|---|
+| none | 5/22 | 5/22 | 4/23 | 4/23 |
+| episodic | 5/22 | 14/22 | 5/23 | 13/23 |
+| graph memory | 13/22 | 16/22 | 16/23 | 21/23 |
+
+- **Graph memory beats no memory on held-out tasks:** 13 tasks to 2 (p=0.007).
+- **Graph memory and episodic recall are tied on held-out tasks:** 5 tasks to 3 (p=0.73). The
+  prompt fix alone took episodic from 5 to 14, which confirms the earlier gap was the prompt.
+  On click graph memory leads 21 to 13, but click is where the fixes came from.
+- **The fixes helped graph memory, not significantly:** 4 tasks gained and 1 lost on pytest
+  (p=0.38). The lost one, "who is the release captain for pytest 10.0", went from right to
+  unknown.
+- **Confident wrong answers on pytest, after:** graph memory 5, episodic 4. Two of graph
+  memory's are near-miss questions: asked which *team* owns `approx.py` it named bluetech, the
+  person with the final say, and asked what PR #15285 *depends on* it named the issue it fixes.
+  One retraction failed: asked what Issue #15341 is blocked by after the block was withdrawn,
+  it named the PR that depends on that issue. "QA-88 board" against the gold "QA-88" is
+  arguably right.
+- **Changed facts:** graph memory 5 of 6 on pytest, episodic 3 of 6. Each gave one stale value.
 
 ## How to read these numbers
 
