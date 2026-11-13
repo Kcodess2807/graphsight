@@ -10,6 +10,7 @@ from eval.grade import grade, normalize, parse_answer
     ("`src/click/types.py`", "types.py"),
     ("@Rowlando13", "rowlando13"),
     ("**kdeldycke**", "kdeldycke"),
+    ("the completion team", "completion team"),
 ])
 def test_normalize(raw, want):
     assert normalize(raw) == want

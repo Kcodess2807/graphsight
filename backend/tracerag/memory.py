@@ -6,6 +6,7 @@ can never overwrite each other, and the answer model is always told which is whi
 
 from __future__ import annotations
 
+import json
 import re
 import time
 from typing import Callable, Sequence
@@ -24,6 +25,31 @@ def _relation(raw: str) -> str:
     if not _RELATION.match(rel):
         raise ValueError(f"relation must be a short name like OWNED_BY, got {raw!r}")
     return rel
+
+
+_EXTRACT = """Extract the durable facts in this message as JSON, and nothing else:
+{{"facts": [{{"subject": "...", "relation": "...", "object": "...", "replaces_previous": false}}]}}
+
+- Make the thing being described the subject: the file, PR, issue, release or project.
+- Copy names exactly as written: file paths, PR #N, Issue #N, logins.
+- relation is a short name such as OWNED_BY, MAINTAINED_BY, BLOCKED_BY, ASSIGNED_TO,
+  CONTACT, REVIEWED_BY, SCHEDULED_FOR, PUBLISHED_FROM, TRACKED_IN, SIGNED_WITH, MANAGED_BY.
+  Use the same relation for the same kind of fact every time.
+- replaces_previous is true only when the message says a fact changed: moved, reassigned,
+  no longer, now, instead, took over, slipped.
+- Return {{"facts": []}} if there is nothing durable.
+
+Message: {text}"""
+
+
+def _parse_facts(raw: str) -> list[dict]:
+    """The facts list from a model reply, or [] when the reply isn't usable JSON."""
+    match = re.search(r"\{.*\}", raw or "", re.DOTALL)
+    try:
+        facts = json.loads(match.group(0)).get("facts") if match else []
+    except (ValueError, AttributeError):
+        return []
+    return [f for f in facts or [] if isinstance(f, dict)]
 
 
 def _name(raw: str, what: str) -> str:
@@ -68,6 +94,24 @@ class AgentMemory:
         replaced = self.db.end_memory_edges(a, relation, keep_to_id=b, ts=now) if replace else 0
         self.db.add_memory_edge(a, b, relation, config.AGENT_FACT_WEIGHT, source, now)
         return {"subject": a, "relation": relation, "object": b, "replaced": replaced}
+
+    def learn(self, text: str, llm, model: str, *, source: str) -> list[dict]:
+        """Have the model pull facts out of a message, then remember each one.
+        A fact the model got wrong is skipped rather than failing the rest."""
+        resp = llm.chat.completions.create(
+            model=model, temperature=0,
+            messages=[{"role": "user", "content": _EXTRACT.format(text=text)}],
+        )
+        stored = []
+        for fact in _parse_facts(resp.choices[0].message.content or ""):
+            try:
+                stored.append(self.remember(
+                    fact["subject"], fact["relation"], fact["object"],
+                    source=source, replace=bool(fact.get("replaces_previous")),
+                ))
+            except (KeyError, TypeError, ValueError):
+                continue
+        return stored
 
     def forget(self, subject: str, relation: str, obj: str) -> int:
         """Delete a remembered fact, history included. Facts read from GitHub can't

@@ -1,0 +1,30 @@
+{
+  "note": "Invented team knowledge about real pallets/click entities. None of these facts are true of the click project; they only test whether a fact said earlier reaches a later answer. Written and committed before any run.",
+  "tasks": [
+    {"id": "new-1", "category": "new_info", "statements": ["The completion team owns src/click/shell_completion.py."], "question": "Who owns src/click/shell_completion.py?", "gold": ["completion team"]},
+    {"id": "new-2", "category": "new_info", "statements": ["While kdeldycke is away, Rowlando13 reviews everything that touches src/click/testing.py."], "question": "Who is covering reviews of src/click/testing.py at the moment?", "gold": ["Rowlando13"]},
+    {"id": "new-3", "category": "new_info", "statements": ["PR #3858 is blocked by Issue #3886 until that crash is fixed."], "question": "What is holding up PR #3858?", "gold": ["Issue #3886"]},
+    {"id": "new-4", "category": "new_info", "statements": ["The docs team maintains docs/faqs.md."], "question": "Which group looks after docs/faqs.md?", "gold": ["docs team"]},
+    {"id": "new-5", "category": "new_info", "statements": ["Release builds of click are signed with the sigstore toolchain."], "question": "What toolchain signs click release builds?", "gold": ["sigstore"]},
+    {"id": "new-6", "category": "new_info", "statements": ["Rowlando13 is the release manager for the 8.6 release."], "question": "Who manages the 8.6 release?", "gold": ["Rowlando13"]},
+    {"id": "new-7", "category": "new_info", "statements": ["Issue #3840 was triaged to the windows team."], "question": "Which team has Issue #3840?", "gold": ["windows team"]},
+    {"id": "new-8", "category": "new_info", "statements": ["Changes to src/click/types.py need sign-off from the typing team."], "question": "Whose sign-off do src/click/types.py changes need?", "gold": ["typing team"]},
+    {"id": "new-9", "category": "new_info", "statements": ["Courtneybrown11 paired with kdeldycke on PR #3896."], "question": "Who paired with kdeldycke on PR #3896?", "gold": ["Courtneybrown11"]},
+    {"id": "new-10", "category": "new_info", "statements": ["The nightly CI failures for click are tracked in INFRA-221."], "question": "Where are the nightly CI failures for click tracked?", "gold": ["INFRA-221"]},
+
+    {"id": "upd-1", "category": "update", "statements": ["The completion team owns src/click/_termui_impl.py.", "Ownership of src/click/_termui_impl.py moved from the completion team to the terminal team."], "question": "Who owns src/click/_termui_impl.py now?", "gold": ["terminal team"], "stale": ["completion team"]},
+    {"id": "upd-2", "category": "update", "statements": ["kdeldycke is the point of contact for Issue #3887.", "Issue #3887's point of contact is now Rowlando13, not kdeldycke."], "question": "Who is the point of contact for Issue #3887?", "gold": ["Rowlando13"], "stale": ["kdeldycke"]},
+    {"id": "upd-3", "category": "update", "statements": ["PR #3865 is blocked by Issue #3832.", "PR #3865 is no longer blocked by Issue #3832. It is now blocked by Issue #3903."], "question": "What blocks PR #3865?", "gold": ["Issue #3903"], "stale": ["Issue #3832"]},
+    {"id": "upd-4", "category": "update", "statements": ["The docs team maintains docs/contrib.md.", "docs/contrib.md is now maintained by the community team instead of the docs team."], "question": "Who maintains docs/contrib.md?", "gold": ["community team"], "stale": ["docs team"]},
+    {"id": "upd-5", "category": "update", "statements": ["Release builds of click are published from buildkite.", "Click release builds moved off buildkite and are now published from GitHub Actions."], "question": "Where are click release builds published from?", "gold": ["GitHub Actions"], "stale": ["buildkite"]},
+    {"id": "upd-6", "category": "update", "statements": ["The 8.6 release is scheduled for December.", "The 8.6 release slipped from December to January."], "question": "When is the 8.6 release scheduled?", "gold": ["January"], "stale": ["December"]},
+    {"id": "upd-7", "category": "update", "statements": ["The core team owns src/click/utils.py.", "The utils team took over src/click/utils.py from the core team."], "question": "Who owns src/click/utils.py?", "gold": ["utils team"], "stale": ["core team"]},
+    {"id": "upd-8", "category": "update", "statements": ["Issue #3882 is assigned to Wkhanex.", "Issue #3882 was reassigned from Wkhanex to janluke."], "question": "Who is Issue #3882 assigned to?", "gold": ["janluke"], "stale": ["Wkhanex"]},
+
+    {"id": "never-1", "category": "never_stated", "statements": [], "question": "Who owns src/click/decorators.py?", "gold": ["unknown"]},
+    {"id": "never-2", "category": "never_stated", "statements": [], "question": "Which team has Issue #3893?", "gold": ["unknown"]},
+    {"id": "never-3", "category": "never_stated", "statements": [], "question": "Who manages the 9.0 release?", "gold": ["unknown"]},
+    {"id": "never-4", "category": "never_stated", "statements": [], "question": "What is holding up PR #3901?", "gold": ["unknown"]},
+    {"id": "never-5", "category": "never_stated", "statements": [], "question": "Where are the weekly release failures for click tracked?", "gold": ["unknown"]}
+  ]
+}

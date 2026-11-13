@@ -14,7 +14,7 @@ _ANSWER_LINE = re.compile(r"^\W*ANSWER\W*:\s*(.*)$", re.IGNORECASE | re.MULTILIN
 def normalize(item: str) -> str:
     """'PR #3858' -> '3858', '`src/click/types.py`' -> 'types.py', '@Bob' -> 'bob'."""
     item = item.strip().strip("`*'\". ").lower()
-    item = re.sub(r"^(pr|pull request|issue|commit)\s+", "", item).lstrip("#@")
+    item = re.sub(r"^(the|pr|pull request|issue|commit)\s+", "", item).lstrip("#@")
     return item.rsplit("/", 1)[-1]
 
 
