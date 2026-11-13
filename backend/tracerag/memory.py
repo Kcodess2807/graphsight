@@ -35,8 +35,10 @@ _EXTRACT = """Extract the durable facts in this message as JSON, and nothing els
 - relation is a short name such as OWNED_BY, MAINTAINED_BY, BLOCKED_BY, ASSIGNED_TO,
   CONTACT, REVIEWED_BY, SCHEDULED_FOR, PUBLISHED_FROM, TRACKED_IN, SIGNED_WITH, MANAGED_BY.
   Use the same relation for the same kind of fact every time.
-- replaces_previous is true only when the message says a fact changed: moved, reassigned,
-  no longer, now, instead, took over, slipped.
+- replaces_previous is true only when the message says a fact changed to a new value: moved,
+  reassigned, now, instead, took over, slipped.
+- When the message says a fact no longer holds and nothing replaces it, give that fact with
+  "object": null and "retracts": true.
 - Return {{"facts": []}} if there is nothing durable.
 
 Message: {text}"""
@@ -105,6 +107,11 @@ class AgentMemory:
         stored = []
         for fact in _parse_facts(resp.choices[0].message.content or ""):
             try:
+                if fact.get("retracts"):
+                    ended = self.retract(fact["subject"], fact["relation"])
+                    stored.append({"subject": fact["subject"], "relation": fact["relation"],
+                                   "object": None, "retracted": ended})
+                    continue
                 stored.append(self.remember(
                     fact["subject"], fact["relation"], fact["object"],
                     source=source, replace=bool(fact.get("replaces_previous")),
@@ -112,6 +119,17 @@ class AgentMemory:
             except (KeyError, TypeError, ValueError):
                 continue
         return stored
+
+    def retract(self, subject: str, relation: str) -> int:
+        """End every live fact of this relation on subject, with nothing in its place:
+        "X no longer has an owner". Kept as history, like a replace."""
+        subject = _name(subject, "subject")
+        relation = _relation(relation)
+        found = self._find(subject)
+        if not found:
+            return 0
+        # an id no edge points at, so every live fact of the relation is ended
+        return self.db.end_memory_edges(found, relation, keep_to_id="", ts=int(time.time()))
 
     def forget(self, subject: str, relation: str, obj: str) -> int:
         """Delete a remembered fact, history included. Facts read from GitHub can't

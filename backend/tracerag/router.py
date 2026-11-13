@@ -67,6 +67,7 @@ def graph_facts(hops: list[dict], meta: dict[str, dict]) -> list[str]:
     entities and chunks but not one relation, so the graph can't change an answer."""
     seen: set[tuple[frozenset[str], str]] = set()
     facts: list[str] = []
+    remembered: list[str] = []
     for hop in hops:
         key = (frozenset((hop["from_id"], hop["to_id"])), hop["relation"])
         # proximity is a guess, so it stays out of what the model treats as fact
@@ -79,10 +80,11 @@ def graph_facts(hops: list[dict], meta: dict[str, dict]) -> list[str]:
         # an agent's own fact must never pass for one read from the source system
         if hop.get("origin") == "agent":
             fact += f" (remembered, source: {hop.get('source') or 'unknown'})"
-        facts.append(fact)
-        if len(facts) == config.GRAPH_MAX_FACTS:
-            break
-    return facts
+            remembered.append(fact)
+        else:
+            facts.append(fact)
+    # own budget for remembered facts, so a busy node's GitHub facts can't push them out
+    return remembered[: config.GRAPH_MAX_FACTS] + facts[: config.GRAPH_MAX_FACTS]
 
 
 class TraceRouter:

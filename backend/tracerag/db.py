@@ -465,7 +465,9 @@ class TraceDB:
             if not kept:
                 continue  # every relation fans out too wide: a true hub
             kept.sort(key=lambda n: (-n["confidence"], n["id"]))
-            out[from_id] = kept[:k]
+            # agent facts weigh less, so on a busy node the top k would always cut them
+            extra = [n for n in kept[k:] if n["origin"] == "agent"][:k]
+            out[from_id] = kept[:k] + extra
         return out
 
     def documents_for_entities(self, entity_ids: list[str]) -> dict[str, list[dict]]:

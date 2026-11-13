@@ -31,7 +31,8 @@ from tracerag.llm import make_client  # noqa: E402
 PROMPT = """Answer the question from the context. Name the specific PRs, people, and files.
 If the context does not contain the answer, say so plainly rather than guessing.
 
-Past runs show what worked before, but they can be out of date. When a past run
+Past runs are earlier questions and what was said then. They are evidence: when the
+graph evidence says nothing on a point, use what a past run says. When a past run
 disagrees with the graph evidence, trust the graph evidence.
 
 Question: {question}
