@@ -5,53 +5,7 @@ export const MOCK_TRACE: TraceState = {
   id: "trace_8f21c9",
   query: "Which PR caused the payments outage?",
   computedAt: "2026-06-02T14:21:09Z",
-  weights: {
-    vector: 0.15,
-    graph: 0.85,
-    intent: "relational",
-  },
-  confidence: {
-    score: 0.92,
-    uncertainty: 0.04,
-    rationale:
-      "High graph connectivity (3 corroborating CAUSED edges, confidence ≥ 0.88) and a single dominant traced path. Vector arm agreed on the top incident chunk.",
-  },
-  steps: [
-    {
-      id: "step-1",
-      index: 1,
-      title: "Vector Recall",
-      detail: "Found 8 chunks (similarity > 0.88) from the incident corpus.",
-      status: "complete",
-      badge: "8 chunks",
-      arm: "vector",
-      durationMs: 180,
-    },
-    {
-      id: "step-2",
-      index: 2,
-      title: "Graph Traversal",
-      detail: "Navigated 3 hops from PR #402 across CAUSED / MERGED_INTO edges.",
-      status: "complete",
-      badge: "3 hops",
-      arm: "graph",
-      durationMs: 640,
-    },
-    {
-      id: "step-3",
-      index: 3,
-      title: "Context Assembly",
-      detail: "Synthesized a 2,450-token grounded context for the LLM.",
-      status: "complete",
-      badge: "2,450 tok",
-      durationMs: 420,
-    },
-  ],
-  metrics: {
-    tokens: { used: 2450, budget: 8192, reductionPct: 64 },
-    peakRamGb: 2.1,
-    queryTimeSec: 1.24,
-  },
+  metrics: { queryTimeSec: 1.24 },
   graph: {
     nodes: [
       // active traced path: Document -> PR -> Service
@@ -199,13 +153,12 @@ export const MOCK_TRACE: TraceState = {
         position: { x: 150, y: 540 },
         meta: { subtitle: "Add idempotency regression test" },
       },
-      // orphans (hidden until toggled)
+      // nodes with no edges, laid out in a grid below the path
       {
         id: "doc-orphan-1",
         label: "Q1 Capacity Plan",
         type: "Document",
         active: false,
-        orphan: true,
         position: { x: 900, y: 470 },
         meta: { subtitle: "Unlinked document" },
       },
@@ -214,7 +167,6 @@ export const MOCK_TRACE: TraceState = {
         label: "PagerDuty",
         type: "Tool",
         active: false,
-        orphan: true,
         position: { x: 470, y: 560 },
         meta: { subtitle: "No edges in this trace" },
       },

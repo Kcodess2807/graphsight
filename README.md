@@ -306,7 +306,7 @@ backend/
 │   ├── recency.py          # age decay: 0.5 ** (age_days / half_life), floored
 │   ├── router.py           # intent classify + dual-stream fusion + trace_log
 │   └── integrations/langchain.py   # drop-in BaseRetriever
-├── scripts/                # ingest · ingest_github · benchmark · stress_test
+├── scripts/                # ingest · ingest_github · episodic_agent · stress_test
 ├── models/ · routers/      # chat history
 └── tests/
     ├── test_recency.py · test_router_scoring.py · test_github_graph.py   # scoring, no DB
@@ -440,7 +440,7 @@ the two repos. The graph clearly beats plain vector search. Token savings agains
 57% on click to 16% on pytest, so they don't generalize. Episodic recall improved 4 follow-up
 tasks and worsened none, on tasks built so a past run could help, which isn't proof yet.
 
-The older benchmark below is kept for the record.
+The older benchmark below is kept for the record. Its script and corpus are no longer in the repo.
 
 LLM-as-a-judge (Groq) over 10 queries (5 semantic, 5 relational), hybrid router vs. a pure-vector
 baseline:

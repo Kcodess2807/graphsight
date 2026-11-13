@@ -1,11 +1,4 @@
-import type {
-  EntityType,
-  ExecutionStep,
-  RouterConfidence,
-  TraceEdge,
-  TraceNode,
-  TraceState,
-} from "@/types/trace";
+import type { EntityType, TraceEdge, TraceNode, TraceState } from "@/types/trace";
 import { layoutGraph } from "@/lib/layout";
 import { getAuthToken } from "@/lib/authToken";
 
@@ -176,26 +169,6 @@ export function fetchSessionTraces(sessionId: string): Promise<TraceLogDto[]> {
   );
 }
 
-export interface GraphInfo {
-  id: string;
-  label: string;
-  active: boolean;
-}
-
-export function listGraphs(): Promise<{
-  graphs: GraphInfo[];
-  active: string | null;
-}> {
-  return getJSON("/api/graphs");
-}
-
-// hot-swap the active graph; returns the new active id + node count
-export function switchGraph(
-  id: string
-): Promise<{ active: string; label: string; nodes: number }> {
-  return postJSON("/api/graphs/switch", { id });
-}
-
 export interface Suggestion {
   query: string;
   entity: string;
@@ -326,103 +299,6 @@ function resultSourceUrl(r: TraceResult): string | undefined {
   return r.documents?.find((d) => /^https?:\/\//.test(d.path ?? ""))?.path;
 }
 
-const _summaryCache = new Map<string, string>();
-
-// one-sentence summary of a node's snippet; cached client- and server-side
-export async function summarizeNode(key: string, text: string): Promise<string> {
-  const cached = _summaryCache.get(key);
-  if (cached !== undefined) return cached;
-  const res = await postJSON<{ summary: string }>("/api/summarize", { key, text });
-  const summary = res.summary ?? "";
-  if (summary) _summaryCache.set(key, summary);
-  return summary;
-}
-
-// derive a confidence from the traversal: mean hop confidence, spread as the band
-function deriveConfidence(log: TraceLog): RouterConfidence {
-  const hops = log.execution_path.graph_hops;
-  if (hops.length === 0) {
-    return {
-      score: 0.78,
-      uncertainty: 0.08,
-      rationale:
-        "Answer came from the vector arm with no corroborating graph hops — confidence derived from a conservative prior.",
-    };
-  }
-  const confs = hops.map((h) => h.confidence);
-  const mean = confs.reduce((a, b) => a + b, 0) / confs.length;
-  const spread = (Math.max(...confs) - Math.min(...confs)) / 2;
-  const uncertainty = Math.min(0.2, Math.max(0.02, spread || 0.03));
-  return {
-    score: Math.max(0, Math.min(1, mean)),
-    uncertainty,
-    rationale: `Derived from ${hops.length} graph hop${
-      hops.length === 1 ? "" : "s"
-    } (mean confidence ${mean.toFixed(2)}). Band reflects spread across the traced edges.`,
-  };
-}
-
-// synthesize the 3-step execution stepper from the trace log
-function buildSteps(log: TraceLog): ExecutionStep[] {
-  const seeds = log.execution_path.vector_seeds.length;
-  const hops = log.execution_path.graph_hops.length;
-  const evaluated = log.metrics.total_nodes_evaluated;
-
-  // name the relations actually walked — "3 edges" says nothing about why
-  const byRelation = new Map<string, number>();
-  for (const h of log.execution_path.graph_hops) {
-    if (h.relation) byRelation.set(h.relation, (byRelation.get(h.relation) ?? 0) + 1);
-  }
-  const relations = [...byRelation.entries()]
-    .sort((a, b) => b[1] - a[1])
-    .map(([rel, n]) => `${n}× ${rel}`)
-    .join(", ");
-
-  // recency only matters when it actually moved something
-  const decayed = (log.recency?.applied ?? []).filter((a) => a.factor < 0.95);
-  const oldest = decayed.reduce(
-    (worst, a) => ((a.age_days ?? 0) > (worst?.age_days ?? 0) ? a : worst),
-    decayed[0]
-  );
-
-  return [
-    {
-      id: "step-1",
-      index: 1,
-      title: "Vector Recall",
-      detail: `Seeded retrieval with ${seeds} semantic chunk${seeds === 1 ? "" : "s"}.`,
-      status: "complete",
-      badge: `${seeds} seed${seeds === 1 ? "" : "s"}`,
-      arm: "vector",
-    },
-    {
-      id: "step-2",
-      index: 2,
-      title: "Graph Traversal",
-      detail: relations
-        ? `Walked ${hops} edge${hops === 1 ? "" : "s"}: ${relations}.`
-        : `Walked ${hops} edge${hops === 1 ? "" : "s"} across the relationship graph.`,
-      status: "complete",
-      badge: `${hops} hop${hops === 1 ? "" : "s"}`,
-      arm: "graph",
-    },
-    {
-      id: "step-3",
-      index: 3,
-      title: "Context Assembly",
-      detail:
-        decayed.length > 0
-          ? `Evaluated ${evaluated} node${evaluated === 1 ? "" : "s"}; age decay demoted ${
-              decayed.length
-            } of them (oldest ${Math.round(oldest.age_days ?? 0)} days, ×${oldest.factor.toFixed(2)}).`
-          : `Evaluated ${evaluated} node${evaluated === 1 ? "" : "s"} to assemble the grounded context.`,
-      status: "complete",
-      badge:
-        decayed.length > 0 ? `${decayed.length} aged` : `${evaluated} nodes`,
-    },
-  ];
-}
-
 // merge trace_log + subgraph into the single TraceState the UI renders
 export function adaptToTraceState(
   query: string,
@@ -551,20 +427,8 @@ export function adaptToTraceState(
     id: `trace_${Date.now().toString(36)}`,
     query,
     computedAt: new Date().toISOString(),
-    weights: {
-      vector: log.intent.alpha,
-      graph: log.intent.beta,
-      intent: log.intent.type === "relational" ? "relational" : "conceptual",
-    },
-    confidence: deriveConfidence(log),
-    steps: buildSteps(log),
-    metrics: {
-      // queryTime is measured client-side; token/RAM aren't in the contract yet
-      tokens: { used: 0, budget: 0, reductionPct: 0 },
-      peakRamGb: 0,
-      queryTimeSec: +(elapsedMs / 1000).toFixed(2),
-      nodesEvaluated: log.metrics.total_nodes_evaluated,
-    },
+    // measured client-side, so it includes the network
+    metrics: { queryTimeSec: +(elapsedMs / 1000).toFixed(2) },
     graph: { nodes: positioned, edges },
     context: trace.context,
   };

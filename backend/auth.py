@@ -16,7 +16,6 @@ locked out. Configured => enforce; unconfigured => warn-and-allow.
 from __future__ import annotations
 
 import logging
-from contextvars import ContextVar
 
 import jwt
 from fastapi import Header, HTTPException, Request, status
@@ -186,26 +185,3 @@ def _resolve_user_id(authorization: str | None) -> str:
 # Clerk identifies a *user* (web app); an API key identifies an *org* (tenant),
 # and selects which isolated graph the request is served from.
 # ===========================================================================
-
-# Request-scoped current org, so code paths without a Request handle (the MCP
-# tools, run under asyncio.to_thread which copies the context) can read it.
-_current_org: ContextVar[str | None] = ContextVar("current_org", default=None)
-
-
-def current_org() -> str | None:
-    """The org resolved for the in-flight request, or None if unset."""
-    return _current_org.get()
-
-
-def set_current_org(org_id: str | None) -> None:
-    _current_org.set(org_id)
-
-
-def get_current_tenant_org(request: Request) -> str:
-    """FastAPI dependency: the org this request is scoped to. Single tenant, so
-    always DEFAULT_TENANT_ORG_ID; the multi-tenant API-key path lives on the
-    saas-control-plane branch."""
-    org_id = config.DEFAULT_TENANT_ORG_ID
-    request.state.org_id = org_id
-    set_current_org(org_id)
-    return org_id

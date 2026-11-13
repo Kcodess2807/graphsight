@@ -20,7 +20,7 @@ from tracerag.db import TraceDB
 from tracerag.router import TraceRouter, shutdown_embed_executor
 from tracerag.integrations.langchain import format_page_content
 
-from auth import get_current_user, get_current_tenant_org
+from auth import get_current_user
 from cache import LRUCache
 from database import init_db
 from ratelimit import limiter, LLM_RATE_LIMIT
@@ -52,14 +52,9 @@ if config.SENTRY_ENABLED:
 _state: dict = {}
 
 
-# single tenant: every org resolves to the warm local graph
-def _mcp_tenant_provider(org_id: str) -> "mcp_server.Tenant":
-    return mcp_server.Tenant(router=_state["router"], db=_state["db"],
-                             graph_id=Path(_state.get("db_path", "")).name or org_id)
-
-
-def _resolve_tenant(org_id: str):
-    return _state["router"], _state["db"]
+# read live, so the MCP tools follow a graph switch
+def _mcp_tenant() -> "mcp_server.Tenant":
+    return mcp_server.Tenant(router=_state["router"], db=_state["db"])
 
 
 @asynccontextmanager
@@ -87,7 +82,7 @@ async def lifespan(app: FastAPI):
     except Exception as exc:  # noqa: BLE001
         logger.warning("Postgres history disabled (%s).", exc)
 
-    mcp_server.set_tenant_provider(_mcp_tenant_provider)
+    mcp_server.set_tenant_provider(_mcp_tenant)
 
     logger.info("TraceRAG STUDIO API ready (db=%s)", config.DB_PATH)
     try:
@@ -159,10 +154,9 @@ class SubgraphRequest(BaseModel):
 async def trace(
     req: TraceRequest,
     user_id: str = Depends(get_current_user),           # who (Clerk user)
-    org_id: str = Depends(get_current_tenant_org),      # which tenant graph
 ) -> dict:
     """Run the router and return the full trace for visualization."""
-    router, _db = _resolve_tenant(org_id)
+    router = _state["router"]
     # aroute offloads the blocking hybrid retrieval (DB pool + embed pool) off
     # the event loop, so concurrent requests no longer serialize on one thread.
     response = await router.aroute(req.query, top_k=req.top_k or config.TOP_K_VECTOR)
@@ -194,63 +188,11 @@ async def trace(
 @app.post("/api/subgraph")
 async def subgraph(
     req: SubgraphRequest,
-    org_id: str = Depends(get_current_tenant_org),
 ) -> dict:
     """Requested nodes plus their 1-hop neighbors and edges."""
-    _router, db = _resolve_tenant(org_id)
+    db = _state["db"]
     # blocking DB read -> offload so the loop stays free under concurrency
     return await asyncio.to_thread(db.subgraph, req.node_ids)
-
-
-class SummarizeRequest(BaseModel):
-    key: str           # cache key (doc id / node id)
-    text: str
-
-
-# bounded so a long-running server can't leak memory; LRU evicts cold snippets
-_SUMMARY_CACHE: LRUCache[str, str] = LRUCache(capacity=512)
-
-
-@app.post("/api/summarize")
-@limiter.limit(LLM_RATE_LIMIT)  # per-user cap; needs the `request` param below
-def summarize(
-    request: Request,  # required by slowapi to read the rate-limit key
-    req: SummarizeRequest,
-    _user: str = Depends(get_current_user),  # require a valid token (LLM = billed)
-) -> dict:
-    """One-sentence LLM summary of a node's snippet, cached by key."""
-    key = req.key or req.text[:64]
-    cached = _SUMMARY_CACHE.get(key)
-    if cached is not None:
-        return {"summary": cached, "cached": True}
-    text = (req.text or "").strip()
-    if not text:
-        return {"summary": "", "cached": False}
-    try:
-        client = _state.get("llm")
-        if client is None:
-            from tracerag.llm import make_client
-
-            client = make_client()
-            _state["llm"] = client
-        resp = client.chat.completions.create(
-            model=config.OPENROUTER_MODEL,
-            messages=[{
-                "role": "user",
-                "content": (
-                    "Summarize this engineering note in one concise sentence "
-                    "(max 25 words): what changed and why. Reply with only the "
-                    "sentence.\n\n" + text
-                ),
-            }],
-            temperature=0,
-        )
-        summary = (resp.choices[0].message.content or "").strip()
-    except Exception as exc:  # noqa: BLE001
-        logger.warning("summarize failed for %s: %s", key, exc)
-        return {"summary": "", "cached": False, "error": str(exc)}
-    _SUMMARY_CACHE.set(key, summary)
-    return {"summary": summary, "cached": False}
 
 
 # swap the active .lbug without restarting; router models stay warm
@@ -316,7 +258,6 @@ def switch_graph(req: SwitchGraphRequest) -> dict:
     _state["db"] = new_db
     _state["db_path"] = str(target)
     _state["router"].db = new_db
-    _SUMMARY_CACHE.clear()  # snippets differ per graph
     if old is not None and old is not new_db:
         try:
             old.close()
@@ -347,10 +288,9 @@ _SUGGESTION_DEFAULT = "What is related to {label}?"
 @app.get("/api/suggestions")
 def suggestions(
     limit: int = 5,
-    org_id: str = Depends(get_current_tenant_org),
 ) -> dict:
     """Example questions built from the active graph's hub entities."""
-    _router, db = _resolve_tenant(org_id)
+    db = _state["db"]
     try:
         hubs = db.top_entities(limit=limit * 4)  # over-fetch, then diversify
     except Exception as exc:  # noqa: BLE001

@@ -25,9 +25,8 @@ def make_trace(overlaps=(0.5, 0.05), answer="an answer") -> AgentTrace:
 
 def test_contract_top_level_keys():
     state = to_tracestate(make_trace())
-    for key in ("id", "query", "computedAt", "weights", "confidence", "steps", "metrics", "graph"):
+    for key in ("id", "query", "computedAt", "metrics", "graph"):
         assert key in state
-    assert state["weights"]["intent"] == "relational"
 
 
 def test_kind_normalization():
@@ -76,13 +75,6 @@ def test_edge_active_follows_node_usage():
     state = to_tracestate(make_trace(overlaps=(0.5, 0.05)))
     edge = state["graph"]["edges"][0]
     assert edge["active"] is False  # c_1 is unused, so the edge dims too
-
-
-def test_vector_only_trace_is_conceptual():
-    trace = make_trace()
-    trace.retrievals[0].edges = []
-    state = to_tracestate(trace)
-    assert state["weights"] == {"vector": 1.0, "graph": 0.0, "intent": "conceptual"}
 
 
 if __name__ == "__main__":

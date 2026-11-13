@@ -4,8 +4,6 @@ import { MotionConfig } from "framer-motion";
 import * as Sentry from "@sentry/react";
 import { Analytics } from "@vercel/analytics/react";
 import { ClerkProvider, useAuth } from "@clerk/clerk-react";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { Toaster } from "sonner";
 import { PageMessage } from "@/components/PageMessage";
 import { LandingPage } from "@/components/landing/LandingPage";
 import { MemoryImport } from "@/components/memory/MemoryImport";
@@ -118,7 +116,6 @@ export default function App() {
 
   return (
     <MotionConfig reducedMotion="user">
-    <TooltipProvider delayDuration={150} skipDelayDuration={300}>
       {clerkEnabled ? (
         <ClerkProvider
           publishableKey={CLERK_PUBLISHABLE_KEY!}
@@ -132,17 +129,6 @@ export default function App() {
         routed
       )}
       {SHOW_ANALYTICS && <Analytics />}
-      <Toaster
-        position="bottom-right"
-        toastOptions={{
-          classNames: {
-            toast:
-              "!rounded-xl !border-border !bg-white !text-zinc-900 !shadow-lifted !font-sans",
-            description: "!text-zinc-500",
-          },
-        }}
-      />
-    </TooltipProvider>
     </MotionConfig>
   );
 }

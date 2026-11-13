@@ -7,6 +7,9 @@
 - `capture(..., outcome="success" | "failure")` labels a run. Unlabelled runs
   are never recalled.
 - Traces keep each item's `answerOverlap`, and scores read from `score_total`.
+- `to_tracestate()` no longer writes `steps`, `weights` or `confidence`. The viewer
+  never rendered them, and `confidence` was derived, not measured. Spans are still
+  recorded in `AgentTrace`.
 
 ## 0.3.2 — 2026-11-07
 

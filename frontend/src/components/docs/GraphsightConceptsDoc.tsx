@@ -14,13 +14,11 @@ import {
   HelpCircle,
   type LucideIcon,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Card } from "@/components/ui/card";
 import { Wordmark } from "@/components/Wordmark";
 import { MermaidDiagram } from "@/components/docs/MermaidDiagram";
 import { ARCHITECTURE_CHART } from "@/components/docs/architectureChart";
 import { cn } from "@/lib/utils";
+import { BTN_PRIMARY, CARD as PANEL } from "@/components/landing/_shared";
 import { usePageTitle } from "@/lib/usePageTitle";
 
 const fadeUp = {
@@ -76,7 +74,7 @@ function ChainStep({
 
 function WorkedExample() {
   return (
-    <Card className="not-prose overflow-hidden p-0">
+    <div className={cn(PANEL, "not-prose overflow-hidden")}>
       {/* question */}
       <div className="flex items-center gap-3 border-b border-border bg-zinc-50/70 px-6 py-4">
         <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white text-zinc-500 shadow-soft ring-1 ring-border">
@@ -162,7 +160,7 @@ function WorkedExample() {
           </div>
         </div>
       </div>
-    </Card>
+    </div>
   );
 }
 
@@ -197,9 +195,10 @@ function ConceptCard({
   }[accent];
 
   return (
-    <Card
+    <div
       className={cn(
-        "relative overflow-hidden p-6 ring-4 transition-shadow hover:shadow-lifted",
+        PANEL,
+        "relative overflow-hidden p-6 ring-4",
         styles.card
       )}
     >
@@ -238,7 +237,7 @@ function ConceptCard({
           {children}
         </div>
       </div>
-    </Card>
+    </div>
   );
 }
 
@@ -249,17 +248,13 @@ export default function GraphsightConceptsDoc() {
       {/* top bar */}
       <header className="sticky top-0 z-30 border-b border-border bg-white/70 backdrop-blur">
         <div className="mx-auto flex max-w-4xl items-center justify-between px-6 py-3">
-          <Button
-            asChild
-            variant="ghost"
-            size="sm"
-            className="text-zinc-500 hover:text-zinc-900"
+          <Link
+            to="/"
+            className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium text-zinc-600 transition-colors hover:bg-zinc-100 hover:text-zinc-900"
           >
-            <Link to="/">
-              <ArrowLeft className="h-4 w-4" />
-              Back to home
-            </Link>
-          </Button>
+            <ArrowLeft className="h-4 w-4" />
+            Back to home
+          </Link>
           <Wordmark />
         </div>
       </header>
@@ -280,10 +275,10 @@ export default function GraphsightConceptsDoc() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
           >
-            <Badge variant="emerald" className="mb-5 gap-1.5">
+            <span className="mb-5 inline-flex items-center gap-1.5 rounded-full border border-emerald-100 bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-700">
               <Sparkles className="h-3 w-3" />
               Concepts · How it works
-            </Badge>
+            </span>
             <h1 className="text-balance font-display text-4xl font-bold tracking-tight text-[#131316] sm:text-5xl">
               Understanding Graphsight
             </h1>
@@ -425,7 +420,7 @@ export default function GraphsightConceptsDoc() {
 
         {/* closing */}
         <Section index={6} className="mt-12">
-          <Card className="flex items-start gap-4 border-emerald-100 bg-emerald-50/50 p-6 ring-4 ring-emerald-500/5">
+          <div className="flex items-start gap-4 rounded-xl border border-[#131316] bg-emerald-50/50 p-6 shadow-[3px_4px_0_0_#131316]">
             <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white text-emerald-700 shadow-soft ring-1 ring-emerald-100">
               <ShieldCheck className="h-5 w-5" />
             </span>
@@ -440,15 +435,13 @@ export default function GraphsightConceptsDoc() {
                 rather than a confident guess.
               </p>
             </div>
-          </Card>
+          </div>
 
           <div className="mt-10 flex justify-center">
-            <Button asChild size="lg">
-              <Link to="/">
-                <ArrowLeft className="h-4 w-4" />
-                Back to home
-              </Link>
-            </Button>
+            <Link to="/" className={cn(BTN_PRIMARY, "flex items-center gap-2 px-6 py-2.5 text-sm")}>
+              <ArrowLeft className="h-4 w-4" />
+              Back to home
+            </Link>
           </div>
         </Section>
       </main>

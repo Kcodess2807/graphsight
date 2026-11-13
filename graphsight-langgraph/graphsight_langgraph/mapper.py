@@ -38,8 +38,6 @@ _MAX_CONTEXT_CHARS = 8000
 
 def to_tracestate(trace: AgentTrace) -> dict[str, Any]:
     """Return a TraceState-shaped dict ready for the Studio."""
-    has_edges = any(r.edges for r in trace.retrievals)
-
     # retrieved vs used: only meaningful when an answer + overlaps exist
     has_usage = trace.answer is not None and any(
         item.answer_overlap is not None for r in trace.retrievals for item in r.items
@@ -105,32 +103,10 @@ def to_tracestate(trace: AgentTrace) -> dict[str, Any]:
                 }
             )
 
-    # execution steps from spans
-    ordered = sorted(trace.spans, key=lambda s: s.start_ms)
-    steps = []
-    for index, span in enumerate(ordered):
-        duration = (span.end_ms - span.start_ms) if span.end_ms is not None else None
-        step = {
-            "id": span.id,
-            "index": index,
-            "title": span.name,
-            "detail": f"{span.kind} · {span.status}",
-            "status": "complete" if span.status == "ok" else "pending",
-            "badge": span.kind,
-            "durationMs": round(duration, 1) if duration is not None else None,
-        }
-        if span.kind == "retriever":
-            arm = next((r.arm for r in trace.retrievals if r.span_id == span.id), None)
-            if arm in ("vector", "graph"):
-                step["arm"] = arm
-        steps.append(step)
-
     # context for downstream answer generation
     context = "\n\n".join(
         item.content for r in trace.retrievals for item in r.items if item.content
     )[:_MAX_CONTEXT_CHARS] or None
-
-    scores = [item.score for r in trace.retrievals for item in r.items if item.score is not None]
 
     return {
         "id": f"trace_lg_{int(time.time() * 1000)}",
@@ -138,25 +114,8 @@ def to_tracestate(trace: AgentTrace) -> dict[str, Any]:
         "answer": trace.answer,
         "outcome": trace.outcome,
         "computedAt": datetime.now(timezone.utc).isoformat(),
-        "weights": {
-            # honest split: this router didn't run, so weights describe the
-            # observed arms, not a fusion decision
-            "vector": 0.5 if has_edges else 1.0,
-            "graph": 0.5 if has_edges else 0.0,
-            "intent": "relational" if has_edges else "conceptual",
-        },
-        "confidence": {
-            "score": round(sum(scores) / len(scores), 3) if scores else 0.0,
-            "uncertainty": 0.0,
-            "rationale": (
-                f"External {trace.framework} trace. Scores reported by the "
-                "retriever; Graphsight does not recompute them."
-            ),
-        },
-        "steps": steps,
         "metrics": {
             "queryTimeSec": round((trace.latency_ms or 0.0) / 1000.0, 3),
-            "nodesEvaluated": len(nodes),
         },
         "graph": {"nodes": nodes, "edges": edges},
         "context": context,
