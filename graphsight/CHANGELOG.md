@@ -1,5 +1,10 @@
 # graphsight changelog
 
+## 0.3.3 — 2026-11-14
+
+- Smaller bundled UI: unused components and the toast library are gone.
+- The README no longer promises an execution timeline the viewer doesn't show.
+
 ## 0.3.2 — 2026-11-07
 
 - The viewer shows the question, the answer, relation labels on traced edges,

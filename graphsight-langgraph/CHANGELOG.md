@@ -1,6 +1,6 @@
 # graphsight-langgraph changelog
 
-## Unreleased
+## 0.3.3 — 2026-11-14
 
 - Episodic recall: `recall()` finds past successful runs in the history dir, and
   `EpisodeRetriever` puts them in an agent's graph, traced like any retriever.
