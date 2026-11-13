@@ -1,0 +1,30 @@
+{
+  "note": "Held-out memory tasks on pytest-dev/pytest. Invented team knowledge about real pytest files, PRs, issues and people; none of it is true of the pytest project. Written and committed before any memory run on this repo, and before the fixes listed in docs/NEXT_STEPS.md section 2b. Adds two kinds click lacked: retractions, where the right answer becomes unknown, and near-miss questions that sound like a stated fact.",
+  "tasks": [
+    {"id": "new-1", "category": "new_info", "statements": ["The fixtures team owns src/_pytest/tmpdir.py."], "question": "Which team owns src/_pytest/tmpdir.py?", "gold": ["fixtures team"]},
+    {"id": "new-2", "category": "new_info", "statements": ["bluetech has the final say on anything in src/_pytest/approx.py."], "question": "Who has the final say on src/_pytest/approx.py?", "gold": ["bluetech"]},
+    {"id": "new-3", "category": "new_info", "statements": ["PR #15255 cannot merge until Issue #15341 is resolved."], "question": "Which issue does PR #15255 depend on?", "gold": ["Issue #15341"]},
+    {"id": "new-4", "category": "new_info", "statements": ["Issue #15346 has been handed to the xdist team."], "question": "Who is handling Issue #15346?", "gold": ["xdist team"]},
+    {"id": "new-5", "category": "new_info", "statements": ["Pierre-Sassoulas is the release captain for pytest 10.0."], "question": "Who is the release captain for pytest 10.0?", "gold": ["Pierre-Sassoulas"]},
+    {"id": "new-6", "category": "new_info", "statements": ["Flaky test reports for pytest go to the QA-88 board."], "question": "Where do flaky test reports for pytest go?", "gold": ["QA-88"]},
+    {"id": "new-7", "category": "new_info", "statements": ["Changes to src/_pytest/deprecated.py must be approved by RonnyPfannschmidt and nicoddemus."], "question": "Who must approve changes to src/_pytest/deprecated.py?", "gold": ["RonnyPfannschmidt", "nicoddemus"]},
+    {"id": "new-8", "category": "new_info", "statements": ["PR #15193 was written together with webknjaz."], "question": "Who helped write PR #15193?", "gold": ["webknjaz"]},
+    {"id": "new-9", "category": "new_info", "statements": ["Issue #15335 is a duplicate of Issue #15314."], "question": "Which issue is Issue #15335 a duplicate of?", "gold": ["Issue #15314"]},
+    {"id": "new-10", "category": "new_info", "statements": ["The pytest docs site is hosted on readthedocs."], "question": "Where is the pytest docs site hosted?", "gold": ["readthedocs"]},
+
+    {"id": "upd-1", "category": "update", "statements": ["nicoddemus is the contact for Issue #15295.", "The contact for Issue #15295 changed from nicoddemus to bluetech."], "question": "Who is the contact for Issue #15295?", "gold": ["bluetech"], "stale": ["nicoddemus"]},
+    {"id": "upd-2", "category": "update", "statements": ["PR #15202 is waiting on Issue #15237.", "PR #15202 no longer waits on Issue #15237. It now waits on Issue #15329."], "question": "Which issue is PR #15202 waiting on?", "gold": ["Issue #15329"], "stale": ["Issue #15237"]},
+    {"id": "upd-3", "category": "update", "statements": ["The CI dashboard for pytest lives on Grafana.", "The pytest CI dashboard was moved from Grafana to Datadog."], "question": "Where does the pytest CI dashboard live?", "gold": ["Datadog"], "stale": ["Grafana"]},
+    {"id": "upd-4", "category": "update", "statements": ["pytest 10.0 is planned for February.", "pytest 10.0 has been pushed back from February to April."], "question": "When is pytest 10.0 planned?", "gold": ["April"], "stale": ["February"]},
+    {"id": "upd-5", "category": "update", "statements": ["src/_pytest/terminal.py is owned by the assertion team.", "The reporting team took over src/_pytest/terminal.py from the assertion team."], "question": "Which team owns src/_pytest/terminal.py?", "gold": ["reporting team"], "stale": ["assertion team"]},
+    {"id": "upd-6", "category": "update", "statements": ["Issue #15237 is assigned to gerlero.", "Issue #15237 now belongs to Pierre-Sassoulas instead of gerlero."], "question": "Who is Issue #15237 assigned to?", "gold": ["Pierre-Sassoulas"], "stale": ["gerlero"]},
+
+    {"id": "ret-1", "category": "retracted", "statements": ["src/_pytest/timing.py is owned by the plugins team.", "src/_pytest/timing.py no longer has an owning team."], "question": "Which team owns src/_pytest/timing.py?", "gold": ["unknown"], "stale": ["plugins team"]},
+    {"id": "ret-2", "category": "retracted", "statements": ["Issue #15341 is blocked by Issue #15346.", "Issue #15341 is not blocked by anything anymore."], "question": "What is Issue #15341 blocked by?", "gold": ["unknown"], "stale": ["Issue #15346"]},
+
+    {"id": "never-1", "category": "never_stated", "statements": [], "question": "Which team owns src/_pytest/approx.py?", "gold": ["unknown"]},
+    {"id": "never-2", "category": "never_stated", "statements": [], "question": "Where do performance regression reports for pytest go?", "gold": ["unknown"]},
+    {"id": "never-3", "category": "never_stated", "statements": [], "question": "Who is the release captain for pytest 11.0?", "gold": ["unknown"]},
+    {"id": "never-4", "category": "never_stated", "statements": [], "question": "Which issue does PR #15285 depend on?", "gold": ["unknown"]}
+  ]
+}
