@@ -49,7 +49,6 @@ PyJWT[crypto]>=2.8.0
 
 # --- Ops / testing ---
 tqdm>=4.66.0                  # ingest progress bars
-aiohttp>=3.9.0                 # scripts/stress_test.py load generator
 slowapi>=0.1.9                 # FastAPI rate limiting (see api.py hardening)
 requests>=2.31.0              # scripts/ingest_github.py live PR connector
 

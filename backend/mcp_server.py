@@ -14,12 +14,8 @@ Transport: mounted as a Streamable-HTTP ASGI sub-app on the FastAPI instance
 (see api.py). `stateless_http=True` — no session affinity, so it fits the
 fungible-pod serving model directly.
 
-Tenancy: every tool resolves its data through `get_current_tenant()`. Today that
-returns the single in-memory graph handle the server already has warm; the graph
-is read live, so the tools follow `/api/graphs/switch` automatically. Going
-multi-tenant is a one-line swap: register a provider that reads the request's
-org_id (from the verified API key) and returns that org's loaded `.lbug` handle
-from the registry — nothing in the tools themselves changes.
+Every tool reads the warm graph through `get_current_tenant()`, live, so the
+tools follow `/api/graphs/switch` automatically.
 """
 
 from __future__ import annotations
@@ -50,48 +46,27 @@ except Exception as exc:  # noqa: BLE001
     logger.info("MCP SDK not installed (%s); /mcp surface disabled.", exc)
 
 
-# ---------------------------------------------------------------------------
-# Tenant resolution — the single indirection that becomes multi-tenant later.
-# ---------------------------------------------------------------------------
 @dataclass
 class Tenant:
-    """The graph a tool call operates on. Today: the one warm local graph.
-    Later: the org's loaded `.lbug`, resolved from the request's api_key -> org_id."""
+    """The graph a tool call operates on: the one warm local graph."""
 
     router: TraceRouter
     db: TraceDB
-    graph_id: Optional[str] = None  # the .lbug name now; becomes org_id in prod
 
 
-TenantProvider = Callable[[str], Tenant]
-_provider: Optional[TenantProvider] = None
+_provider: Optional[Callable[[], Tenant]] = None
 
 
-def set_tenant_provider(provider: TenantProvider) -> None:
-    """Register how tools obtain their tenant, given an org_id. Called once at
-    startup (api.py). The provider resolves org_id -> the org's loaded graph via
-    the shared registry (single-tenant binds DEFAULT_TENANT_ORG_ID to the warm
-    handle, so the same provider serves both modes)."""
+def set_tenant_provider(provider: Callable[[], Tenant]) -> None:
+    """Called once at startup by api.py."""
     global _provider
     _provider = provider
 
 
 def get_current_tenant() -> Tenant:
-    """Return the tenant (graph handle) for the current call.
-
-    The org is taken from the request-scoped contextvar (set by the auth/routing
-    layer; propagated into the tool's worker thread by asyncio.to_thread). When
-    unset — e.g. the intentionally-open local demo — it falls back to the default
-    org, which single-tenant startup binds to the warm graph.
-    """
     if _provider is None:
-        raise RuntimeError(
-            "MCP tenant provider not configured; call set_tenant_provider() at startup"
-        )
-    import auth  # local import avoids any import-time coupling
-
-    org_id = auth.current_org() or config.DEFAULT_TENANT_ORG_ID
-    return _provider(org_id)
+        raise RuntimeError("MCP tenant provider not configured; call set_tenant_provider() at startup")
+    return _provider()
 
 
 # ---------------------------------------------------------------------------

@@ -69,8 +69,7 @@ graphsight graphsight_out/trace_state.json
 
 Your browser opens on an interactive graph of that repository's recent activity:
 the PRs that matched the question, the people who authored them, the issues
-they resolve, every node clickable, scores shown, execution timeline
-included.
+they resolve, every node clickable, and scores shown.
 
 ### `graphsight-github-trace` reference
 
@@ -180,7 +179,7 @@ retrievals.
 | `on_retriever_end` documents | one `RetrievedItem` per doc: id, label, kind, score, content, source |
 | `Document.metadata` score keys (`score`, `relevance_score`, `similarity`, `_score`, `vector_score`) | item scores |
 | `Document.metadata["edges"]` | relational edges, deduplicated per retrieval |
-| LLM / tool calls | plain spans in the execution timeline |
+| LLM / tool calls | plain spans in the `AgentTrace` |
 | Edges present in a retrieval | `arm = "graph"`, else `"vector"`, detected automatically |
 | The final answer (when passed to `finish`/`capture`) | per-item `answer_overlap`, the retrieved-vs-used signal |
 

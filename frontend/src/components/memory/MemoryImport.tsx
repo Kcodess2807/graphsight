@@ -32,7 +32,6 @@ function parseTraceState(raw: string): TraceState {
   data.graph.nodes = data.graph.nodes.filter((n) => n?.id != null);
   for (const n of data.graph.nodes) n.label ??= String(n.id);
   data.graph.edges = Array.isArray(data.graph.edges) ? data.graph.edges : [];
-  data.steps = Array.isArray(data.steps) ? data.steps : [];
   data.metrics = data.metrics ?? { queryTimeSec: 0 };
   return data;
 }

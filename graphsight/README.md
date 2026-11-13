@@ -80,9 +80,8 @@ attached makes no usage claims at all.
 - **Relational paths between results**, *person → authored → PR →
   resolves → issue*, the chain of evidence, not just a ranked list.
 - **An inspector on every node**: underlying content, score, source link.
-- **The execution timeline** of the run: each agent step, each retriever
-  call, per-span timings, and which retrieval arm (vector / graph) produced
-  the results.
+- **The question and the answer**, with every node marked as overlapping the
+  answer or not.
 
 ## Requirements
 
@@ -177,7 +176,6 @@ The minimum contract is small, a JSON object with:
     "nodes": [{ "id", "label", "type", "score", "meta": { "snippet", "sourceUrl" } }],
     "edges": [{ "id", "source", "target", "relation", "confidence" }]
   },
-  "steps":   [ /* execution timeline, optional */ ],
   "metrics": { "queryTimeSec": 0.004 }             // optional
 }
 ```

@@ -11,8 +11,7 @@ It records every retriever call, per-item scores, which retrieval arm
 produced each result (vector vs graph), and the relational paths between
 results (e.g. **person → PR → Service → Issue**), then renders it as an
 interactive graph in the browser: every node clickable, with the underlying
-evidence, score, and source link in an inspector, plus the execution
-timeline of the run that produced it.
+evidence, score, and source link in an inspector.
 
 You get full visibility into the retrieval reasoning instead of a black box.
 

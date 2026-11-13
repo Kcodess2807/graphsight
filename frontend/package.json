@@ -11,11 +11,8 @@
   },
   "dependencies": {
     "@clerk/clerk-react": "^5.61.8",
-    "@radix-ui/react-slot": "^1.1.1",
-    "@radix-ui/react-tooltip": "^1.1.5",
     "@sentry/react": "^10.57.0",
     "@vercel/analytics": "^2.0.1",
-    "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "dagre": "^0.8.5",
     "framer-motion": "^11.15.0",
@@ -25,9 +22,7 @@
     "react-dom": "^18.3.1",
     "react-router-dom": "^7.16.0",
     "reactflow": "^11.11.4",
-    "sonner": "^1.7.1",
-    "tailwind-merge": "^2.6.0",
-    "tailwindcss-animate": "^1.0.7"
+    "tailwind-merge": "^2.6.0"
   },
   "devDependencies": {
     "@tailwindcss/typography": "^0.5.19",

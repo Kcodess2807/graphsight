@@ -24,9 +24,6 @@ const EMPTY_TRACE: TraceState = {
   id: "trace_empty",
   query: "",
   computedAt: new Date(0).toISOString(),
-  weights: { vector: 0.5, graph: 0.5, intent: "conceptual" },
-  confidence: { score: 0, uncertainty: 0, rationale: "Memory idle." },
-  steps: [],
   metrics: { queryTimeSec: 0 },
   graph: { nodes: [], edges: [] },
 };

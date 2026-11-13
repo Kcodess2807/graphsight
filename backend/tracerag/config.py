@@ -17,7 +17,6 @@ except ImportError:
 
 DB_PATH = Path(os.getenv("TRACERAG_DB_PATH", PROJECT_ROOT / "memory.lbug"))
 DATASETS_DIR = Path(os.getenv("TRACERAG_DATASETS_DIR", PROJECT_ROOT / "datasets"))
-RESULTS_CSV = Path(os.getenv("TRACERAG_RESULTS_CSV", PROJECT_ROOT / "results.csv"))
 
 
 EMBED_MODEL = os.getenv("TRACERAG_EMBED_MODEL", "all-MiniLM-L6-v2")
@@ -74,7 +73,6 @@ MCP_RESOLVE_MIN_SIM = float(os.getenv("TRACERAG_MCP_RESOLVE_MIN_SIM", "0.40"))
 
 # The org every request maps to. Single tenant; the multi-tenant control plane
 # lives on the saas-control-plane branch.
-DEFAULT_TENANT_ORG_ID = os.getenv("DEFAULT_TENANT_ORG_ID", "org_local_dev")
 
 # Sentry error tracking + performance monitoring. Fully optional: unset DSN =
 # disabled, so local/dev runs are untouched. traces_sample_rate is 1.0 (trace
