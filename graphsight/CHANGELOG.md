@@ -1,5 +1,14 @@
 # graphsight changelog
 
+## 0.3.2 — 2026-11-07
+
+- The viewer shows the question, the answer, relation labels on traced edges,
+  and node age, and says in words whether each item overlapped the answer.
+- Works by keyboard and on phones. A trace with an unknown node type no longer
+  blanks the page.
+- The run list skips JSON files that aren't viewer traces, such as
+  `agent_trace.json`.
+
 ## 0.3.0 — 2026-07-26
 
 - Run diff: select two runs in the history view to see what changed in

@@ -9,7 +9,8 @@ export type EntityType =
   | "Library"
   | "Ticket"
   | "Team"
-  | "Tool";
+  | "Tool"
+  | "File";
 
 export type RetrievalArm = "vector" | "graph";
 
@@ -92,6 +93,8 @@ export interface TraceMetrics {
 export interface TraceState {
   id: string;
   query: string;
+  // the final answer, when the tracer captured one
+  answer?: string | null;
   computedAt: string;
   weights: RouterWeights;
   confidence: RouterConfidence;

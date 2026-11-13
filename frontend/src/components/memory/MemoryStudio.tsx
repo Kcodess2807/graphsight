@@ -2,6 +2,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { AppLayout } from "./AppLayout";
 import type { SuggestedTrace } from "./CommandPanel";
 import {
+  API_BASE,
+  ApiError,
   createSession,
   fetchSessionTraces,
   fetchSuggestions,
@@ -11,6 +13,7 @@ import {
   streamAnswer,
   type ChatSessionDto,
 } from "@/lib/api";
+import { usePageTitle } from "@/lib/usePageTitle";
 import { useSessionUser } from "@/lib/useSessionUser";
 import { MOCK_TRACE, QUERY_PRESETS } from "@/data/mockTrace";
 import type { TraceState } from "@/types/trace";
@@ -28,6 +31,15 @@ const EMPTY_TRACE: TraceState = {
   graph: { nodes: [], edges: [] },
 };
 
+// says what actually failed; only an unreachable backend falls back to the sample
+function failureNotice(err: unknown): string {
+  const status = err instanceof ApiError ? err.status : 0;
+  if (status === 401 || status === 403) return "Your session expired. Sign in again, then rerun the trace.";
+  if (status === 429) return "Too many requests. Wait a minute, then rerun the trace.";
+  if (status) return `The backend returned HTTP ${status}. Check its logs, then rerun the trace.`;
+  return `Can't reach the backend at ${API_BASE}. Start it, then rerun the trace. Showing a sample graph for now.`;
+}
+
 function loadRecent(): string[] {
   try {
     const raw = localStorage.getItem(RECENT_KEY);
@@ -44,6 +56,8 @@ function loadRecent(): string[] {
  * Falls back to the sample trace when the backend is unreachable.
  */
 export function MemoryStudio() {
+  usePageTitle("Studio");
+  const [notice, setNotice] = useState<string | null>(null);
   const [trace, setTrace] = useState<TraceState>(EMPTY_TRACE);
   const [tracing, setTracing] = useState(false);
   const [answer, setAnswer] = useState<string | null>(null);
@@ -72,7 +86,10 @@ export function MemoryStudio() {
       .then((rows) => {
         if (!cancelled) setSessions(rows);
       })
-      .catch((err) => console.error("[Graphsight] listSessions failed:", err));
+      .catch((err) => {
+        console.error("[Graphsight] listSessions failed:", err);
+        if (!cancelled) setNotice("Couldn't load saved sessions. Reload the page to try again.");
+      });
     return () => {
       cancelled = true;
     };
@@ -104,6 +121,7 @@ export function MemoryStudio() {
       const epoch = ++queryEpoch.current;
       setTracing(true);
       setAnswer(null);
+      setNotice(null);
       rememberQuery(q);
       try {
         // lazily start a session on the first query of a new chat
@@ -129,20 +147,27 @@ export function MemoryStudio() {
         setTrace(state);
         const ctx = state.context?.trim();
         if (ctx) {
+          const answerFailed = () => {
+            if (epoch !== queryEpoch.current) return;
+            setAnswer(null);
+            setNotice("The trace finished, but the answer failed. Rerun the trace to try again.");
+          };
           setAnswer(""); // stream in instead of popping whole
           streamAnswer(q, ctx, (partial) => {
             if (epoch === queryEpoch.current) setAnswer(partial);
-          }).catch(() => {
-            if (epoch === queryEpoch.current) setAnswer(null);
-          });
+          })
+            .then((full) => {
+              if (!full) answerFailed();
+            })
+            .catch(answerFailed);
         }
       } catch (err) {
-        console.error("[Graphsight] live trace failed, showing sample:", err);
+        console.error("[Graphsight] live trace failed:", err);
         if (epoch !== queryEpoch.current) return;
-        setTrace({ ...MOCK_TRACE, id: `trace_${q}`, query: q });
-        setAnswer(
-          "Backend unreachable — showing the sample trace so the canvas stays explorable."
-        );
+        setNotice(failureNotice(err));
+        if (!(err instanceof ApiError)) {
+          setTrace({ ...MOCK_TRACE, id: `trace_${q}`, query: q });
+        }
       } finally {
         if (epoch === queryEpoch.current) setTracing(false);
       }
@@ -155,6 +180,7 @@ export function MemoryStudio() {
     const epoch = ++queryEpoch.current;
     setActiveSessionId(sessionId);
     setAnswer(null);
+    setNotice(null);
     setTracing(true);
     try {
       const logs = await fetchSessionTraces(sessionId);
@@ -169,6 +195,9 @@ export function MemoryStudio() {
       setTrace(state);
     } catch (err) {
       console.error("[Graphsight] hydrate session failed:", err);
+      if (epoch === queryEpoch.current) {
+        setNotice("Couldn't open that session. Check the backend, then select it again.");
+      }
     } finally {
       if (epoch === queryEpoch.current) setTracing(false);
     }
@@ -180,6 +209,7 @@ export function MemoryStudio() {
     setActiveSessionId(null);
     setTrace(EMPTY_TRACE);
     setAnswer(null);
+    setNotice(null);
     setTracing(false);
   }, []);
 
@@ -188,6 +218,7 @@ export function MemoryStudio() {
       trace={trace}
       tracing={tracing}
       answer={answer}
+      notice={notice}
       suggestions={suggestions}
       recentQueries={recent}
       onQuery={handleQuery}

@@ -1,7 +1,7 @@
 import { memo } from "react";
 import { Handle, Position, type NodeProps } from "reactflow";
 import { motion } from "framer-motion";
-import { MEMORY_ENTITY_STYLES } from "./entityTheme";
+import { entityStyle, formatAge, usageLabel } from "./entityTheme";
 import { cn } from "@/lib/utils";
 import type { TraceNode } from "@/types/trace";
 
@@ -14,7 +14,8 @@ export interface MemoryNodeData extends TraceNode {
 
 // w-[240px] is coupled to NODE_HALF_W in GraphCanvas.tsx — keep them in sync
 function MemoryNodeComponent({ data, selected }: NodeProps<MemoryNodeData>) {
-  const style = MEMORY_ENTITY_STYLES[data.type];
+  const style = entityStyle(data.type);
+  const age = formatAge(data.meta?.ageDays);
   const Icon = style.icon;
   const lit = data.active || selected;
 
@@ -40,7 +41,7 @@ function MemoryNodeComponent({ data, selected }: NodeProps<MemoryNodeData>) {
       {/* sonar ring while the graph algorithm is "visiting" nodes */}
       {data.searching && (
         <span
-          className="pointer-events-none absolute inset-0 rounded-xl border-2 border-emerald-500/60 animate-trace-ping"
+          className="pointer-events-none absolute inset-0 rounded-xl border-2 border-emerald-500/60 motion-safe:animate-trace-ping"
           style={{ animationDelay: `${(data.searchDelayIndex ?? 0) % 6 * 0.22}s` }}
         />
       )}
@@ -60,12 +61,16 @@ function MemoryNodeComponent({ data, selected }: NodeProps<MemoryNodeData>) {
             "truncate text-[13px] font-bold leading-tight",
             lit ? "text-[#131316]" : "text-zinc-500"
           )}
+          title={data.label}
         >
           {data.label}
         </p>
-        <p className="truncate font-mono text-[9.5px] uppercase tracking-[0.15em] text-zinc-400">
+        <p className="truncate font-mono text-[9.5px] uppercase tracking-[0.15em] text-zinc-500">
           {style.label}
+          {age && ` · ${age}`}
         </p>
+        {/* the core signal in words, so it never depends on color alone */}
+        <p className="truncate text-[10.5px] font-medium text-zinc-600">{usageLabel(data)}</p>
       </div>
 
       {data.active && data.score != null && (

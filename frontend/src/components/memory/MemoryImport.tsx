@@ -4,6 +4,7 @@ import { FileJson, GitCompareArrows, Upload } from "lucide-react";
 import { AppLayout } from "./AppLayout";
 import { RunDiff } from "./RunDiff";
 import { cn } from "@/lib/utils";
+import { usePageTitle } from "@/lib/usePageTitle";
 import type { TraceState } from "@/types/trace";
 
 const LIME = "#C8F169";
@@ -18,10 +19,18 @@ interface RunEntry {
 
 /** minimal structural check — enough to render without crashing */
 function parseTraceState(raw: string): TraceState {
-  const data = JSON.parse(raw) as TraceState;
-  if (typeof data?.query !== "string" || !data?.graph || !Array.isArray(data.graph.nodes)) {
-    throw new Error("Not a TraceState: expected { query, graph: { nodes, edges }, … }");
+  let data: TraceState;
+  try {
+    data = JSON.parse(raw) as TraceState;
+  } catch {
+    throw new Error("That isn't valid JSON. Copy the whole file and try again.");
   }
+  if (typeof data?.query !== "string" || !data?.graph || !Array.isArray(data.graph.nodes)) {
+    throw new Error("That isn't a viewer trace. Open trace_state.json, or a file from .graphsight/.");
+  }
+  // hand-built traces can omit these; the canvas and citations need them
+  data.graph.nodes = data.graph.nodes.filter((n) => n?.id != null);
+  for (const n of data.graph.nodes) n.label ??= String(n.id);
   data.graph.edges = Array.isArray(data.graph.edges) ? data.graph.edges : [];
   data.steps = Array.isArray(data.steps) ? data.steps : [];
   data.metrics = data.metrics ?? { queryTimeSec: 0 };
@@ -33,6 +42,8 @@ function parseTraceState(raw: string): TraceState {
  * in the full Studio — drop or paste the JSON, no backend involved.
  */
 export function MemoryImport() {
+  usePageTitle("Open a trace");
+  const [pasted, setPasted] = useState("");
   const [trace, setTrace] = useState<TraceState | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
@@ -161,13 +172,11 @@ export function MemoryImport() {
       <AppLayout
         trace={trace}
         tracing={false}
-        answer={null}
+        answer={trace.answer ?? null}
         suggestions={[]}
         recentQueries={[]}
-        onQuery={() => {
-          /* imported traces are static — no live backend behind this view */
-        }}
         onNewChat={() => setTrace(null)}
+        newChatLabel="Open another trace"
       />
     );
   }
@@ -185,19 +194,19 @@ export function MemoryImport() {
 
   if (fetching) {
     return (
-      <div className="m-light flex min-h-dvh items-center justify-center bg-paper font-sans antialiased">
-        <p className="font-mono text-[11px] font-bold uppercase tracking-[0.4em] text-zinc-400">
+      <main role="status" className="m-light flex min-h-dvh items-center justify-center bg-paper font-sans antialiased">
+        <p className="font-mono text-[11px] font-bold uppercase tracking-[0.4em] text-zinc-500">
           loading trace…
         </p>
-      </div>
+      </main>
     );
   }
 
   if (runs) {
     return (
-      <div className="m-light flex min-h-dvh flex-col items-center bg-paper px-5 py-14 font-sans antialiased">
+      <main tabIndex={-1} className="m-light flex min-h-dvh flex-col items-center bg-paper px-5 py-14 font-sans antialiased outline-none">
         <div className="w-full max-w-xl">
-          <p className="text-center font-mono text-[10px] font-bold uppercase tracking-[0.4em] text-zinc-400">
+          <p className="text-center font-mono text-[10px] font-bold uppercase tracking-[0.4em] text-zinc-500">
             Graphsight · Run history
           </p>
           <h1 className="mt-3 text-center font-display text-3xl font-bold tracking-tight text-[#131316]">
@@ -225,7 +234,7 @@ export function MemoryImport() {
                   "flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-bold",
                   picked.length === 2
                     ? "bg-[#131316] text-white shadow-[2px_3px_0_0_#C8F169]"
-                    : "cursor-not-allowed bg-zinc-100 text-zinc-400"
+                    : "cursor-not-allowed bg-zinc-100 text-zinc-500"
                 )}
               >
                 <GitCompareArrows className="h-4 w-4" />
@@ -255,7 +264,7 @@ export function MemoryImport() {
                   onClick={() => openRun(run.file)}
                   className="min-w-0 flex-1 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#059669]"
                 >
-                  <p className="truncate text-[14px] font-bold leading-snug text-[#131316]">
+                  <p className="break-words text-[14px] font-bold leading-snug text-[#131316]">
                     {run.query || run.file}
                   </p>
                   <p className="mt-1.5 font-mono text-[11px] text-zinc-500">
@@ -278,21 +287,23 @@ export function MemoryImport() {
             )}
           </div>
 
-          {error && (
-            <p className="mt-5 flex items-center justify-center gap-2 text-center text-[13px] font-medium text-red-500">
-              <FileJson className="h-4 w-4 shrink-0" />
-              {error}
-            </p>
-          )}
+          <div role="alert">
+            {error && (
+              <p className="mt-5 flex items-center justify-center gap-2 text-center text-[13px] font-medium text-red-600">
+                <FileJson className="h-4 w-4 shrink-0" />
+                {error}
+              </p>
+            )}
+          </div>
         </div>
-      </div>
+      </main>
     );
   }
 
   return (
-    <div className="m-light flex min-h-dvh flex-col items-center justify-center bg-paper px-5 font-sans antialiased">
+    <main tabIndex={-1} className="m-light flex min-h-dvh flex-col items-center justify-center bg-paper px-5 font-sans antialiased outline-none">
       <div className="w-full max-w-lg">
-        <p className="text-center font-mono text-[10px] font-bold uppercase tracking-[0.4em] text-zinc-400">
+        <p className="text-center font-mono text-[10px] font-bold uppercase tracking-[0.4em] text-zinc-500">
           Graphsight · Import
         </p>
         <h1 className="mt-3 text-center font-display text-3xl font-bold tracking-tight text-[#131316]">
@@ -317,6 +328,7 @@ export function MemoryImport() {
           className={cn(
             "mt-8 flex cursor-pointer flex-col items-center gap-3 rounded-xl border-2 border-dashed px-6 py-12",
             "transition-colors duration-150",
+            "has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-[#059669]",
             dragging
               ? "border-emerald-600 bg-emerald-50"
               : "border-[#131316] bg-white hover:bg-zinc-50"
@@ -338,21 +350,32 @@ export function MemoryImport() {
           <textarea
             rows={6}
             spellCheck={false}
+            aria-label="Trace JSON"
+            value={pasted}
+            onChange={(e) => setPasted(e.target.value)}
             placeholder='{"query": "...", "graph": {"nodes": [...], "edges": [...]}, ...}'
-            onChange={(e) => e.target.value.trim() && load(e.target.value)}
             className={cn(
-              "mt-2 w-full rounded-xl border border-[#131316] bg-white p-3 font-mono text-[11px] text-[#131316]",
-              "placeholder:text-zinc-400 focus:outline-none focus:shadow-[3px_4px_0_0_#059669]"
+              "mt-2 w-full rounded-xl border border-[#131316] bg-white p-3 font-mono text-base text-[#131316] md:text-[11px]",
+              "placeholder:text-zinc-500 focus:outline-none focus:shadow-[3px_4px_0_0_#059669]"
             )}
           />
+          <button
+            type="button"
+            onClick={() => load(pasted)}
+            className="mt-2 rounded-lg bg-[#131316] px-3 py-1.5 text-sm font-bold text-white shadow-[2px_3px_0_0_#C8F169]"
+          >
+            Render trace
+          </button>
         </details>
 
-        {error && (
-          <p className="mt-4 flex items-center justify-center gap-2 text-center text-[13px] font-medium text-red-500">
-            <FileJson className="h-4 w-4 shrink-0" />
-            {error}
-          </p>
-        )}
+        <div role="alert">
+          {error && (
+            <p className="mt-4 flex items-center justify-center gap-2 text-center text-[13px] font-medium text-red-600">
+              <FileJson className="h-4 w-4 shrink-0" />
+              {error}
+            </p>
+          )}
+        </div>
 
         <p className="mt-8 text-center text-xs text-zinc-500">
           Generate one:{" "}
@@ -365,6 +388,6 @@ export function MemoryImport() {
           </Link>
         </p>
       </div>
-    </div>
+    </main>
   );
 }

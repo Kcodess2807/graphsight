@@ -114,7 +114,7 @@ function ScoreChip({ score, muted }: { score: number; muted?: boolean }) {
     <span
       className={cn(
         "shrink-0 rounded-full border px-1.5 py-px font-mono text-[10px] font-bold",
-        muted ? "border-zinc-300 text-zinc-400" : "border-[#131316] text-[#131316]"
+        muted ? "border-zinc-300 text-zinc-500" : "border-[#131316] text-[#131316]"
       )}
       style={muted ? undefined : { backgroundColor: LIME }}
     >
@@ -142,7 +142,7 @@ function RankedView({ onPick }: { onPick: (n: XrayNode) => void }) {
                 : "border-zinc-200 hover:border-zinc-400"
             )}
           >
-            <span className="w-4 shrink-0 font-mono text-[11px] font-bold text-zinc-400">
+            <span className="w-4 shrink-0 font-mono text-[11px] font-bold text-zinc-500">
               {i + 1}
             </span>
             <span className={cn("flex h-7 w-7 shrink-0 items-center justify-center rounded-md border", TINT[n.kind])}>
@@ -264,13 +264,13 @@ export function TraceXray() {
           <div className={cn(CARD, "overflow-hidden shadow-[5px_6px_0_0_#131316]")}>
             {/* the wrong answer, up top */}
             <div className="border-b border-[#131316] bg-[#131316] p-4 sm:p-5">
-              <p className="font-mono text-[10px] font-bold uppercase tracking-[0.25em] text-zinc-500">
+              <p className="font-mono text-[10px] font-bold uppercase tracking-[0.25em] text-zinc-300">
                 asked
               </p>
               <p className="mt-1.5 font-mono text-[12.5px] text-zinc-200">
                 &quot;Why are checkout payments failing since yesterday&apos;s deploy?&quot;
               </p>
-              <p className="mt-4 font-mono text-[10px] font-bold uppercase tracking-[0.25em] text-zinc-500">
+              <p className="mt-4 font-mono text-[10px] font-bold uppercase tracking-[0.25em] text-zinc-300">
                 answered
               </p>
               <p className="mt-1.5 flex items-start gap-2 text-[13px] leading-relaxed text-zinc-300">

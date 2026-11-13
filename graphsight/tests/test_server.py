@@ -21,6 +21,8 @@ def history(tmp_path):
             encoding="utf-8",
         )
     (hist / "broken.json").write_text("{not json", encoding="utf-8")
+    # valid json, but the raw tracer output the viewer can't open
+    (hist / "agent_trace.json").write_text(json.dumps({"query": "raw"}), encoding="utf-8")
     return hist
 
 
@@ -52,7 +54,7 @@ def test_runs_index_skips_broken_files(serve):
     status, body = get(f"{serve}/__runs__.json")
     assert status == 200
     runs = json.loads(body)
-    assert {r["file"] for r in runs} == {"a.json", "b.json"}  # broken.json skipped
+    assert {r["file"] for r in runs} == {"a.json", "b.json"}  # broken and non-trace files skipped
     assert all("query" in r for r in runs)
 
 

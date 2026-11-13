@@ -190,10 +190,10 @@ flowchart TB
 | Layer | Technology | Role |
 |---|---|---|
 | **Embeddings** | `sentence-transformers` · `all-MiniLM-L6-v2` | 384-dim vectors (cosine) |
-| **Entity extraction** | **GLiNER** (designed) / **spaCy** (current fallback) | Zero-shot NER; see Benchmarks for why spaCy is active |
+| **Entity extraction** | **GLiNER**, with **spaCy** as fallback | Zero-shot NER. spaCy runs when GLiNER can't load |
 | **Storage** | **LadybugDB** (embedded, Kùzu-lineage) | Single-file hybrid vector + graph store, native HNSW |
 | **LLM, router intent** | **Groq** · `llama-3.1-8b-instant` | Query intent classification; falls back to OpenRouter when unset |
-| **LLM, generation** | **OpenRouter** · `anthropic/claude-3-haiku` | Grounded answers + node summaries |
+| **LLM, generation** | **OpenRouter** · `anthropic/claude-haiku-5.5` | Grounded answers + node summaries |
 | **API** | **FastAPI** + Uvicorn | trace · subgraph · answer · graphs · history |
 | **Concurrency** | read connection pool + bounded embed pool | parallel graph/vector reads; embeds off request threads |
 | **Auth** | **Clerk** + **PyJWT / JWKS** | Networkless verification; dev-bypass when unconfigured |
@@ -222,8 +222,9 @@ across all entity labels. `Document` nodes hold one sliding-window chunk each. E
 | `CO_OCCURS` | 0.35 | same-window text proximity |
 
 Text ingestion can only produce `CO_OCCURS`. Structure produces the rest, so a two-hop
-`AUTHORED → RESOLVES` chain outranks a one-hop proximity guess. An edge **upgrades** when
-structure later proves a guess right; it never downgrades.
+`AUTHORED → RESOLVES` chain outranks a one-hop proximity guess. The store's merge only ever strengthens
+an edge. The two GitHub passes still write different node ids, so a structural edge doesn't yet
+upgrade a text-pass guess: they meet at query time through the shared label.
 
 `REVIEWED` comes from `/pulls/N/reviews`, **not** `requested_reviewers`. That field is a
 pending ask which empties once someone actually reviews, so reading it both misses real
@@ -267,7 +268,6 @@ frontend/                   # Vite + React 18, landing + Graphsight Studio
 └── src/components/
     ├── landing/            # marketing page at `/`
     ├── memory/             # Studio at `/studio`: CommandPanel · GraphCanvas · Inspector
-    └── right/              # EntityNode (age + recency), TracedEdge (relation labels)
 
 graphsight-langgraph/       # standalone tracer: any LangGraph agent → AgentTrace v0.2
 graphsight/                 # pip-installable local viewer (bundled UI + stdlib server)
@@ -315,7 +315,7 @@ bug: enabling `--files` gave real PRs enough `TOUCHES` edges to trip a per-node 
 
 **Everything is recorded.** `trace_log` carries the intent weights, the vector seeds, every hop
 with its `relation`, and a per-node recency breakdown (`age_days`, `factor`). The Studio renders
-relation labels on edges and an age chip on nodes, so you can see *why* something ranked.
+relation labels on traced edges and an age chip on nodes, so you can see *why* something ranked.
 
 ---
 
@@ -362,7 +362,8 @@ so the whole job finishes in seconds.
 
 The web surface (`/studio`) renders a query's traced path: the node graph laid out with dagre,
 the execution stepper, the fused scores, and clickable citations that pan the camera to the
-cited node. Nodes show an age chip and recency multiplier; edges show their relation.
+cited node. Nodes show their age, the inspector shows the recency multiplier, and traced edges
+show their relation.
 
 Other routes: `/memory/preview` (mock data, no backend), `/memory/import` (render an external
 LangGraph trace with no backend at all).
@@ -394,20 +395,20 @@ the vectors already found. After global chunk deduplication the two contexts rea
 earlier −70% figure was a genuine bug: chunks were repeated once *per mentioning entity*.
 Global dedup fixed it, and we deleted the claim.)
 
-**Accuracy capped at 20%,** from two avoidable causes: GLiNER is blocked on this machine by an
-`onnxruntime` DLL load failure, so the active spaCy fallback extracts the wrong things for this
-domain (markdown artifacts, `CARDINAL` numbers, timestamps) and the graph is noisy; and Groq's
-free tier caps the judge at 5,000 characters of context, hiding relevant evidence past the
+**Accuracy capped at 20%,** from two avoidable causes: GLiNER was blocked on the benchmark machine by
+an `onnxruntime` DLL load failure, so the spaCy fallback extracted the wrong things for this
+domain (markdown artifacts, `CARDINAL` numbers, timestamps) and the graph was noisy; and Groq's
+free tier capped the judge at 5,000 characters of context, hiding relevant evidence past the
 cutoff.
 
-**Treat this as a baseline, not a verdict.** The pipeline is correct and operational. These are
-data-quality and environment constraints. The path forward: unblock GLiNER, raise the judge
-budget, and re-scope the token comparison against naive over-retrieval rather than equal-k
+**Treat this as a baseline, not a verdict.** These are data-quality and environment constraints.
+The path forward: raise the judge budget and re-scope the token comparison against naive over-retrieval rather than equal-k
 vector retrieval, which is where graph precision would actually save tokens.
 
 **One more caveat, stated plainly:** this benchmark predates the typed-edge and recency work. The
 engine now produces a materially different graph, and these numbers have not been re-run against
-it.
+it. They can't be re-run as they stand: the corpus isn't in this repo, and "accuracy" here was a
+relevance judge, not a grade of the answer.
 
 ---
 

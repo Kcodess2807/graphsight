@@ -66,6 +66,8 @@ class StudioHandler(SimpleHTTPRequestHandler):
             entry = {"file": f.name}
             try:
                 data = json.loads(f.read_text(encoding="utf-8"))
+                if "graph" not in data:
+                    continue  # e.g. agent_trace.json: not something the viewer opens
                 entry["query"] = data.get("query")
                 entry["computedAt"] = data.get("computedAt")
                 entry["nodes"] = len((data.get("graph") or {}).get("nodes") or [])

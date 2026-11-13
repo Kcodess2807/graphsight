@@ -1,5 +1,5 @@
 import { Fragment, type ReactNode } from "react";
-import { MEMORY_ENTITY_STYLES } from "./entityTheme";
+import { entityStyle } from "./entityTheme";
 import { cn } from "@/lib/utils";
 import type { TraceNode } from "@/types/trace";
 
@@ -10,7 +10,7 @@ interface CitationPillProps {
 }
 
 export function CitationPill({ node, onCite }: CitationPillProps) {
-  const style = MEMORY_ENTITY_STYLES[node.type];
+  const style = entityStyle(node.type);
   const Icon = style.icon;
   return (
     <button

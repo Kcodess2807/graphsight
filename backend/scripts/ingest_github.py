@@ -241,8 +241,8 @@ def ingest_repo(
                                 source=pr.get("html_url"))
                 )
 
-        # structured pass: relations read from the payload, not inferred. Runs
-        # after the text pass so a CO_OCCURS guess gets upgraded, not the reverse.
+        # structured pass: relations read from the payload, not inferred. Its node
+        # ids differ from the text pass, so these edges sit beside CO_OCCURS guesses.
         builder = GitHubGraphBuilder(db, engine.embed, repo)
         graph = builder.build(pulls=prs, issues=issues, commits=commits)
 

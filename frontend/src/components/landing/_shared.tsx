@@ -45,7 +45,7 @@ export function SectionHead({
   return (
     <Reveal className="mx-auto max-w-2xl text-center">
       {eyebrow && (
-        <p className="text-xs font-bold uppercase tracking-[0.2em] text-emerald-600">{eyebrow}</p>
+        <p className="text-xs font-bold uppercase tracking-[0.2em] text-emerald-700">{eyebrow}</p>
       )}
       <h2 className="mt-3 font-display text-3xl font-bold leading-tight tracking-[-0.02em] text-[#131316] sm:text-4xl">
         {title}

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AppLayout } from "./AppLayout";
 import { MOCK_TRACE, QUERY_PRESETS } from "@/data/mockTrace";
+import { usePageTitle } from "@/lib/usePageTitle";
 import type { TraceState } from "@/types/trace";
 
 const EMPTY: TraceState = {
@@ -15,7 +16,7 @@ const EMPTY: TraceState = {
 // citation pills resolve to actual canvas nodes
 function buildAnswer(trace: TraceState): string {
   const path = trace.graph.nodes.filter((n) => n.active).slice(0, 3);
-  if (path.length < 2) return "Trace complete — inspect the highlighted path.";
+  if (path.length < 2) return "Trace complete. Inspect the highlighted path.";
   return (
     `The regression traces back to ${path[0].label}, which propagated through ` +
     `${path[1].label}${path[2] ? ` and surfaced in ${path[2].label}` : ""}. ` +
@@ -29,6 +30,7 @@ function buildAnswer(trace: TraceState): string {
  * micro-interaction is visible without a running backend.
  */
 export function MemoryPreview() {
+  usePageTitle("Live demo");
   const [trace, setTrace] = useState<TraceState>(EMPTY);
   const [tracing, setTracing] = useState(false);
   const [answer, setAnswer] = useState<string | null>(null);

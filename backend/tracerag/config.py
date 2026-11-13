@@ -85,7 +85,7 @@ SENTRY_TRACES_SAMPLE_RATE = float(os.getenv("SENTRY_TRACES_SAMPLE_RATE", "1.0"))
 
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 OPENROUTER_BASE_URL = os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1")
-OPENROUTER_MODEL = os.getenv("OPENROUTER_MODEL", "anthropic/claude-3-haiku")
+OPENROUTER_MODEL = os.getenv("OPENROUTER_MODEL", "anthropic/claude-haiku-5.5")
 OPENROUTER_SITE_URL = os.getenv("OPENROUTER_SITE_URL",
                                 "https://github.com/Kcodess2807/graphsight")
 OPENROUTER_APP_TITLE = os.getenv("OPENROUTER_APP_TITLE", "TraceRAG")

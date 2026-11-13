@@ -1,6 +1,7 @@
+import { useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Crosshair, ExternalLink, X } from "lucide-react";
-import { MEMORY_ENTITY_STYLES } from "./entityTheme";
+import { entityStyle, formatAge } from "./entityTheme";
 import { cn } from "@/lib/utils";
 import type { TraceNode } from "@/types/trace";
 
@@ -33,18 +34,28 @@ function InspectorContent({
   onClose: () => void;
   onCenter: (id: string) => void;
 }) {
-  const style = MEMORY_ENTITY_STYLES[node.type];
+  const style = entityStyle(node.type);
   const Icon = style.icon;
+  const age = formatAge(node.meta?.ageDays);
+  // sourceUrl comes from trace JSON, so only web links become hrefs
+  const sourceUrl = /^https?:\/\//i.test(node.meta?.sourceUrl ?? "") ? node.meta?.sourceUrl : undefined;
+  const panel = useRef<HTMLElement>(null);
+
+  // keyboard users land in the panel they just opened
+  useEffect(() => panel.current?.focus({ preventScroll: true }), []);
 
   return (
     <motion.aside
+      ref={panel}
+      tabIndex={-1}
+      aria-label={`Details for ${node.label}`}
       initial={{ x: 40, opacity: 0 }}
       animate={{ x: 0, opacity: 1 }}
-      exit={{ x: 40, opacity: 0 }}
+      exit={{ x: 40, opacity: 0, transition: { duration: 0.15 } }}
       transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
       className={cn(
         "absolute inset-y-4 right-4 z-30 flex w-[380px] max-w-[calc(100%-2rem)] flex-col",
-        "rounded-2xl border border-[#131316] bg-white shadow-[6px_7px_0_0_#131316]"
+        "rounded-2xl border border-[#131316] bg-white shadow-[6px_7px_0_0_#131316] outline-none"
       )}
     >
       {/* header */}
@@ -58,11 +69,11 @@ function InspectorContent({
           <Icon className={cn("h-4.5 w-4.5", style.glyph)} />
         </span>
         <div className="min-w-0 flex-1">
-          <h2 className="truncate text-sm font-bold text-[#131316]">
+          <h2 className="break-words text-sm font-bold text-[#131316]">
             {node.label}
           </h2>
-          <p className="mt-0.5 font-mono text-[10px] uppercase tracking-widest text-zinc-400">
-            {style.label} · <span className="normal-case">{node.id}</span>
+          <p className="mt-0.5 font-mono text-[10px] uppercase tracking-widest text-zinc-500">
+            {style.label} · <span className="break-all normal-case">{node.id}</span>
           </p>
         </div>
         <div className="flex shrink-0 gap-1">
@@ -76,7 +87,7 @@ function InspectorContent({
       </div>
 
       {/* body */}
-      <div className="scrollbar-thin min-h-0 flex-1 space-y-4 overflow-y-auto p-4">
+      <div className="scrollbar-thin min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain p-4">
         {node.meta?.subtitle && (
           <p className="text-[13px] leading-relaxed text-zinc-700">
             {node.meta.subtitle}
@@ -120,7 +131,7 @@ function InspectorContent({
         )}
 
         {/* provenance */}
-        {(node.meta?.owner || node.meta?.status || node.meta?.timestamp) && (
+        {(node.meta?.owner || node.meta?.status || node.meta?.timestamp || age) && (
           <section>
             <InspectorLabel>Provenance</InspectorLabel>
             <dl className="mt-2 space-y-1.5">
@@ -129,16 +140,20 @@ function InspectorContent({
               {node.meta?.timestamp && (
                 <MetaRow label="When" value={node.meta.timestamp} />
               )}
+              {age && <MetaRow label="Age" value={age} />}
+              {node.meta?.recency != null && (
+                <MetaRow label="Recency multiplier" value={`×${node.meta.recency.toFixed(2)}`} />
+              )}
             </dl>
           </section>
         )}
       </div>
 
       {/* footer */}
-      {node.meta?.sourceUrl && (
+      {sourceUrl && (
         <div className="border-t border-[#131316] p-3">
           <a
-            href={node.meta.sourceUrl}
+            href={sourceUrl}
             target="_blank"
             rel="noreferrer"
             className={cn(
@@ -157,7 +172,7 @@ function InspectorContent({
 
 function InspectorLabel({ children }: { children: React.ReactNode }) {
   return (
-    <h3 className="font-mono text-[10px] font-medium uppercase tracking-[0.2em] text-zinc-400">
+    <h3 className="font-mono text-[10px] font-medium uppercase tracking-[0.2em] text-zinc-500">
       {children}
     </h3>
   );
@@ -174,11 +189,11 @@ function MetaRow({
 }) {
   return (
     <div className="flex items-center justify-between gap-3 text-xs">
-      <dt className="text-zinc-400">{label}</dt>
+      <dt className="shrink-0 text-zinc-500">{label}</dt>
       <dd
         className={cn(
-          "truncate text-right font-mono text-[11px]",
-          accent ? "font-bold text-emerald-600" : "text-zinc-700"
+          "min-w-0 break-words text-right font-mono text-[11px]",
+          accent ? "font-bold text-emerald-700" : "text-zinc-700"
         )}
       >
         {value}

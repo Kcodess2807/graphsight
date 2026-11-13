@@ -105,6 +105,13 @@ export interface TraceLogDto {
   created_at: string;
 }
 
+// carries the status so the UI can say what actually went wrong
+export class ApiError extends Error {
+  constructor(readonly status: number, message: string) {
+    super(message);
+  }
+}
+
 async function postJSON<T>(path: string, body: unknown): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`, {
     method: "POST",
@@ -112,7 +119,7 @@ async function postJSON<T>(path: string, body: unknown): Promise<T> {
     body: JSON.stringify(body),
   });
   if (!res.ok) {
-    throw new Error(`${path} → HTTP ${res.status} ${res.statusText}`);
+    throw new ApiError(res.status, `${path} → HTTP ${res.status} ${res.statusText}`);
   }
   return (await res.json()) as T;
 }
@@ -122,7 +129,7 @@ async function getJSON<T>(path: string): Promise<T> {
     headers: await authHeaders(),
   });
   if (!res.ok) {
-    throw new Error(`${path} → HTTP ${res.status} ${res.statusText}`);
+    throw new ApiError(res.status, `${path} → HTTP ${res.status} ${res.statusText}`);
   }
   return (await res.json()) as T;
 }
@@ -214,7 +221,7 @@ export async function generateAnswer(
   query: string,
   context: string
 ): Promise<string> {
-  const key = `${query}::${context.length}`;
+  const key = `${query}::${context}`;
   const cached = _answerCache.get(key);
   if (cached !== undefined) return cached;
   const res = await postJSON<{ answer: string }>("/api/answer", {
@@ -232,7 +239,7 @@ export async function streamAnswer(
   context: string,
   onToken: (partial: string) => void
 ): Promise<string> {
-  const key = `${query}::${context.length}`;
+  const key = `${query}::${context}`;
   const cached = _answerCache.get(key);
   if (cached !== undefined) {
     onToken(cached);
@@ -287,6 +294,8 @@ export function allTraceNodeIds(trace: TraceResponse): string[] {
 
 const VALID_TYPES: EntityType[] = [
   "PR",
+  "Commit",
+  "File",
   "Service",
   "Person",
   "Document",
@@ -545,7 +554,7 @@ export function adaptToTraceState(
     weights: {
       vector: log.intent.alpha,
       graph: log.intent.beta,
-      intent: log.intent.type === "conceptual" ? "conceptual" : "relational",
+      intent: log.intent.type === "relational" ? "relational" : "conceptual",
     },
     confidence: deriveConfidence(log),
     steps: buildSteps(log),

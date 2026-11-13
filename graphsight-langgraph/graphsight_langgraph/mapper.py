@@ -134,6 +134,7 @@ def to_tracestate(trace: AgentTrace) -> dict[str, Any]:
     return {
         "id": f"trace_lg_{int(time.time() * 1000)}",
         "query": trace.query,
+        "answer": trace.answer,
         "computedAt": datetime.now(timezone.utc).isoformat(),
         "weights": {
             # honest split: this router didn't run, so weights describe the

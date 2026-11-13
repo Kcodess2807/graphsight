@@ -16,25 +16,25 @@
     --popover: 0 0% 100%;
     --popover-foreground: 240 10% 12%;
 
-    /* Primary accent — confident electric indigo (#4F46E5) */
-    --primary: 243 75% 59%;
+    /* Primary accent: emerald-700, the system's interactive color */
+    --primary: 163 94% 24%;
     --primary-foreground: 0 0% 100%;
 
     --secondary: 240 5% 96%;
     --secondary-foreground: 240 6% 25%;
 
     --muted: 240 5% 96%;
-    --muted-foreground: 240 4% 58%; /* zinc-500 */
+    --muted-foreground: 240 4% 46%; /* zinc-500 */
 
-    --accent: 243 75% 96%; /* faint indigo wash */
-    --accent-foreground: 243 75% 40%;
+    --accent: 152 81% 96%; /* faint emerald wash */
+    --accent-foreground: 163 94% 24%;
 
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
 
     --border: 240 6% 90%; /* zinc-200 hairline */
     --input: 240 6% 90%;
-    --ring: 243 75% 59%; /* indigo focus ring */
+    --ring: 163 94% 24%; /* emerald focus ring */
 
     --radius: 0.75rem; /* rounded-xl base */
   }
@@ -64,13 +64,7 @@
 
 @layer utilities {
   .font-mono {
-    font-feature-settings: "tnum", "zero";
-  }
-  /* Frosted control pill */
-  .glass {
-    background: rgba(255, 255, 255, 0.72);
-    backdrop-filter: blur(12px) saturate(160%);
-    -webkit-backdrop-filter: blur(12px) saturate(160%);
+    font-variant-numeric: tabular-nums slashed-zero;
   }
   /* Dotted-grid canvas background */
   .dotted-grid {
@@ -88,9 +82,7 @@
 
   /* ── Memory layer (dual-theme spatial UI) ───────────────────────── */
 
-  /* Theme variable sets — raw RGB triplets consumed by tailwind tokens.
-     Light: warm paper + navy ink + electric blue (Supermemory-family).
-     Dark: deep void + soft ink + brighter synapse blue. */
+  /* Theme variable set: raw RGB triplets consumed by tailwind tokens. */
   /* neubrutalist light — shared language with the landing page:
      white surfaces, #131316 ink and borders, emerald interactive accent */
   .m-light {
@@ -104,25 +96,6 @@
     --m-accent: 5 150 105;
     color-scheme: light;
   }
-  .m-dark {
-    --m-paper: 9 9 12;
-    --m-surface: 13 13 17;
-    --m-raised: 21 21 27;
-    --m-ink: 240 240 245;
-    --m-ink-dim: 158 160 172;
-    --m-ink-ghost: 100 102 113;
-    --m-line: 255 255 255;
-    --m-accent: 92 156 255;
-    color-scheme: dark;
-  }
-
-  /* Overlay panels float above the canvas: translucent, heavy blur, hairline edge */
-  .glass-dark {
-    background: rgb(var(--m-surface) / 0.75);
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
-    border: 1px solid rgb(var(--m-line) / 0.1);
-  }
   /* Canvas with a barely-there dot lattice */
   .dotted-grid-dark {
     background-color: rgb(var(--m-paper));
@@ -132,20 +105,6 @@
     );
     background-size: 26px 26px;
   }
-  /* Film grain: 1px specks, tiled tight. Lay over everything at
-     pointer-events-none — keeps large flat fields from reading as vinyl. */
-  .grain {
-    background-image: radial-gradient(
-      circle at 1px 1px,
-      rgb(var(--m-line) / 0.04) 1px,
-      transparent 0
-    );
-    background-size: 3px 3px;
-  }
-  .scrollbar-dark {
-    scrollbar-width: thin;
-    scrollbar-color: rgb(var(--m-line) / 0.15) transparent;
-  }
 }
 
 /* React Flow surface tuning to match the light theme */
@@ -154,6 +113,12 @@
 }
 .react-flow__node {
   cursor: pointer;
+}
+/* outranks React Flow's own outline: none */
+.react-flow__node.selectable:focus-visible {
+  outline: 2px solid #059669;
+  outline-offset: 3px;
+  border-radius: 0.75rem;
 }
 .react-flow__handle {
   opacity: 0;
@@ -191,6 +156,13 @@
   .lp2-float { animation: none; }
 }
 
+/* the landing's pause control stops every looping animation at once */
+[data-motion="paused"] .lp2-float,
+[data-motion="paused"] .lp2-marquee,
+[data-motion="paused"] .lp-edge-flow {
+  animation-play-state: paused;
+}
+
 /* tilted full-bleed logo marquee (content duplicated once → -50% loops) */
 .lp2-marquee {
   animation: lp2-marquee 32s linear infinite;
@@ -217,109 +189,6 @@
   .lp-edge-flow { animation: none; }
 }
 
-/* ── Landing page (monochrome waitlist, lp- prefix) ─────────────── */
-.lp-spotlight {
-  background: radial-gradient(ellipse 60% 50% at 50% 0%, rgba(255, 255, 255, 0.05), transparent 70%);
-}
-.lp-spotlight-dim {
-  background: radial-gradient(ellipse 50% 60% at 50% 100%, rgba(255, 255, 255, 0.03), transparent 70%);
-}
-.lp-grid {
-  background-image: radial-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px);
-  background-size: 28px 28px;
-  -webkit-mask-image: linear-gradient(to bottom, black 20%, transparent 85%);
-  mask-image: linear-gradient(to bottom, black 20%, transparent 85%);
-}
-.lp-card {
-  position: relative;
-  background: rgba(13, 13, 18, 0.6);
-  /* faint top light keeps the surface from reading flat */
-  background-image: linear-gradient(to bottom, rgba(255, 255, 255, 0.035), transparent 45%);
-  -webkit-backdrop-filter: blur(12px);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgb(var(--m-line) / 0.09);
-  border-radius: 12px;
-  transition: border-color 180ms ease, transform 180ms ease, box-shadow 180ms ease;
-}
-.lp-card:hover {
-  border-color: rgb(var(--m-accent) / 0.4);
-  transform: translateY(-2px);
-  box-shadow: 0 0 24px -8px rgb(var(--m-accent) / 0.3);
-}
-.lp-card-static:hover {
-  transform: none;
-  border-color: rgb(var(--m-line) / 0.09);
-  box-shadow: none;
-}
-/* unmasked dot lattice for framed panels */
-.lp-grid-full {
-  background-image: radial-gradient(rgb(var(--m-line) / 0.05) 1px, transparent 1px);
-  background-size: 22px 22px;
-}
-.lp-spot::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  opacity: 0;
-  transition: opacity 250ms ease;
-  background: radial-gradient(
-    260px circle at var(--mx, 50%) var(--my, 50%),
-    rgba(255, 255, 255, 0.07),
-    transparent 65%
-  );
-  pointer-events: none;
-}
-.lp-spot:hover::before { opacity: 1; }
-.lp-spot > * { position: relative; z-index: 1; }
-
-.lp-connector { position: relative; }
-.lp-flow-dot {
-  position: absolute;
-  width: 4px; height: 4px; border-radius: 50%;
-  background: rgb(var(--m-accent));
-  box-shadow: 0 0 6px rgb(var(--m-accent) / 0.8);
-}
-@media (min-width: 768px) {
-  .lp-connector { flex: 1 1 0%; height: 1px; background: rgb(var(--m-line) / 0.16); min-width: 32px; }
-  .lp-flow-dot { top: 50%; transform: translate(-50%, -50%); animation: lp-flow-x 3s linear infinite; }
-}
-@media (max-width: 767px) {
-  .lp-connector { width: 1px; height: 40px; background: rgb(var(--m-line) / 0.16); margin: 0 auto; }
-  .lp-flow-dot { left: 50%; transform: translate(-50%, -50%); animation: lp-flow-y 3s linear infinite; }
-}
-@keyframes lp-flow-x { from { left: 0%; } to { left: 100%; } }
-@keyframes lp-flow-y { from { top: 0%; } to { top: 100%; } }
-
-@media (prefers-reduced-motion: no-preference) {
-  .lp-recv { animation: lp-node-receive 3s linear infinite; }
-  .lp-recv-center { animation: lp-node-receive-center 3s linear infinite; }
-  .lp-recv-d1 { animation-delay: 1s; }
-  .lp-recv-d2 { animation-delay: 2s; }
-}
-@keyframes lp-node-receive {
-  0% { border-color: rgb(var(--m-accent) / 0.6); box-shadow: 0 0 24px -6px rgb(var(--m-accent) / 0.35); }
-  14%, 100% { border-color: rgb(var(--m-line) / 0.09); box-shadow: none; }
-}
-@keyframes lp-node-receive-center {
-  0% { border-color: rgb(var(--m-accent) / 0.85); box-shadow: 0 0 32px -6px rgb(var(--m-accent) / 0.45); }
-  14%, 100% { border-color: rgb(var(--m-accent) / 0.4); box-shadow: 0 0 20px -8px rgb(var(--m-accent) / 0.25); }
-}
-
-.lp-shake { animation: lp-shake 300ms ease; }
-@keyframes lp-shake {
-  0%, 100% { transform: translateX(0); }
-  25% { transform: translateX(-4px); }
-  50% { transform: translateX(4px); }
-  75% { transform: translateX(-4px); }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .lp-flow-dot { display: none; }
-  .lp-shake { animation: none; }
-  .lp-card:hover { transform: none; }
-}
-
 /* Memory layer — edge strokes live here because React Flow renders raw SVG.
    Base edges are ghost-faint; only the traced (active) path earns the accent. */
 .memory-flow .react-flow__edge-path {
@@ -330,7 +199,7 @@
   stroke: rgb(var(--m-accent));
   stroke-width: 1.75;
   stroke-dasharray: 7 9;
-  animation: memory-dash 0.9s linear infinite;
+  animation: memory-dash 0.9s linear 5; /* stops before the 5s WCAG 2.2.2 limit */
   filter: drop-shadow(0 0 5px rgb(var(--m-accent) / 0.5));
 }
 @keyframes memory-dash {

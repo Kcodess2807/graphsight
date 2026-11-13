@@ -1,5 +1,9 @@
 # graphsight-langgraph changelog
 
+## 0.3.2 — 2026-11-07
+
+- `to_tracestate()` carries the final `answer`, so the viewer can show it.
+
 ## 0.3.0 — 2026-07-26
 
 - `finish()` now defaults the answer to the last LLM generation the tracer
