@@ -11,6 +11,8 @@ class FakeDB:
     def __init__(self):
         self.nodes = {}
         self.edges = []
+        self.docs = {}
+        self.mentions = []
 
     def upsert_node(self, node_id, label, node_type, embedding, ts=0):
         prev = self.nodes.get(node_id)
@@ -21,6 +23,12 @@ class FakeDB:
 
     def add_relationship(self, a, b, confidence=None, relation=config.RELATION_CO_OCCURS, ts=0):
         self.edges.append({"from": a, "to": b, "relation": relation, "ts": ts})
+
+    def upsert_document(self, doc_id, content=None, path=None):
+        self.docs[doc_id] = {"content": content, "path": path}
+
+    def add_mention(self, doc_id, entity_id):
+        self.mentions.append((doc_id, entity_id))
 
     def rel(self, relation):
         return [e for e in self.edges if e["relation"] == relation]
@@ -125,6 +133,27 @@ def test_structural_edges_outweigh_proximity():
     assert authored > co
     # even a 2-hop structural path beats a 1-hop proximity hop
     assert authored * config.RELATION_WEIGHTS[config.RELATION_RESOLVES] > co
+
+
+def test_a_pr_is_embedded_by_its_title_and_carries_its_text():
+    """'PR #412' scored -0.009 against a relevant query, and its title 0.549."""
+    embedded = []
+    db = FakeDB()
+    builder = GitHubGraphBuilder(db, lambda t: embedded.append(t) or [0.0] * config.EMBED_DIM, "a/b")
+    builder.build(pulls=[{"number": 7, "title": "Fix login", "body": "details", "html_url": "u"}])
+    assert "PR #7: Fix login" in embedded
+    assert db.docs["gh:pr:a/b#7"] == {"content": "PR #7: Fix login\n\ndetails", "path": "u"}
+    assert ("gh:pr:a/b#7", "pr:a/b#7") in db.mentions
+
+
+def test_issue_keeps_its_title_when_a_pr_references_it():
+    embedded = []
+    builder = GitHubGraphBuilder(FakeDB(), lambda t: embedded.append(t) or [0.0] * config.EMBED_DIM, "a/b")
+    builder.build(
+        pulls=[{"number": 7, "title": "x", "body": "Fixes #3"}],
+        issues=[{"number": 3, "title": "Crash on start"}],
+    )
+    assert "Issue #3: Crash on start" in embedded
 
 
 if __name__ == "__main__":

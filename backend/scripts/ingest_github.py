@@ -17,6 +17,7 @@ Set GITHUB_TOKEN in .env to raise the rate limit from 60/hr to 5000/hr.
 from __future__ import annotations
 
 import argparse
+import json
 import logging
 import os
 import re
@@ -167,6 +168,33 @@ def attach_pr_details(
                              repo, futures[fut].get("number"), exc)
 
 
+def _prune_snapshot(prs: list[dict], issues: list[dict], commits: list[dict]) -> dict:
+    """Only the fields ingest reads: a raw GitHub payload is mostly URLs."""
+    user = lambda x: {"login": (x.get("user") or {}).get("login")}  # noqa: E731
+    return {
+        "pulls": [{
+            **{k: pr.get(k) for k in ("number", "title", "body", "html_url",
+                                      "merged_at", "closed_at", "created_at")},
+            "user": user(pr),
+            "files": [{"filename": f.get("filename")} for f in pr.get("files") or []],
+            "reviews": [{"user": user(r)} for r in pr.get("reviews") or []],
+        } for pr in prs],
+        "issues": [{
+            **{k: i.get(k) for k in ("number", "title", "body", "html_url", "created_at")},
+            "user": user(i),
+        } for i in issues],
+        "commits": [{
+            "sha": c.get("sha"),
+            "author": {"login": (c.get("author") or {}).get("login")},
+            "commit": {
+                "message": (c.get("commit") or {}).get("message"),
+                "author": {k: ((c.get("commit") or {}).get("author") or {}).get(k)
+                           for k in ("name", "date")},
+            },
+        } for c in commits],
+    }
+
+
 def repo_db_path(repo: str, graphs_dir: Path) -> Path:
     """Per-repo .lbug file, e.g. pallets/flask -> graphs/pallets__flask.lbug."""
     slug = re.sub(r"[^a-z0-9_]+", "-", repo.lower().replace("/", "__"))
@@ -198,6 +226,9 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
                         "per-repo file is created under --graphs-dir).")
     p.add_argument("--graphs-dir", type=Path, default=None,
                    help="Directory for per-repo .lbug files (default backend/graphs).")
+    p.add_argument("--snapshot", type=Path, default=None,
+                   help="Read the repo from this JSON file instead of GitHub; if it "
+                        "doesn't exist, fetch and write it. Gives repeatable builds.")
     p.add_argument("--reset", action="store_true",
                    help="Delete each target .lbug (+ sidecars) before ingesting.")
     p.add_argument("-v", "--verbose", action="store_true")
@@ -215,11 +246,18 @@ def ingest_repo(
             logger.info("[%s] reset: removing %s", repo, p.name)
             p.unlink()
 
-    logger.info("[%s] fetching up to %d merged PRs", repo, args.limit)
-    prs = fetch_merged_prs(repo, args.limit, token)
-    issues = fetch_issues(repo, args.issues, token)
-    commits = fetch_commits(repo, args.commits, token)
-    attach_pr_details(repo, prs, token, files=args.files, reviews=args.reviews)
+    if args.snapshot and args.snapshot.exists():
+        frozen = json.loads(args.snapshot.read_text(encoding="utf-8"))
+        prs, issues, commits = frozen["pulls"], frozen["issues"], frozen["commits"]
+    else:
+        logger.info("[%s] fetching up to %d merged PRs", repo, args.limit)
+        prs = fetch_merged_prs(repo, args.limit, token)
+        issues = fetch_issues(repo, args.issues, token)
+        commits = fetch_commits(repo, args.commits, token)
+        attach_pr_details(repo, prs, token, files=args.files, reviews=args.reviews)
+        if args.snapshot:
+            frozen = _prune_snapshot(prs, issues, commits)
+            args.snapshot.write_text(json.dumps(frozen, indent=1), encoding="utf-8")
     logger.info(
         "[%s] fetched %d PRs, %d issues, %d commits -> %s",
         repo, len(prs), len(issues), len(commits), db_path.name,

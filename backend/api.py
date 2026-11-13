@@ -170,7 +170,7 @@ async def trace(
     # rendered context the generation model would receive
     for node, result in zip(response.results, payload["results"]):
         result["page_content"] = format_page_content(node)
-    payload["context"] = router.build_context(response.results)
+    payload["context"] = router.build_context(response.results, response.facts)
     if req.session_id:
         # Ownership check (write-side IDOR): only persist into a session that
         # belongs to the authenticated user. Unknown session → 404; someone

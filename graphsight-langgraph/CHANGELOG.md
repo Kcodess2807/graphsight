@@ -1,5 +1,13 @@
 # graphsight-langgraph changelog
 
+## Unreleased
+
+- Episodic recall: `recall()` finds past successful runs in the history dir, and
+  `EpisodeRetriever` puts them in an agent's graph, traced like any retriever.
+- `capture(..., outcome="success" | "failure")` labels a run. Unlabelled runs
+  are never recalled.
+- Traces keep each item's `answerOverlap`, and scores read from `score_total`.
+
 ## 0.3.2 — 2026-11-07
 
 - `to_tracestate()` carries the final `answer`, so the viewer can show it.

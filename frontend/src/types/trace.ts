@@ -33,6 +33,8 @@ export interface TraceNode {
     connections?: number;
     scoreGraph?: number;
     sourceUrl?: string;
+    // lexical overlap with the final answer (0..1), measured by the tracer
+    answerOverlap?: number | null;
     // age decay applied to the fused score: 1 = untouched, lower = older
     recency?: number;
     // null when the entity carries no timestamp, so it was never decayed
@@ -95,6 +97,7 @@ export interface TraceState {
   query: string;
   // the final answer, when the tracer captured one
   answer?: string | null;
+  outcome?: "success" | "failure" | null;
   computedAt: string;
   weights: RouterWeights;
   confidence: RouterConfidence;

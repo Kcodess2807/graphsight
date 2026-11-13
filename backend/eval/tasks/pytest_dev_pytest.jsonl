@@ -1,0 +1,94 @@
+{"id": "lookup-0", "category": "lookup", "question": "Who authored PR #15192?", "gold": ["Lothnic"]}
+{"id": "lookup-1", "category": "lookup", "question": "Who authored PR #15211?", "gold": ["dependabot[bot]"]}
+{"id": "lookup-2", "category": "lookup", "question": "Who authored PR #15225?", "gold": ["pre-commit-ci[bot]"]}
+{"id": "lookup-3", "category": "lookup", "question": "Who authored PR #15245?", "gold": ["RonnyPfannschmidt"]}
+{"id": "lookup-4", "category": "lookup", "question": "Who authored PR #15257?", "gold": ["github-actions[bot]"]}
+{"id": "lookup-5", "category": "lookup", "question": "Who authored PR #15272?", "gold": ["bluetech"]}
+{"id": "lookup-6", "category": "lookup", "question": "Who authored PR #15298?", "gold": ["RonnyPfannschmidt"]}
+{"id": "lookup-7", "category": "lookup", "question": "Who authored PR #15319?", "gold": ["seifertm"]}
+{"id": "lookup-8", "category": "lookup", "question": "Who authored PR #15348?", "gold": ["dependabot[bot]"]}
+{"id": "lookup-9", "category": "lookup", "question": "Who reported issue #15346?", "gold": ["adamnovak"]}
+{"id": "lookup-10", "category": "lookup", "question": "Who reported issue #15329?", "gold": ["GeorgeMakarov"]}
+{"id": "lookup-11", "category": "lookup", "question": "Who reported issue #15290?", "gold": ["bashonly"]}
+{"id": "lookup-12", "category": "lookup", "question": "Who reported issue #15281?", "gold": ["komposter"]}
+{"id": "lookup-13", "category": "lookup", "question": "Who reported issue #15237?", "gold": ["Spikhalskiy"]}
+{"id": "lookup-14", "category": "lookup", "question": "Who reviewed PR #15192?", "gold": ["RonnyPfannschmidt", "copilot-pull-request-reviewer[bot]"]}
+{"id": "lookup-15", "category": "lookup", "question": "Who reviewed PR #15193?", "gold": ["RonnyPfannschmidt", "bluetech"]}
+{"id": "lookup-16", "category": "lookup", "question": "Who reviewed PR #15202?", "gold": ["RonnyPfannschmidt"]}
+{"id": "lookup-17", "category": "lookup", "question": "Who reviewed PR #15211?", "gold": ["Pierre-Sassoulas"]}
+{"id": "lookup-18", "category": "lookup", "question": "Who reviewed PR #15212?", "gold": ["Pierre-Sassoulas"]}
+{"id": "lookup-19", "category": "lookup", "question": "Who reviewed PR #15223?", "gold": ["RonnyPfannschmidt"]}
+{"id": "multi_hop-20", "category": "multi_hop", "question": "Which PR fixed issue #7323?", "gold": ["PR #15202"]}
+{"id": "multi_hop-21", "category": "multi_hop", "question": "Who reviewed the PR that fixed issue #7323?", "gold": ["RonnyPfannschmidt"]}
+{"id": "multi_hop-22", "category": "multi_hop", "question": "Who authored the PR that fixed issue #7323?", "gold": ["LuanaPBueno"]}
+{"id": "multi_hop-23", "category": "multi_hop", "question": "Which PR fixed issue #13431?", "gold": ["PR #15193"]}
+{"id": "multi_hop-24", "category": "multi_hop", "question": "Who reviewed the PR that fixed issue #13431?", "gold": ["RonnyPfannschmidt", "bluetech"]}
+{"id": "multi_hop-25", "category": "multi_hop", "question": "Who authored the PR that fixed issue #13431?", "gold": ["paneendrakumar0"]}
+{"id": "multi_hop-26", "category": "multi_hop", "question": "Which PR fixed issue #15190?", "gold": ["PR #15192"]}
+{"id": "multi_hop-27", "category": "multi_hop", "question": "Who reviewed the PR that fixed issue #15190?", "gold": ["RonnyPfannschmidt", "copilot-pull-request-reviewer[bot]"]}
+{"id": "multi_hop-28", "category": "multi_hop", "question": "Who authored the PR that fixed issue #15190?", "gold": ["Lothnic"]}
+{"id": "multi_hop-29", "category": "multi_hop", "question": "Which PR fixed issue #15201?", "gold": ["PR #15298"]}
+{"id": "multi_hop-30", "category": "multi_hop", "question": "Who reviewed the PR that fixed issue #15201?", "gold": ["bluetech"]}
+{"id": "multi_hop-31", "category": "multi_hop", "question": "Who authored the PR that fixed issue #15201?", "gold": ["RonnyPfannschmidt"]}
+{"id": "multi_hop-32", "category": "multi_hop", "question": "Which PR fixed issue #15242?", "gold": ["PR #15245"]}
+{"id": "multi_hop-33", "category": "multi_hop", "question": "Who reviewed the PR that fixed issue #15242?", "gold": ["bluetech"]}
+{"id": "multi_hop-34", "category": "multi_hop", "question": "Who authored the PR that fixed issue #15242?", "gold": ["RonnyPfannschmidt"]}
+{"id": "multi_hop-35", "category": "multi_hop", "question": "Which PR fixed issue #15254?", "gold": ["PR #15255"]}
+{"id": "multi_hop-36", "category": "multi_hop", "question": "Who reviewed the PR that fixed issue #15254?", "gold": ["nicoddemus"]}
+{"id": "multi_hop-37", "category": "multi_hop", "question": "Who authored the PR that fixed issue #15254?", "gold": ["RonnyPfannschmidt"]}
+{"id": "multi_hop-38", "category": "multi_hop", "question": "Which PR fixed issue #15284?", "gold": ["PR #15285"]}
+{"id": "multi_hop-39", "category": "multi_hop", "question": "Who reviewed the PR that fixed issue #15284?", "gold": ["bluetech"]}
+{"id": "multi_hop-40", "category": "multi_hop", "question": "Who authored the PR that fixed issue #15284?", "gold": ["gerlero"]}
+{"id": "multi_hop-41", "category": "multi_hop", "question": "Which PR fixed issue #15290?", "gold": ["PR #15296"]}
+{"id": "multi_hop-42", "category": "multi_hop", "question": "Who reviewed the PR that fixed issue #15290?", "gold": ["bluetech"]}
+{"id": "multi_hop-43", "category": "multi_hop", "question": "Who authored the PR that fixed issue #15290?", "gold": ["RonnyPfannschmidt"]}
+{"id": "multi_hop-44", "category": "multi_hop", "question": "Which commit fixed issue #15201?", "gold": ["fd35683"]}
+{"id": "multi_hop-45", "category": "multi_hop", "question": "Which commit fixed issue #15290?", "gold": ["6ed587d"]}
+{"id": "enumerate-46", "category": "enumerate", "question": "Which PRs touched src/_pytest/approx.py?", "gold": ["PR #15285", "PR #15301"]}
+{"id": "enumerate-47", "category": "enumerate", "question": "Which PRs touched src/_pytest/deprecated.py?", "gold": ["PR #15202", "PR #15296"]}
+{"id": "enumerate-48", "category": "enumerate", "question": "Which PRs touched src/_pytest/tmpdir.py?", "gold": ["PR #15255", "PR #15296"]}
+{"id": "enumerate-49", "category": "enumerate", "question": "Which PRs did Contrabang review?", "gold": ["PR #15227"]}
+{"id": "enumerate-50", "category": "enumerate", "question": "Which PRs did copilot-pull-request-reviewer[bot] review?", "gold": ["PR #15192"]}
+{"id": "enumerate-51", "category": "enumerate", "question": "Which PRs did nicoddemus review?", "gold": ["PR #15255"]}
+{"id": "enumerate-52", "category": "enumerate", "question": "Which PRs did webknjaz review?", "gold": ["PR #15309"]}
+{"id": "described-53", "category": "described", "question": "Which PR keeps one measured time object on the record of each test phase?", "gold": ["PR #15298"]}
+{"id": "described-54", "category": "described", "question": "Which PR brings back quoted numbers for the output detail settings in the config file?", "gold": ["PR #15296"]}
+{"id": "described-55", "category": "described", "question": "Which PR repairs approximate comparison for a machine learning array library?", "gold": ["PR #15285"]}
+{"id": "described-56", "category": "described", "question": "Which PR stops scanning the whole scratch folder each time a fresh one is needed?", "gold": ["PR #15255"]}
+{"id": "described-57", "category": "described", "question": "Which PR registers a third-party add-on for checking AI agents?", "gold": ["PR #15246"]}
+{"id": "described-58", "category": "described", "question": "Which PR explains several ways to set up an isolated Python environment before installing?", "gold": ["PR #15245"]}
+{"id": "described-59", "category": "described", "question": "Which PR relaxes the static type of the attribute that points at the current test item?", "gold": ["PR #15227"]}
+{"id": "described-60", "category": "described", "question": "Which PR reduces the flood of automated upgrade pull requests by batching them per ecosystem?", "gold": ["PR #15223"]}
+{"id": "described-61", "category": "described", "question": "Which PR warns when raw binary data is handed to the console output writer?", "gold": ["PR #15202"]}
+{"id": "described-62", "category": "described", "question": "Which PR makes the return type of the parametrize helper importable by users?", "gold": ["PR #15193"]}
+{"id": "described-63", "category": "described", "question": "Which PR repairs the Sphinx site after a plugin library upgrade?", "gold": ["PR #15192"]}
+{"id": "described-64", "category": "described", "question": "Which PR raises the async add-on version so integration tests install on development builds?", "gold": ["PR #15319"]}
+{"id": "described-65", "category": "described", "question": "Which PR upgrades the web framework used in the integration tests?", "gold": ["PR #15211"]}
+{"id": "described-66", "category": "described", "question": "Which PR copies the changelog of the latest version back onto the main branch?", "gold": ["PR #15272"]}
+{"id": "described-67", "category": "described", "question": "Which PR refreshes the generated catalogue of third-party add-ons?", "gold": ["PR #15257"]}
+{"id": "described-68", "category": "described", "question": "Which issue says cleanup of old scratch folders fails when a parent lost write permission?", "gold": ["Issue #15341"]}
+{"id": "described-69", "category": "described", "question": "Which issue reports a crash when comparing a not-a-number decimal value?", "gold": ["Issue #15335"]}
+{"id": "described-70", "category": "described", "question": "Which issue reports a startup crash when the store directory path contains parent-directory dots?", "gold": ["Issue #15295"]}
+{"id": "described-71", "category": "described", "question": "Which issue reports a crash when a different thread creates a log handle during a test?", "gold": ["Issue #15237"]}
+{"id": "described-72", "category": "described", "question": "Which issue asks whether bailing out in cleanup code should produce a warning?", "gold": ["Issue #15289"]}
+{"id": "described-73", "category": "described", "question": "Which issue says passing a lot of test paths from one folder makes discovery repeat work?", "gold": ["Issue #15221"]}
+{"id": "followup-74", "category": "followup", "question": "Who reviewed the PR that keeps one measured time object on the record of each test phase?", "gold": ["bluetech"], "seed": "Which PR keeps one measured time object on the record of each test phase?", "seed_gold": ["PR #15298"]}
+{"id": "followup-75", "category": "followup", "question": "Who reviewed the PR that brings back quoted numbers for the output detail settings in the config file?", "gold": ["bluetech"], "seed": "Which PR brings back quoted numbers for the output detail settings in the config file?", "seed_gold": ["PR #15296"]}
+{"id": "followup-76", "category": "followup", "question": "Who reviewed the PR that repairs approximate comparison for a machine learning array library?", "gold": ["bluetech"], "seed": "Which PR repairs approximate comparison for a machine learning array library?", "seed_gold": ["PR #15285"]}
+{"id": "followup-77", "category": "followup", "question": "Who reviewed the PR that stops scanning the whole scratch folder each time a fresh one is needed?", "gold": ["nicoddemus"], "seed": "Which PR stops scanning the whole scratch folder each time a fresh one is needed?", "seed_gold": ["PR #15255"]}
+{"id": "followup-78", "category": "followup", "question": "Who reviewed the PR that registers a third-party add-on for checking AI agents?", "gold": ["bluetech"], "seed": "Which PR registers a third-party add-on for checking AI agents?", "seed_gold": ["PR #15246"]}
+{"id": "followup-79", "category": "followup", "question": "Who reviewed the PR that explains several ways to set up an isolated Python environment before installing?", "gold": ["bluetech"], "seed": "Which PR explains several ways to set up an isolated Python environment before installing?", "seed_gold": ["PR #15245"]}
+{"id": "followup-80", "category": "followup", "question": "Who reviewed the PR that relaxes the static type of the attribute that points at the current test item?", "gold": ["Contrabang", "bluetech"], "seed": "Which PR relaxes the static type of the attribute that points at the current test item?", "seed_gold": ["PR #15227"]}
+{"id": "followup-81", "category": "followup", "question": "Who reviewed the PR that reduces the flood of automated upgrade pull requests by batching them per ecosystem?", "gold": ["RonnyPfannschmidt"], "seed": "Which PR reduces the flood of automated upgrade pull requests by batching them per ecosystem?", "seed_gold": ["PR #15223"]}
+{"id": "followup-82", "category": "followup", "question": "Who reviewed the PR that warns when raw binary data is handed to the console output writer?", "gold": ["RonnyPfannschmidt"], "seed": "Which PR warns when raw binary data is handed to the console output writer?", "seed_gold": ["PR #15202"]}
+{"id": "followup-83", "category": "followup", "question": "Who reviewed the PR that makes the return type of the parametrize helper importable by users?", "gold": ["RonnyPfannschmidt", "bluetech"], "seed": "Which PR makes the return type of the parametrize helper importable by users?", "seed_gold": ["PR #15193"]}
+{"id": "followup-84", "category": "followup", "question": "Who reviewed the PR that repairs the Sphinx site after a plugin library upgrade?", "gold": ["RonnyPfannschmidt", "copilot-pull-request-reviewer[bot]"], "seed": "Which PR repairs the Sphinx site after a plugin library upgrade?", "seed_gold": ["PR #15192"]}
+{"id": "followup-85", "category": "followup", "question": "Who reviewed the PR that raises the async add-on version so integration tests install on development builds?", "gold": ["Pierre-Sassoulas"], "seed": "Which PR raises the async add-on version so integration tests install on development builds?", "seed_gold": ["PR #15319"]}
+{"id": "followup-86", "category": "followup", "question": "Who reviewed the PR that upgrades the web framework used in the integration tests?", "gold": ["Pierre-Sassoulas"], "seed": "Which PR upgrades the web framework used in the integration tests?", "seed_gold": ["PR #15211"]}
+{"id": "followup-87", "category": "followup", "question": "Who reviewed the PR that refreshes the generated catalogue of third-party add-ons?", "gold": ["Pierre-Sassoulas"], "seed": "Which PR refreshes the generated catalogue of third-party add-ons?", "seed_gold": ["PR #15257"]}
+{"id": "unanswerable-88", "category": "unanswerable", "question": "Who authored PR #1234?", "gold": ["unknown"]}
+{"id": "unanswerable-89", "category": "unanswerable", "question": "Which files did PR #3000 touch?", "gold": ["unknown"]}
+{"id": "unanswerable-90", "category": "unanswerable", "question": "Who reported issue #90010?", "gold": ["unknown"]}
+{"id": "unanswerable-91", "category": "unanswerable", "question": "Which PR added a GraphQL reporter?", "gold": ["unknown"]}
+{"id": "unanswerable-92", "category": "unanswerable", "question": "Which PR fixed issue #15200?", "gold": ["unknown"]}
+{"id": "unanswerable-93", "category": "unanswerable", "question": "Who reviewed PR #15272?", "gold": ["unknown"]}

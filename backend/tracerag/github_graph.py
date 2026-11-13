@@ -62,6 +62,9 @@ def _login(actor: dict[str, Any] | None) -> str | None:
     return actor.get("login") or actor.get("name")
 
 
+_MAX_EVIDENCE_CHARS = 2000
+
+
 class GitHubGraphBuilder:
     """Writes typed, timestamped edges from GitHub payloads into the graph.
 
@@ -77,24 +80,35 @@ class GitHubGraphBuilder:
         self._seen: set[str] = set()
 
     # nodes -------------------------------------------------------------
-    def _node(self, node_id: str, label: str, node_type: str, ts: int = 0) -> str:
-        """Upsert once per run; embeddings are the expensive part."""
+    def _node(self, node_id: str, label: str, node_type: str, ts: int = 0,
+              text: str | None = None) -> str:
+        """Upsert once per run; embeddings are the expensive part. text is what gets
+        embedded when the label alone means nothing, as "PR #412" doesn't."""
         if node_id not in self._seen:
-            self.db.upsert_node(node_id, label, node_type, self.embed(label), ts=ts)
+            self.db.upsert_node(node_id, label, node_type, self.embed(text or label), ts=ts)
             self._seen.add(node_id)
         elif ts:
             # already embedded this run — still let a newer event move the clock
-            self.db.upsert_node(node_id, label, node_type, self.embed(label), ts=ts)
+            self.db.upsert_node(node_id, label, node_type, self.embed(text or label), ts=ts)
         return node_id
+
+    def _evidence(self, node_id: str, text: str, url: str | None) -> None:
+        """The record's own words on the node that holds its typed edges."""
+        doc_id = f"gh:{node_id}"
+        self.db.upsert_document(doc_id, content=text[:_MAX_EVIDENCE_CHARS], path=url or doc_id)
+        self.db.add_mention(doc_id, node_id)
 
     def person(self, login: str) -> str:
         return self._node(f"person:{login}", login, "Person")
 
     def pull_request(self, number: int, title: str, ts: int) -> str:
-        return self._node(f"pr:{self.repo}#{number}", f"PR #{number}", "PR", ts)
+        label = f"PR #{number}"
+        return self._node(f"pr:{self.repo}#{number}", label, "PR", ts, f"{label}: {title}")
 
     def issue(self, number: int, title: str = "", ts: int = 0) -> str:
-        return self._node(f"issue:{self.repo}#{number}", f"Issue #{number}", "Ticket", ts)
+        label = f"Issue #{number}"
+        text = f"{label}: {title}" if title else None
+        return self._node(f"issue:{self.repo}#{number}", label, "Ticket", ts, text)
 
     def file(self, path: str) -> str:
         return self._node(f"file:{self.repo}:{path}", path, "File")
@@ -111,7 +125,9 @@ class GitHubGraphBuilder:
         if number is None:
             return
         ts = parse_ts(pr.get("merged_at") or pr.get("closed_at") or pr.get("created_at"))
-        pr_id = self.pull_request(number, pr.get("title") or "", ts)
+        title = pr.get("title") or ""
+        pr_id = self.pull_request(number, title, ts)
+        self._evidence(pr_id, f"PR #{number}: {title}\n\n{pr.get('body') or ''}", pr.get("html_url"))
         repo_id = self.repository()
         self.db.add_relationship(pr_id, repo_id, relation=config.RELATION_TOUCHES, ts=ts)
         stats.count(config.RELATION_TOUCHES)
@@ -157,7 +173,12 @@ class GitHubGraphBuilder:
         if issue.get("number") is None or "pull_request" in issue:
             return  # the issues endpoint also returns PRs
         ts = parse_ts(issue.get("created_at"))
-        issue_id = self.issue(issue["number"], issue.get("title") or "", ts)
+        title = issue.get("title") or ""
+        issue_id = self.issue(issue["number"], title, ts)
+        self._evidence(
+            issue_id, f"Issue #{issue['number']}: {title}\n\n{issue.get('body') or ''}",
+            issue.get("html_url"),
+        )
         self.db.add_relationship(
             issue_id, self.repository(), relation=config.RELATION_TOUCHES, ts=ts
         )
@@ -204,10 +225,11 @@ class GitHubGraphBuilder:
         commits: Iterable[dict[str, Any]] = (),
     ) -> GraphStats:
         stats = GraphStats()
-        for pr in pulls:
-            self.add_pull_request(pr, stats)
+        # issues first: a PR's "Fixes #N" would otherwise create the node without its title
         for issue in issues:
             self.add_issue(issue, stats)
+        for pr in pulls:
+            self.add_pull_request(pr, stats)
         for commit in commits:
             self.add_commit(commit, stats)
         stats.nodes = len(self._seen)
