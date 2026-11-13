@@ -133,6 +133,11 @@ memory.forget("checkout-service", "owned by", "billing team")
 Known limit: after a replace, the old object's name can still surface as a node with no live
 facts, because its ended fact is kept as history.
 
+**Measured:** on 23 tasks about facts stated earlier, graph memory answered 16 against 4 with no
+memory, and gave no stale value on changed facts. It also caused one wrong answer. Episodic
+recall scored 5, mostly because the agent's prompt told it to distrust past runs, so that
+comparison isn't settled. [Details](backend/eval/README.md#memory-writes).
+
 ## What this actually is
 
 Two halves, deliberately separable.

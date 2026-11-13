@@ -1,0 +1,320 @@
+[
+ {
+  "task": "new-1",
+  "statement": "The completion team owns src/click/shell_completion.py.",
+  "stored": [
+   {
+    "subject": "file:pallets/click:src/click/shell_completion.py",
+    "relation": "OWNED_BY",
+    "object": "mem:completion-team",
+    "replaced": 0
+   }
+  ]
+ },
+ {
+  "task": "new-2",
+  "statement": "While kdeldycke is away, Rowlando13 reviews everything that touches src/click/testing.py.",
+  "stored": [
+   {
+    "subject": "file:pallets/click:src/click/testing.py",
+    "relation": "REVIEWED_BY",
+    "object": "person:Rowlando13",
+    "replaced": 0
+   }
+  ]
+ },
+ {
+  "task": "new-3",
+  "statement": "PR #3858 is blocked by Issue #3886 until that crash is fixed.",
+  "stored": [
+   {
+    "subject": "pr:pallets/click#3858",
+    "relation": "BLOCKED_BY",
+    "object": "issue:pallets/click#3886",
+    "replaced": 0
+   }
+  ]
+ },
+ {
+  "task": "new-4",
+  "statement": "The docs team maintains docs/faqs.md.",
+  "stored": [
+   {
+    "subject": "file:pallets/click:docs/faqs.md",
+    "relation": "MAINTAINED_BY",
+    "object": "mem:docs-team",
+    "replaced": 0
+   }
+  ]
+ },
+ {
+  "task": "new-5",
+  "statement": "Release builds of click are signed with the sigstore toolchain.",
+  "stored": [
+   {
+    "subject": "repo:pallets/click",
+    "relation": "SIGNED_WITH",
+    "object": "mem:sigstore-toolchain",
+    "replaced": 0
+   }
+  ]
+ },
+ {
+  "task": "new-6",
+  "statement": "Rowlando13 is the release manager for the 8.6 release.",
+  "stored": [
+   {
+    "subject": "mem:8-6-release",
+    "relation": "MANAGED_BY",
+    "object": "person:Rowlando13",
+    "replaced": 0
+   }
+  ]
+ },
+ {
+  "task": "new-7",
+  "statement": "Issue #3840 was triaged to the windows team.",
+  "stored": [
+   {
+    "subject": "issue:pallets/click#3840",
+    "relation": "ASSIGNED_TO",
+    "object": "mem:windows-team",
+    "replaced": 0
+   }
+  ]
+ },
+ {
+  "task": "new-8",
+  "statement": "Changes to src/click/types.py need sign-off from the typing team.",
+  "stored": [
+   {
+    "subject": "file:pallets/click:src/click/types.py",
+    "relation": "REVIEWED_BY",
+    "object": "mem:typing-team",
+    "replaced": 0
+   }
+  ]
+ },
+ {
+  "task": "new-9",
+  "statement": "Courtneybrown11 paired with kdeldycke on PR #3896.",
+  "stored": [
+   {
+    "subject": "pr:pallets/click#3896",
+    "relation": "PAIRED_ON",
+    "object": "person:Courtneybrown11",
+    "replaced": 0
+   },
+   {
+    "subject": "pr:pallets/click#3896",
+    "relation": "PAIRED_ON",
+    "object": "person:kdeldycke",
+    "replaced": 0
+   }
+  ]
+ },
+ {
+  "task": "new-10",
+  "statement": "The nightly CI failures for click are tracked in INFRA-221.",
+  "stored": [
+   {
+    "subject": "mem:nightly-ci-failures-for-click",
+    "relation": "TRACKED_IN",
+    "object": "mem:infra-221",
+    "replaced": 0
+   }
+  ]
+ },
+ {
+  "task": "upd-1",
+  "statement": "The completion team owns src/click/_termui_impl.py.",
+  "stored": [
+   {
+    "subject": "file:pallets/click:src/click/_termui_impl.py",
+    "relation": "OWNED_BY",
+    "object": "mem:completion-team",
+    "replaced": 0
+   }
+  ]
+ },
+ {
+  "task": "upd-2",
+  "statement": "kdeldycke is the point of contact for Issue #3887.",
+  "stored": [
+   {
+    "subject": "issue:pallets/click#3887",
+    "relation": "CONTACT",
+    "object": "person:kdeldycke",
+    "replaced": 0
+   }
+  ]
+ },
+ {
+  "task": "upd-3",
+  "statement": "PR #3865 is blocked by Issue #3832.",
+  "stored": [
+   {
+    "subject": "pr:pallets/click#3865",
+    "relation": "BLOCKED_BY",
+    "object": "issue:pallets/click#3832",
+    "replaced": 0
+   }
+  ]
+ },
+ {
+  "task": "upd-4",
+  "statement": "The docs team maintains docs/contrib.md.",
+  "stored": [
+   {
+    "subject": "file:pallets/click:docs/contrib.md",
+    "relation": "MAINTAINED_BY",
+    "object": "mem:docs-team",
+    "replaced": 0
+   }
+  ]
+ },
+ {
+  "task": "upd-5",
+  "statement": "Release builds of click are published from buildkite.",
+  "stored": [
+   {
+    "subject": "repo:pallets/click",
+    "relation": "PUBLISHED_FROM",
+    "object": "mem:buildkite",
+    "replaced": 0
+   }
+  ]
+ },
+ {
+  "task": "upd-6",
+  "statement": "The 8.6 release is scheduled for December.",
+  "stored": [
+   {
+    "subject": "mem:8-6-release",
+    "relation": "SCHEDULED_FOR",
+    "object": "mem:december",
+    "replaced": 0
+   }
+  ]
+ },
+ {
+  "task": "upd-7",
+  "statement": "The core team owns src/click/utils.py.",
+  "stored": [
+   {
+    "subject": "file:pallets/click:src/click/utils.py",
+    "relation": "OWNED_BY",
+    "object": "mem:the-core-team",
+    "replaced": 0
+   }
+  ]
+ },
+ {
+  "task": "upd-8",
+  "statement": "Issue #3882 is assigned to Wkhanex.",
+  "stored": [
+   {
+    "subject": "issue:pallets/click#3882",
+    "relation": "ASSIGNED_TO",
+    "object": "person:Wkhanex",
+    "replaced": 0
+   }
+  ]
+ },
+ {
+  "task": "upd-1",
+  "statement": "Ownership of src/click/_termui_impl.py moved from the completion team to the terminal team.",
+  "stored": [
+   {
+    "subject": "file:pallets/click:src/click/_termui_impl.py",
+    "relation": "OWNED_BY",
+    "object": "mem:terminal-team",
+    "replaced": 1
+   }
+  ]
+ },
+ {
+  "task": "upd-2",
+  "statement": "Issue #3887's point of contact is now Rowlando13, not kdeldycke.",
+  "stored": [
+   {
+    "subject": "issue:pallets/click#3887",
+    "relation": "CONTACT",
+    "object": "person:Rowlando13",
+    "replaced": 1
+   }
+  ]
+ },
+ {
+  "task": "upd-3",
+  "statement": "PR #3865 is no longer blocked by Issue #3832. It is now blocked by Issue #3903.",
+  "stored": [
+   {
+    "subject": "pr:pallets/click#3865",
+    "relation": "BLOCKED_BY",
+    "object": "issue:pallets/click#3903",
+    "replaced": 1
+   }
+  ]
+ },
+ {
+  "task": "upd-4",
+  "statement": "docs/contrib.md is now maintained by the community team instead of the docs team.",
+  "stored": [
+   {
+    "subject": "file:pallets/click:docs/contrib.md",
+    "relation": "MAINTAINED_BY",
+    "object": "mem:community-team",
+    "replaced": 1
+   }
+  ]
+ },
+ {
+  "task": "upd-5",
+  "statement": "Click release builds moved off buildkite and are now published from GitHub Actions.",
+  "stored": [
+   {
+    "subject": "mem:click-release-builds",
+    "relation": "PUBLISHED_FROM",
+    "object": "mem:github-actions",
+    "replaced": 0
+   }
+  ]
+ },
+ {
+  "task": "upd-6",
+  "statement": "The 8.6 release slipped from December to January.",
+  "stored": [
+   {
+    "subject": "mem:8-6-release",
+    "relation": "SCHEDULED_FOR",
+    "object": "mem:january",
+    "replaced": 1
+   }
+  ]
+ },
+ {
+  "task": "upd-7",
+  "statement": "The utils team took over src/click/utils.py from the core team.",
+  "stored": [
+   {
+    "subject": "file:pallets/click:src/click/utils.py",
+    "relation": "OWNED_BY",
+    "object": "mem:utils-team",
+    "replaced": 1
+   }
+  ]
+ },
+ {
+  "task": "upd-8",
+  "statement": "Issue #3882 was reassigned from Wkhanex to janluke.",
+  "stored": [
+   {
+    "subject": "issue:pallets/click#3882",
+    "relation": "ASSIGNED_TO",
+    "object": "person:janluke",
+    "replaced": 1
+   }
+  ]
+ }
+]

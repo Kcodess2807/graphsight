@@ -37,6 +37,43 @@ run could help, so they test whether recall works when it should, not how often 
 across both repos. In all 20 the graph held the right fact, so this says nothing about a
 wrong memory when the graph has no answer.
 
+## Memory writes
+
+`run_memory.py`, from `results/memory-click.md`. 23 tasks: 10 facts stated earlier, 8 facts
+that change between statements, and 5 questions about things never stated. The facts are
+invented team knowledge about real click files, PRs and people, so GitHub can't hold them.
+The tasks and the extraction prompt were committed before the run.
+
+| Setup | new facts | changed facts | never stated | all | stale answers |
+|---|---|---|---|---|---|
+| none (graph only) | 0/10 | 0/8 | 4/5 | 4/23 | 0/8 |
+| episodic | 0/10 | 0/8 | 5/5 | 5/23 | 0/8 |
+| graph memory | 6/10 | 6/8 | 4/5 | 16/23 | 0/8 |
+
+- **Graph memory against no memory:** 13 tasks right only with graph memory, 1 only without
+  (sign test p=0.002).
+- **Changed facts:** 6 of 8 right, and no stale value was ever given. Extraction marked 7 of the
+  8 changes as replacing the old fact.
+- **One answer memory made wrong:** asked where weekly *release* failures are tracked (never
+  stated), graph memory answered INFRA-221, which was stated for *nightly CI* failures.
+- **Without memory the agent guesses:** on 6 tasks it named recent contributors as owners or
+  contacts. Graph memory did that on none.
+
+**Why episodic scored so low, and why this doesn't settle graph against episodic.** Episodic
+recall found the right statement on 18 of 23 tasks, but the agent answered on only 2. Its
+prompt says past runs "can be out of date" and to trust the graph, so it set statements aside:
+"The earlier run claimed that Rowlando13 covers it ... ANSWER: unknown". Graph-memory facts are
+labelled "remembered" too, but arrive as graph facts and were trusted. A prompt that presents
+statements as things the user said might close much of this gap. That is untested.
+
+**Misses with the fact stored correctly.** Of graph memory's 6 misses on new and changed facts,
+5 had the right fact in the graph. Agent facts weigh less than GitHub facts, and the walk keeps
+only the top 5 neighbours by weight, so on busy nodes the agent's fact is cut. The sixth,
+"sigstore toolchain" against the gold "sigstore", is arguably right.
+
+**Limits.** 23 tasks, one repo, and both the tasks and the facts are mine. There is no held-out
+set for this part yet.
+
 ## How to read these numbers
 
 - **click is a development set.** The fixes below were made against those tasks, so its
