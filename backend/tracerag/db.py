@@ -31,6 +31,9 @@ def _added_columns() -> dict[str, list[tuple[str, str, str]]]:
         config.REL_TABLE: [
             ("relation", "STRING", f"'{config.RELATION_CO_OCCURS}'"),
             ("ts", "INT64", "0"),
+            ("origin", "STRING", "'api'"),
+            ("ended", "INT64", "0"),
+            ("source", "STRING", "''"),
         ],
     }
 
@@ -69,6 +72,9 @@ class TraceDB:
         logger.info(
             "Opened LadybugDB at %s (read pool=%d)", self.db_path, self._pool_size
         )
+        # every caller opens files directly, so migrating here is the one place
+        # that keeps an older graph readable; init_schema alone left them broken
+        self.migrated = self.migrate_schema()
 
     # ---- connection plumbing -------------------------------------------------
 
@@ -141,14 +147,16 @@ class TraceDB:
         self.execute(
             f"CREATE REL TABLE IF NOT EXISTS {config.REL_TABLE} ("
             f"FROM {config.NODE_TABLE} TO {config.NODE_TABLE}, "
-            f"confidence DOUBLE, relation STRING, ts INT64);"
+            f"confidence DOUBLE, relation STRING, ts INT64, "
+            # origin 'agent' marks facts an agent wrote; ended > 0 means replaced
+            f"origin STRING DEFAULT 'api', ended INT64 DEFAULT 0, source STRING DEFAULT '');"
         )
         self.execute(
             f"CREATE REL TABLE IF NOT EXISTS {config.MENTIONS_TABLE} ("
             f"FROM {config.DOC_TABLE} TO {config.NODE_TABLE});"
         )
         self.migrate_schema()
-        # HNSW index built later via build_vector_index(); a live index blocks embedding writes
+        # HNSW index built later via build_vector_index(); writes stay visible to it after
         logger.info("Schema ready (node=%s, rel=%s)",
                     config.NODE_TABLE, config.REL_TABLE)
 
@@ -261,7 +269,8 @@ class TraceDB:
         self.execute(
             f"MATCH (a:{config.NODE_TABLE} {{id: $from_id}}), "
             f"(b:{config.NODE_TABLE} {{id: $to_id}}) "
-            f"MERGE (a)-[r:{config.REL_TABLE}]->(b) "
+            # api edges only: an agent's fact on the same pair is a separate edge
+            f"MERGE (a)-[r:{config.REL_TABLE} {{origin: 'api'}}]->(b) "
             f"ON CREATE SET r.confidence = $confidence, r.relation = $relation, r.ts = $ts "
             # a stronger relation later (CO_OCCURS then AUTHORED) upgrades the edge.
             # SET items apply left to right, so relation must be decided BEFORE
@@ -275,6 +284,59 @@ class TraceDB:
             {"from_id": from_id, "to_id": to_id, "confidence": float(confidence),
              "relation": relation, "ts": int(ts)},
         )
+
+    # --- agent-written memory: only ever touches origin='agent' edges ---------
+
+    def add_memory_edge(
+        self, from_id: str, to_id: str, relation: str, confidence: float, source: str, ts: int
+    ) -> None:
+        self.execute(
+            f"MATCH (a:{config.NODE_TABLE} {{id: $from_id}}), "
+            f"(b:{config.NODE_TABLE} {{id: $to_id}}) "
+            f"MERGE (a)-[r:{config.REL_TABLE} {{origin: 'agent', relation: $relation, ended: 0}}]->(b) "
+            f"ON CREATE SET r.confidence = $confidence, r.source = $source, r.ts = {_TS} "
+            f"ON MATCH SET r.source = $source, r.ts = {_TS}",
+            {"from_id": from_id, "to_id": to_id, "relation": relation,
+             "confidence": float(confidence), "source": source, "ts": int(ts)},
+        )
+
+    def end_memory_edges(self, from_id: str, relation: str, keep_to_id: str, ts: int) -> int:
+        """Mark this subject's other live agent facts of this relation as replaced."""
+        match = (
+            f"MATCH (a:{config.NODE_TABLE} {{id: $from_id}})-[r:{config.REL_TABLE}]->"
+            f"(b:{config.NODE_TABLE}) WHERE r.origin = 'agent' AND r.relation = $relation "
+            f"AND r.ended = 0 AND b.id <> $keep "
+        )
+        params = {"from_id": from_id, "relation": relation, "keep": keep_to_id}
+        n = self._records(self.execute(match + "RETURN count(r) AS n;", params))[0]["n"]
+        if n:
+            self.execute(match + f"SET r.ended = {_TS};", {**params, "ts": int(ts)})
+        return int(n)
+
+    def delete_memory_edges(self, from_id: str, relation: str, to_id: str) -> int:
+        """Remove agent facts outright, history included. API facts are never touched."""
+        match = (
+            f"MATCH (a:{config.NODE_TABLE} {{id: $from_id}})-[r:{config.REL_TABLE}]->"
+            f"(b:{config.NODE_TABLE} {{id: $to_id}}) "
+            f"WHERE r.origin = 'agent' AND r.relation = $relation "
+        )
+        params = {"from_id": from_id, "relation": relation, "to_id": to_id}
+        n = self._records(self.execute(match + "RETURN count(r) AS n;", params))[0]["n"]
+        if n:
+            self.execute(match + "DELETE r;", params)
+        return int(n)
+
+    def drop_orphan_memory_nodes(self) -> int:
+        """Delete nodes memory created that no longer have any edge, so a forgotten
+        name stops turning up in vector search."""
+        match = (
+            f"MATCH (e:{config.NODE_TABLE}) WHERE e.id STARTS WITH 'mem:' "
+            f"AND NOT EXISTS {{ MATCH (e)-[:{config.REL_TABLE}]-() }} "
+        )
+        n = self._records(self.execute(match + "RETURN count(e) AS n;"))[0]["n"]
+        if n:
+            self.execute(match + "DETACH DELETE e;")
+        return int(n)
 
     def upsert_document(
         self, doc_id: str, content: str | None = None, path: str | None = None
@@ -365,14 +427,16 @@ class TraceDB:
         rows = self._fetch(
             f"MATCH (a:{config.NODE_TABLE}) WHERE a.id IN $ids "
             f"OPTIONAL MATCH (a)-[r:{config.REL_TABLE}]-(b:{config.NODE_TABLE}) "
+            f"WHERE r.ended = 0 "
             f"RETURN a.id AS from_id, b.id AS to_id, b.label AS label, "
             f"b.type AS type, b.ts AS ts, r.confidence AS confidence, "
-            f"r.relation AS relation;",
+            f"r.relation AS relation, r.origin AS origin, r.source AS source;",
             {"ids": list(node_ids)},
         )
         grouped: dict[str, list[dict[str, Any]]] = {}
         for r in rows:
-            if r["to_id"] is None:  # isolated node
+            # no live edge: the optional match comes back as NaN through pandas, not None
+            if not isinstance(r["to_id"], str):
                 continue
             grouped.setdefault(r["from_id"], []).append({
                 "id": r["to_id"], "label": r["label"], "type": r["type"],
@@ -380,6 +444,8 @@ class TraceDB:
                 "relation": r.get("relation") or config.RELATION_CO_OCCURS,
                 "confidence": float(r["confidence"])
                 if r["confidence"] is not None else 1.0,
+                "origin": r.get("origin") or "api",
+                "source": r.get("source") or "",
             })
         out: dict[str, list[dict[str, Any]]] = {}
         for from_id, nbrs in grouped.items():

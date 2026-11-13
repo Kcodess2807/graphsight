@@ -1,4 +1,5 @@
-"""MCP server: semantic, read-only tools over the TraceRAG hybrid engine.
+"""MCP server: semantic tools over the TraceRAG hybrid engine. Read-only by default;
+remember and forget exist only when TRACERAG_MCP_WRITE_TOKEN is set.
 
 This is the agent-facing surface of TraceRAG. It exposes the retrieval engine to
 IDE agents (Cursor, Claude Desktop, etc.) over the Model Context Protocol as a
@@ -24,6 +25,7 @@ from the registry — nothing in the tools themselves changes.
 from __future__ import annotations
 
 import asyncio
+import hmac
 import logging
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
@@ -31,6 +33,7 @@ from typing import Callable, Optional
 
 from tracerag import config
 from tracerag.db import TraceDB
+from tracerag.memory import AgentMemory
 from tracerag.router import TraceRouter
 
 logger = logging.getLogger("tracerag.mcp")
@@ -253,6 +256,43 @@ def _search_context_impl(query: str, top_k: int) -> dict:
             "result_count": len(passages), "passages": passages}
 
 
+def _write_refusal(token: str) -> dict | None:
+    """None when the call may write. A missing or wrong token is refused."""
+    expected = config.MCP_WRITE_TOKEN
+    if not expected:
+        return {"ok": False, "note": "Memory writes are disabled on this server."}
+    # ponytail: the token rides in the tool call. Fine for one local agent; move it to
+    # the transport's auth header before this server faces more than one client.
+    if not hmac.compare_digest((token or "").encode(), expected.encode()):
+        return {"ok": False, "note": "Wrong or missing write token."}
+    return None
+
+
+def _remember_impl(token: str, subject: str, relation: str, obj: str, replace: bool) -> dict:
+    refused = _write_refusal(token)
+    if refused:
+        return refused
+    tenant = get_current_tenant()
+    try:
+        stored = AgentMemory(tenant.db, tenant.router.embed_query).remember(
+            subject, relation, obj, source="mcp", replace=replace)
+    except ValueError as exc:
+        return {"ok": False, "note": str(exc)}
+    return {"ok": True, **stored}
+
+
+def _forget_impl(token: str, subject: str, relation: str, obj: str) -> dict:
+    refused = _write_refusal(token)
+    if refused:
+        return refused
+    tenant = get_current_tenant()
+    try:
+        removed = AgentMemory(tenant.db, tenant.router.embed_query).forget(subject, relation, obj)
+    except ValueError as exc:
+        return {"ok": False, "note": str(exc)}
+    return {"ok": True, "removed": removed}
+
+
 def _find_entity_impl(name: str, limit: int) -> dict:
     tenant = get_current_tenant()
     n = (name or "").strip()
@@ -359,6 +399,47 @@ if _MCP_AVAILABLE:
             match_count: number of candidates found.
         """
         return await asyncio.to_thread(_find_entity_impl, name, limit)
+
+    if config.MCP_WRITE_TOKEN:
+
+        @mcp.tool()
+        async def remember(token: str, subject: str, relation: str, obj: str,
+                           replace: bool = False) -> dict:
+            """Store a fact you learned, as subject -RELATION-> object, so later
+            questions can use it. Example: subject "checkout-service", relation
+            "OWNED_BY", obj "payments team".
+
+            USE THIS WHEN the user tells you something about the codebase that the
+            repository itself doesn't record: who owns what, a decision, a known
+            workaround. Don't store what search_context already returns.
+
+            Set replace=True when the fact supersedes an older one with the same
+            subject and relation (ownership moved, a decision changed). The old fact
+            stops being returned but is kept as history.
+
+            Remembered facts come back labelled "(remembered, source: mcp)", and they
+            never override facts read from GitHub.
+
+            Args:
+                token: The write token this server was configured with.
+                subject, obj: Entity names. An existing entity is matched by exact
+                    name; a new name becomes a new node.
+                relation: A short name such as OWNED_BY or DECIDED.
+                replace: End this subject's other facts with the same relation.
+
+            Returns ok, the stored ids, and how many facts were replaced.
+            """
+            return await asyncio.to_thread(_remember_impl, token, subject, relation, obj, replace)
+
+        @mcp.tool()
+        async def forget(token: str, subject: str, relation: str, obj: str) -> dict:
+            """Delete a fact that remember stored, history included. Use it when a
+            remembered fact was wrong rather than out of date (for out of date, use
+            remember with replace=True). Facts read from GitHub can't be forgotten.
+
+            Returns ok and how many facts were removed.
+            """
+            return await asyncio.to_thread(_forget_impl, token, subject, relation, obj)
 
 else:  # pragma: no cover — SDK absent
     mcp = None

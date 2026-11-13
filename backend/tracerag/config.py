@@ -68,6 +68,8 @@ MCP_SEED_MAX_DEGREE = int(os.getenv("TRACERAG_MCP_SEED_MAX_DEGREE", "200"))
 # Floor for the semantic fallback when auto-resolving a seed name: below this
 # cosine similarity, treat the name as unresolved (tell the agent to use
 # find_entity) rather than tracing a spurious weak match.
+# write tools (remember, forget) only exist when this is set; every call must pass it
+MCP_WRITE_TOKEN = os.getenv("TRACERAG_MCP_WRITE_TOKEN") or None
 MCP_RESOLVE_MIN_SIM = float(os.getenv("TRACERAG_MCP_RESOLVE_MIN_SIM", "0.40"))
 
 # The org every request maps to. Single tenant; the multi-tenant control plane
@@ -93,7 +95,8 @@ OPENROUTER_APP_TITLE = os.getenv("OPENROUTER_APP_TITLE", "TraceRAG")
 # groq for the latency-critical router intent call; falls back to openrouter if unset
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 GROQ_BASE_URL = os.getenv("GROQ_BASE_URL", "https://api.groq.com/openai/v1")
-GROQ_MODEL = os.getenv("GROQ_MODEL", "llama-3.1-8b-instant")
+# must answer in 4 tokens: reasoning models like gpt-oss spend them thinking and return nothing
+GROQ_MODEL = os.getenv("GROQ_MODEL", "qwen/qwen3.8-27b")
 
 
 # --- Clerk auth (backend token verification) ---
@@ -201,6 +204,8 @@ RELATION_WEIGHTS = {
     RELATION_CO_OCCURS: 0.35,   # proximity is a hint, not a fact
 }
 DEFAULT_RELATION_WEIGHT = float(os.getenv("TRACERAG_DEFAULT_REL_WEIGHT", "0.5"))
+# an agent's own fact: above a proximity guess, below anything read from the API
+AGENT_FACT_WEIGHT = float(os.getenv("TRACERAG_AGENT_FACT_WEIGHT", "0.6"))
 
 # Recency: score *= 0.5 ** (age_days / half_life) — at half_life days an item
 # keeps half its score. Incidents go stale in weeks, service definitions in a

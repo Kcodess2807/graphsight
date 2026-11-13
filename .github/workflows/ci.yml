@@ -46,6 +46,7 @@ jobs:
           tests/test_github_graph.py
           tests/test_eval_grading.py
           tests/test_db_integration.py
+          tests/test_memory.py
           tests/test_ingest_github_wiring.py
         working-directory: backend
 
