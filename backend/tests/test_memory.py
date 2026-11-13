@@ -151,3 +151,32 @@ def test_mcp_writes_need_the_configured_token(db, monkeypatch):
     assert agent_edges(db)[0]["source"] == "mcp"
     assert mcp_server._forget_impl("s3cret", "checkout-service", "OWNED_BY", "payments team")["removed"] == 1
     assert mcp_server._remember_impl("s3cret", "", "OWNED_BY", "x", False)["ok"] is False
+
+
+class FakeLLM:
+    """Answers every chat call with a fixed reply, like the OpenAI client shape."""
+
+    def __init__(self, reply):
+        msg = type("M", (), {"content": reply})()
+        resp = type("R", (), {"choices": [type("C", (), {"message": msg})()]})()
+        self.chat = type("Ch", (), {"completions": type("Co", (), {"create": lambda s, **k: resp})()})()
+
+
+def test_learn_stores_what_the_model_extracts_and_skips_bad_facts(db):
+    reply = """Sure: {"facts": [
+        {"subject": "checkout-service", "relation": "OWNED_BY", "object": "payments team"},
+        {"subject": "", "relation": "OWNED_BY", "object": "nobody"},
+        {"relation": "missing subject"}]}"""
+    stored = AgentMemory(db, embed).learn("x", FakeLLM(reply), "m", source="msg-1")
+    assert [(f["relation"], f["object"]) for f in stored] == [("OWNED_BY", "mem:payments-team")]
+
+
+def test_learn_passes_replace_through(db):
+    memory = AgentMemory(db, embed)
+    memory.remember("checkout-service", "OWNED_BY", "payments team", source="msg-1")
+    reply = '{"facts": [{"subject": "checkout-service", "relation": "OWNED_BY", "object": "billing team", "replaces_previous": true}]}'
+    assert memory.learn("moved", FakeLLM(reply), "m", source="msg-2")[0]["replaced"] == 1
+
+
+def test_learn_survives_a_reply_that_is_not_json(db):
+    assert AgentMemory(db, embed).learn("x", FakeLLM("I can't help with that."), "m", source="s") == []
