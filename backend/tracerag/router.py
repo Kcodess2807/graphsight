@@ -65,17 +65,21 @@ class RouterResponse:
 def graph_facts(hops: list[dict], meta: dict[str, dict]) -> list[str]:
     """Typed hops as lines of text, nearest first. Without these the model sees
     entities and chunks but not one relation, so the graph can't change an answer."""
-    seen: set[frozenset[str]] = set()
+    seen: set[tuple[frozenset[str], str]] = set()
     facts: list[str] = []
     for hop in hops:
-        pair = frozenset((hop["from_id"], hop["to_id"]))
+        key = (frozenset((hop["from_id"], hop["to_id"])), hop["relation"])
         # proximity is a guess, so it stays out of what the model treats as fact
-        if pair in seen or hop["relation"] == config.RELATION_CO_OCCURS:
+        if key in seen or hop["relation"] == config.RELATION_CO_OCCURS:
             continue
-        seen.add(pair)
+        seen.add(key)
         a, b = (meta.get(i, {}).get("label") or i for i in (hop["from_id"], hop["to_id"]))
         # <-> because traversal is undirected, so the hop doesn't know which way it points
-        facts.append(f"{a} <-> {b}: {hop['relation']}")
+        fact = f"{a} <-> {b}: {hop['relation']}"
+        # an agent's own fact must never pass for one read from the source system
+        if hop.get("origin") == "agent":
+            fact += f" (remembered, source: {hop.get('source') or 'unknown'})"
+        facts.append(fact)
         if len(facts) == config.GRAPH_MAX_FACTS:
             break
     return facts
@@ -203,6 +207,9 @@ class TraceRouter:
                 timeout=6,
             )
             answer = (resp.choices[0].message.content or "").strip().upper()
+            if not answer:
+                # an empty reply silently became "semantic" when a model was retired
+                logger.warning("Intent LLM %s returned nothing; defaulting to semantic.", model)
         except Exception as exc:  # noqa: BLE001 — default to semantic on failure
             logger.warning("Intent LLM failed (%s); defaulting to semantic.", exc)
             answer = "SEMANTIC"
@@ -259,6 +266,7 @@ class TraceRouter:
                     hops.append({
                         "from_id": node_id, "to_id": to_id,
                         "confidence": conf, "relation": relation,
+                        "origin": nb.get("origin", "api"), "source": nb.get("source", ""),
                     })
                     meta.setdefault(to_id, {"label": nb["label"], "type": nb["type"],
                                             "ts": nb.get("ts", 0)})

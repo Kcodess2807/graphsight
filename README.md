@@ -106,6 +106,33 @@ Matching is lexical, so a reworded question with different words won't match. Re
 appear as nodes in the viewer. `backend/scripts/episodic_agent.py` is a working LangGraph agent
 that uses this with the graph engine, and `--no-memory` gives you the baseline.
 
+### Graph memory
+
+An agent can write facts into the graph, correct them, and delete them. They sit beside the facts
+read from GitHub without ever overwriting them.
+
+```python
+from tracerag.memory import AgentMemory
+
+memory = AgentMemory(db, router.embed_query)
+memory.remember("checkout-service", "owned by", "payments team", source="run-42")
+memory.remember("checkout-service", "owned by", "billing team", source="run-57", replace=True)
+memory.forget("checkout-service", "owned by", "billing team")
+```
+
+- **Labelled.** Remembered facts reach the model as
+  `checkout-service <-> billing team: OWNED_BY (remembered, source: run-57)`, and they weigh less
+  than any fact read from GitHub.
+- **Replaced, not lost.** `replace=True` ends the older fact. It stops being retrieved but stays
+  in the store with the time it ended.
+- **Forget is scoped.** `forget()` deletes only agent facts, history included, and removes nodes
+  it created that are left with no edges. Facts read from GitHub can't be forgotten this way.
+- **Over MCP** as `remember` and `forget`, which exist only when `TRACERAG_MCP_WRITE_TOKEN` is set
+  and check that token on every call.
+
+Known limit: after a replace, the old object's name can still surface as a node with no live
+facts, because its ended fact is kept as history.
+
 ## What this actually is
 
 Two halves, deliberately separable.
@@ -208,7 +235,7 @@ flowchart TB
 | **Embeddings** | `sentence-transformers` · `all-MiniLM-L6-v2` | 384-dim vectors (cosine) |
 | **Entity extraction** | **GLiNER**, with **spaCy** as fallback | Zero-shot NER. spaCy runs when GLiNER can't load |
 | **Storage** | **LadybugDB** (embedded, Kùzu-lineage) | Single-file hybrid vector + graph store, native HNSW |
-| **LLM, router intent** | **Groq** · `llama-3.1-8b-instant` | Query intent classification; falls back to OpenRouter when unset |
+| **LLM, router intent** | **Groq** · `qwen/qwen3.8-27b` | Query intent classification; falls back to OpenRouter when unset |
 | **LLM, generation** | **OpenRouter** · `anthropic/claude-haiku-5.5` | Grounded answers + node summaries |
 | **API** | **FastAPI** + Uvicorn | trace · subgraph · answer · graphs · history |
 | **Concurrency** | read connection pool + bounded embed pool | parallel graph/vector reads; embeds off request threads |
@@ -367,7 +394,7 @@ null-byte queries all return normally. A Cypher injection attempt
 (`'; MATCH (n) DETACH DELETE n; //`) left all 1274 nodes intact. The parameterized queries
 hold.
 
-**Test suite.** 66 tests. Scoring logic runs against a fake store (no driver, no model
+**Test suite.** 80 tests. Scoring logic runs against a fake store (no driver, no model
 download); `test_db_integration.py` runs the real DDL, migration and `MERGE ... ON MATCH`
 clauses through LadybugDB. CI installs `pytest ladybug numpy pandas requests tqdm` (no torch), 
 so the whole job finishes in seconds.
@@ -455,7 +482,7 @@ Honest accounting of what is finished, what is partial, and what is not measured
 | Layer | Status |
 |---|---|
 | `graphsight` viewer + `graphsight-langgraph` tracer | **Real**, published at 0.3.1, install-verified from PyPI |
-| Retrieval engine (ingest → curate → route → trace) | **Real**, 66 tests, live-verified against `fastapi/fastapi` and `pallets/click` |
+| Retrieval engine (ingest → curate → route → trace) | **Real**, 80 tests, live-verified against `fastapi/fastapi` and `pallets/click` |
 | Structured GitHub ingest (typed, dated edges) | **Real**, exercised against the live API |
 | Studio UI (trace canvas, streamed answers, citations, sessions) | **Real**, wired to the live API with an offline sample fallback |
 | Multi-tenant pipeline | On the `saas-control-plane` branch, not `main`; see [Multi-tenant mode](#multi-tenant-mode) |

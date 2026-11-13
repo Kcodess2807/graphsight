@@ -52,7 +52,7 @@ def add(d: TraceDB, node_id, label, ntype, embedding=None, ts=0):
 
 def test_schema_has_the_new_columns(db):
     assert "ts" in db.table_columns(config.NODE_TABLE)
-    assert {"relation", "ts"} <= db.table_columns(config.REL_TABLE)
+    assert {"relation", "ts", "origin", "ended", "source"} <= db.table_columns(config.REL_TABLE)
 
 
 def test_fresh_store_needs_no_migration(db):
@@ -89,12 +89,14 @@ def test_pre_03_store_migrates_in_place(tmp_path):
     conn.close()
     raw.close()
 
-    d = TraceDB(store, pool_size=1)
-    added = d.migrate_schema()
-    assert set(added) == {
+    d = TraceDB(store, pool_size=1)  # opening is enough: no init_schema call
+    assert set(d.migrated) == {
         f"{config.NODE_TABLE}.ts",
         f"{config.REL_TABLE}.relation",
         f"{config.REL_TABLE}.ts",
+        f"{config.REL_TABLE}.origin",
+        f"{config.REL_TABLE}.ended",
+        f"{config.REL_TABLE}.source",
     }
     # the pre-existing rows survived and read back with the column default
     rows = d._fetch(
