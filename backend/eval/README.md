@@ -200,8 +200,22 @@ found on it (`results/join-pytest-3hop.md`): graph memory 19 to 23 of 29, agains
 12, 12 to 1 on the join tasks (p=0.003). Three of its six misses are still "RUN-7 board"
 against the gold "RUN-7".
 
-**Not rerun:** the 175 retrieval tasks. Three hops and up to 60 facts send the model more
-text per question, and neither the score nor the token cost has been measured there.
+**The 175 retrieval tasks, rerun with three hops** (`results/retrieval-3hop-*.md`). Nothing
+moved beyond noise:
+
+| | click before | click after | pytest before | pytest after |
+|---|---|---|---|---|
+| full context | 80/81 | 80/81 | 91/94 | 90/94 |
+| BM25 | 75/81 | 75/81 | 80/94 | 82/94 |
+| graph | 69/81 | 69/81 | 85/94 | 84/94 |
+| vector | 42/81 | 41/81 | 46/94 | 47/94 |
+| graph, prompt tokens | 2,379 | 2,849 | 10,637 | 10,433 |
+
+- **Graph:** the same 69 tasks on click; on pytest one gained and two lost.
+- **Graph and BM25 are still tied:** 153 to 157 across both repos, each alone right on 17
+  and 21 tasks.
+- **Cost:** about 20% more prompt tokens per graph question on click, and none on pytest.
+  The pytest graph was rebuilt from the same snapshot for this run.
 
 ## How to read these numbers
 
