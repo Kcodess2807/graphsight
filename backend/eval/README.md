@@ -103,6 +103,32 @@ one more run on each set.
   arguably right.
 - **Changed facts:** graph memory 5 of 6 on pytest, episodic 3 of 6. Each gave one stale value.
 
+### After the direction fix: pytest is no longer held out
+
+Reading the pytest failures showed a bug and three weaknesses, and the fixes were written from
+them. So `results/memory-pytest-nearmiss.md` is a check that the fixes work on the failures
+they target, not a held-out result.
+
+| Setup | pytest before these fixes | pytest after |
+|---|---|---|
+| none | 5/22 | 6/22 |
+| episodic | 14/22 | 15/22 |
+| graph memory | 16/22 | 20/22 |
+
+- **The bug:** facts reached the model with no direction, as `A <-> B: BLOCKED_BY`. The failed
+  retraction above was this: the retraction worked, and the model read another fact backwards.
+  Facts now print in the direction they are stored, `PR #15255 BLOCKED_BY Issue #15341`.
+- **Updates that missed:** an update named the same dashboard differently and used another
+  relation, so it stood beside the old fact. The extractor now sees what is already remembered.
+- **Relations folded together:** "has the final say" was stored as OWNED_BY. The extractor now
+  names the relation after the message's own words.
+- **Near misses:** the answer prompt, shared by every setup, now says a related fact is not
+  the answer.
+- **What it cost:** one task that passed now fails. Asked who is handling an issue, the agent
+  found "xdist team" and answered unknown because it wanted a person.
+- **Not rerun:** click, and the 175 retrieval tasks, which share the answer prompt and the fact
+  format. Their numbers above are from before these changes.
+
 ## How to read these numbers
 
 - **click is a development set.** The fixes below were made against those tasks, so its

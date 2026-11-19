@@ -16,6 +16,8 @@ from .curation import slugify
 from .db import TraceDB
 
 _MAX_NAME = 200
+# ponytail: newest N facts go in the prompt; pick by similarity once memories outgrow it
+_KNOWN_LIMIT = 100
 _RELATION = re.compile(r"^[A-Z][A-Z0-9_]{0,39}$")
 
 
@@ -35,11 +37,18 @@ _EXTRACT = """Extract the durable facts in this message as JSON, and nothing els
 - relation is a short name such as OWNED_BY, MAINTAINED_BY, BLOCKED_BY, ASSIGNED_TO,
   CONTACT, REVIEWED_BY, SCHEDULED_FOR, PUBLISHED_FROM, TRACKED_IN, SIGNED_WITH, MANAGED_BY.
   Use the same relation for the same kind of fact every time.
+- Name the relation after what the message says, not a broader one near it: "is on call
+  for" is ON_CALL_FOR, not OWNED_BY.
+- When the message is about a fact already remembered below, reuse that fact's subject and
+  relation exactly, so a change replaces it instead of standing beside it.
 - replaces_previous is true only when the message says a fact changed to a new value: moved,
   reassigned, now, instead, took over, slipped.
 - When the message says a fact no longer holds and nothing replaces it, give that fact with
   "object": null and "retracts": true.
 - Return {{"facts": []}} if there is nothing durable.
+
+Already remembered (subject | relation | object):
+{known}
 
 Message: {text}"""
 
@@ -100,9 +109,11 @@ class AgentMemory:
     def learn(self, text: str, llm, model: str, *, source: str) -> list[dict]:
         """Have the model pull facts out of a message, then remember each one.
         A fact the model got wrong is skipped rather than failing the rest."""
+        known = "\n".join(f"{f['subject']} | {f['relation']} | {f['object']}"
+                          for f in self.db.live_memory_facts(_KNOWN_LIMIT)) or "(none)"
         resp = llm.chat.completions.create(
             model=model, temperature=0,
-            messages=[{"role": "user", "content": _EXTRACT.format(text=text)}],
+            messages=[{"role": "user", "content": _EXTRACT.format(text=text, known=known)}],
         )
         stored = []
         for fact in _parse_facts(resp.choices[0].message.content or ""):

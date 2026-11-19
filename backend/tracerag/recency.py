@@ -21,7 +21,8 @@ def age_days(ts: int | None, now: float | None = None) -> float | None:
     """Age in days, or None when the item carries no usable timestamp."""
     if not ts:
         return None
-    now = time.time() if now is None else now
+    if now is None:
+        now = config.RECENCY_NOW or time.time()
     return max(0.0, (now - float(ts)) / SECONDS_PER_DAY)
 
 

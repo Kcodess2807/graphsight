@@ -313,6 +313,16 @@ class TraceDB:
             self.execute(match + f"SET r.ended = {_TS};", {**params, "ts": int(ts)})
         return int(n)
 
+    def live_memory_facts(self, limit: int) -> list[dict[str, Any]]:
+        """The newest live agent facts, as labels, for the extractor to reuse."""
+        return self._fetch(
+            f"MATCH (a:{config.NODE_TABLE})-[r:{config.REL_TABLE}]->(b:{config.NODE_TABLE}) "
+            f"WHERE r.origin = 'agent' AND r.ended = 0 "
+            f"RETURN a.label AS subject, r.relation AS relation, b.label AS object "
+            f"ORDER BY r.ts DESC LIMIT $limit;",
+            {"limit": int(limit)},
+        )
+
     def delete_memory_edges(self, from_id: str, relation: str, to_id: str) -> int:
         """Remove agent facts outright, history included. API facts are never touched."""
         match = (
@@ -424,21 +434,23 @@ class TraceDB:
         """Batched 1-hop expansion of a whole frontier in one query (avoids N+1)."""
         if not node_ids:
             return {}
-        rows = self._fetch(
-            f"MATCH (a:{config.NODE_TABLE}) WHERE a.id IN $ids "
-            f"OPTIONAL MATCH (a)-[r:{config.REL_TABLE}]-(b:{config.NODE_TABLE}) "
-            f"WHERE r.ended = 0 "
+        # both directions, each tagged, so "PR BLOCKED_BY Issue" can't be read backwards
+        ret = (
+            f"WHERE a.id IN $ids AND r.ended = 0 "
             f"RETURN a.id AS from_id, b.id AS to_id, b.label AS label, "
             f"b.type AS type, b.ts AS ts, r.confidence AS confidence, "
-            f"r.relation AS relation, r.origin AS origin, r.source AS source;",
+            f"r.relation AS relation, r.origin AS origin, r.source AS source, "
+        )
+        node, rel = config.NODE_TABLE, config.REL_TABLE
+        rows = self._fetch(
+            f"MATCH (a:{node})-[r:{rel}]->(b:{node}) {ret} true AS out "
+            f"UNION ALL MATCH (a:{node})<-[r:{rel}]-(b:{node}) {ret} false AS out;",
             {"ids": list(node_ids)},
         )
         grouped: dict[str, list[dict[str, Any]]] = {}
         for r in rows:
-            # no live edge: the optional match comes back as NaN through pandas, not None
-            if not isinstance(r["to_id"], str):
-                continue
             grouped.setdefault(r["from_id"], []).append({
+                "out": bool(r["out"]),
                 "id": r["to_id"], "label": r["label"], "type": r["type"],
                 "ts": int(r["ts"]) if r.get("ts") is not None else 0,
                 "relation": r.get("relation") or config.RELATION_CO_OCCURS,
