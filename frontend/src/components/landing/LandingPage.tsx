@@ -17,10 +17,12 @@ import {
   Ticket,
   Zap,
 } from "lucide-react";
+import { LogoMark } from "@/components/Wordmark";
 import { cn } from "@/lib/utils";
 import { FALLBACK_EMAIL, joinWaitlist, type WaitlistError } from "@/lib/waitlist";
 import { BTN_PRIMARY, CARD, EMERALD, LIME, Reveal, SectionHead } from "./_shared";
 import { HowItWorks } from "./HowItWorks";
+import { MemoryKinds, MemoryLedger, Results } from "./MemorySections";
 import { TraceXray } from "./TraceXray";
 
 // one-line rebrand if the product name changes
@@ -85,7 +87,7 @@ function WaitlistForm({ inputId, center }: { inputId: string; center?: boolean }
           <span className="flex h-[18px] w-[18px] items-center justify-center rounded-full bg-emerald-500">
             <Check className="h-3 w-3 text-white" strokeWidth={2.5} />
           </span>
-          Done. One email when the MCP server ships.
+          Done. One email when one-command MCP setup ships.
         </motion.span>
       </div>
     );
@@ -146,7 +148,7 @@ function WaitlistForm({ inputId, center }: { inputId: string; center?: boolean }
         )}
       </div>
       <p className={cn("mt-2 text-xs text-zinc-500", center && "text-center")}>
-        One email when the MCP server ships · Nothing else · Unsubscribe anytime
+        One email when one-command MCP setup ships · Nothing else · Unsubscribe anytime
       </p>
     </div>
   );
@@ -222,12 +224,12 @@ function Hero() {
       <div className="relative mx-auto max-w-6xl px-5 pb-20 pt-28 sm:pt-32">
         {/* side stickers — the product, scattered like desk notes (lg+) */}
         <div className="pointer-events-none absolute inset-0 hidden lg:block" aria-hidden="true">
-          <Sticker className="left-4 top-36 -rotate-6 xl:left-10">
+          <Sticker className="left-4 top-24 -rotate-6 xl:left-10">
             <div className="flex items-center gap-2.5 rounded-xl border border-[#131316] bg-white px-3.5 py-2.5 shadow-[3px_4px_0_0_#131316]">
-              <GitPullRequest className="h-4 w-4 text-emerald-700" strokeWidth={2.25} />
+              <Brain className="h-4 w-4 text-emerald-700" strokeWidth={2.25} />
               <div className="leading-tight">
-                <p className="text-[12.5px] font-bold text-[#131316]">PR #4821</p>
-                <p className="text-[10.5px] text-zinc-500">merged · checkout fix</p>
+                <p className="text-[12.5px] font-bold text-[#131316]">OWNED_BY billing team</p>
+                <p className="text-[10.5px] text-zinc-500">remembered, source: reorg-memo</p>
               </div>
             </div>
           </Sticker>
@@ -244,22 +246,20 @@ function Hero() {
             </svg>
           </Sticker>
 
-          <Sticker className="right-4 top-36 rotate-6 xl:right-10" delay={0.4}>
+          <Sticker className="right-4 top-24 rotate-6 xl:right-10" delay={0.4}>
             <span
               className="flex items-center gap-1.5 rounded-full border border-[#131316] px-3.5 py-2 text-[13px] font-bold text-[#131316] shadow-[3px_4px_0_0_#131316]"
               style={{ backgroundColor: LIME }}
             >
               <Zap className="h-4 w-4" strokeWidth={2.5} />
-              71ms recall
+              a source on every fact
             </span>
           </Sticker>
 
           <Sticker className="bottom-28 right-8 -rotate-3 xl:right-16" delay={1.2}>
-            <div className="flex items-center gap-2 rounded-xl border border-[#131316] bg-white px-3.5 py-2.5 shadow-[3px_4px_0_0_#131316]">
-              <Ticket className="h-4 w-4 text-sky-500" strokeWidth={2.25} />
-              <p className="text-[12px] font-bold text-[#131316]">
-                Issue #982 <span className="text-zinc-500">→</span> PR #4821
-              </p>
+            <div className="rounded-xl border border-[#131316] bg-white px-3.5 py-2.5 leading-tight shadow-[3px_4px_0_0_#131316]">
+              <p className="text-[12px] font-bold text-zinc-500 line-through">OWNED_BY payments team</p>
+              <p className="mt-0.5 text-[10.5px] text-zinc-500">ended, kept as history</p>
             </div>
           </Sticker>
         </div>
@@ -272,9 +272,9 @@ function Hero() {
                 className="rounded-full px-2 py-0.5 text-[11px] font-bold text-[#131316]"
                 style={{ backgroundColor: LIME }}
               >
-                SOON
+                NEW
               </span>
-              MCP server for Claude Code &amp; Cursor
+              Experimental: agents can write, update and retract facts
             </span>
           </Reveal>
 
@@ -284,17 +284,17 @@ function Hero() {
                 className="inline-block -rotate-1 rounded-xl px-3"
                 style={{ backgroundColor: LIME }}
               >
-                Graph memory
+                Project memory
               </span>{" "}
-              for your AI coding agents
+              for coding agents
             </h1>
           </Reveal>
 
           <Reveal delay={0.12}>
             <p className="mx-auto mt-6 max-w-xl text-[16px] leading-[1.65] text-zinc-600">
-              {BRAND} turns your GitHub PRs, issues, and commits into a queryable
-              graph, then shows which of it your agent retrieved and which it actually
-              used. Runs locally. MCP access for Claude Code and Cursor is next.
+              {BRAND} turns a repo&rsquo;s GitHub history into a typed graph, then lets
+              your agent add the team facts GitHub doesn&rsquo;t hold. Every fact records
+              where it came from, and every answer shows which ones it used. Runs locally.
             </p>
           </Reveal>
 
@@ -317,9 +317,9 @@ function Hero() {
           <Reveal delay={0.24} className="mt-10 flex justify-center">
             <div id="waitlist" className="w-full max-w-md scroll-mt-28">
               <p className="mb-3 text-[14px] font-medium text-zinc-600">
-                Want this inside Cursor or Claude Code?{" "}
+                Want it inside Cursor or Claude Code?{" "}
                 <span className="font-bold text-[#131316]">
-                  We&apos;ll email you when the MCP server ships.
+                  The MCP server runs from the repo today. We&rsquo;ll email you when one-command setup ships.
                 </span>
               </p>
               <WaitlistForm inputId="email-hero" center />
@@ -386,18 +386,62 @@ function Marquee({ paused, onToggle }: { paused: boolean; onToggle: () => void }
 
 /* ═══════════════ code showcase (kept element) ════════════════════ */
 
+// each snippet matches a real entry point: episodes.py, memory.py, mcp_server.py
 const USE_CASE_ITEMS = [
-  { title: "Causal bug tracing", body: "Which PR caused this regression, and who reviewed it?" },
-  { title: "Ownership queries", body: "Who owns checkout-service and what changed last week?" },
-  { title: "Impact analysis", body: "What breaks if we bump the stripe SDK?" },
-  { title: "Session recall", body: "Reopen any past trace. Nothing to re-index." },
+  {
+    title: "In a LangGraph agent",
+    body: "Recall past successful runs as evidence. On PyPI today.",
+    file: "agent.py",
+    code: `from graphsight_langgraph import EpisodeRetriever, capture
+
+# past runs come back like any other retrieved evidence
+episodes = EpisodeRetriever(k=3, dir=".graphsight")
+docs = episodes.invoke("who owns checkout-service?")
+
+# label this run so a later one can recall it
+capture(tracer, query=question, answer=answer,
+        outcome="success")`,
+  },
+  {
+    title: "From plain text",
+    body: "Hand it a message. It extracts the facts and stores them. Experimental, from a clone.",
+    file: "learn.py",
+    code: `from tracerag.memory import AgentMemory
+
+memory = AgentMemory(db, router.embed_query)
+
+# an LLM pulls the facts out, then each one is remembered
+memory.learn(
+    "Ownership of checkout-service moved to the billing team.",
+    llm, model, source="reorg-memo",
+)
+# -> checkout-service OWNED_BY billing team (replaced 1)`,
+  },
+  {
+    title: "From any MCP client",
+    body: "Run the MCP server from the repo. Packaged setup is next.",
+    file: "mcp tools",
+    code: `search_context("who owns checkout-service?")
+find_entity("checkout-service")
+trace_impact("checkout-service")
+
+# write tools exist only when a write token is set
+remember(token, "checkout-service", "OWNED_BY",
+         "billing team", replace=True)
+forget(token, "checkout-service", "OWNED_BY",
+       "payments team")`,
+  },
 ];
 
 function CodeShowcase() {
   const [active, setActive] = useState(0);
   return (
     <section className="mx-auto max-w-6xl px-5 py-16">
-      <Reveal>
+      <SectionHead
+        title="Three ways in"
+        sub="The same store, reached from an agent framework, from Python, or from an MCP client."
+      />
+      <Reveal className="mt-10">
         <div className={cn(CARD, "grid grid-cols-1 overflow-hidden shadow-[5px_6px_0_0_#131316] md:grid-cols-[320px_1fr]")}>
           {/* use-case list */}
           <div className="space-y-2 border-[#131316] bg-[#FAFAFB] p-4 md:border-r">
@@ -406,8 +450,10 @@ function CodeShowcase() {
                 key={item.title}
                 type="button"
                 onClick={() => setActive(i)}
+                aria-pressed={i === active}
                 className={cn(
                   "block w-full rounded-lg border p-3.5 text-left transition-[background-color,border-color,box-shadow] duration-150",
+                  "focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-600 focus-visible:outline-offset-2",
                   i === active
                     ? "border-emerald-600 bg-emerald-50 shadow-[2px_3px_0_0_#059669]"
                     : "border-transparent hover:border-zinc-300 hover:bg-white"
@@ -425,57 +471,12 @@ function CodeShowcase() {
               <span className="h-2.5 w-2.5 rounded-full bg-[#FF5F57]" />
               <span className="h-2.5 w-2.5 rounded-full bg-[#FEBC2E]" />
               <span className="h-2.5 w-2.5 rounded-full bg-[#28C840]" />
-              <span className="ml-2 text-[10px] text-zinc-400">zsh · example output</span>
+              <span className="ml-2 text-[10px] text-zinc-400">{USE_CASE_ITEMS[active].file}</span>
             </div>
-            <p className="text-zinc-400">
-              <span className="text-zinc-400">$</span> claude mcp add --transport http graphsight{" "}
-              <span className="text-[#6EE7B7]">http://localhost:8000/mcp</span>
-            </p>
-            <p className="text-emerald-400">✓ graphsight connected · 1,274 nodes</p>
-            <p aria-hidden="true">&nbsp;</p>
-            <p className="text-zinc-400">{"//"} ask anything with full history</p>
-            <p className="text-zinc-300">
-              <span className="text-zinc-400">$</span> claude{" "}
-              <span className="text-[#7DD3FC]">
-                &quot;{USE_CASE_ITEMS[active].body.toLowerCase().replace(/\?$/, "")}?&quot;
-              </span>
-            </p>
-            <p aria-hidden="true">&nbsp;</p>
-            <p className="text-zinc-400">
-              → <span className="text-[#38BDF8]">trace_impact</span>(&quot;checkout-service&quot;)
-            </p>
-            <p className="pl-4 text-zinc-300">
-              <span className="text-[#7DD3FC]">PR #4821</span> → checkout-service →{" "}
-              <span className="text-[#7DD3FC]">Issue #982</span>
-            </p>
-            <p className="pl-4 text-zinc-400">
-              traced in <span className="text-emerald-400">71ms</span> · 3 hops · confidence 0.94
-            </p>
+            <pre translate="no" className="whitespace-pre-wrap break-words text-zinc-200">{USE_CASE_ITEMS[active].code}</pre>
           </div>
         </div>
       </Reveal>
-    </section>
-  );
-}
-
-/* ═══════════════════════ stats band ══════════════════════════════ */
-
-function Stats() {
-  const stats = [
-    { value: "71ms", label: "Median local query, real embeddings" },
-    { value: "2", label: "pip installs to full retrieval visibility" },
-    { value: "0", label: "Bytes leave your machine" },
-  ];
-  return (
-    <section className="border-y border-zinc-200 bg-[#FAFAFB]">
-      <div className="mx-auto grid max-w-5xl grid-cols-1 gap-10 px-5 py-14 text-center sm:grid-cols-3">
-        {stats.map((s, i) => (
-          <Reveal key={s.label} delay={i * 0.06}>
-            <p className="font-display text-5xl font-bold tracking-tight text-[#131316]">{s.value}</p>
-            <p className="mt-2 text-[14px] font-medium text-zinc-600">{s.label}</p>
-          </Reveal>
-        ))}
-      </div>
     </section>
   );
 }
@@ -513,8 +514,8 @@ function LogFeed() {
   return (
     <div className="space-y-3">
       {[
-        { time: "14:23:45", tag: "INFO", tint: "bg-sky-500", text: "Fetched PR #4821 from GitHub." },
-        { time: "14:23:47", tag: "TRACE", tint: "bg-emerald-500", text: "Graph updated. 12 new edges, 3 entities linked." },
+        { time: "14:23:45", tag: "REMEMBER", tint: "bg-emerald-500", text: "checkout-service OWNED_BY billing team. Source: reorg-memo." },
+        { time: "14:23:45", tag: "ENDED", tint: "bg-zinc-500", text: "OWNED_BY payments team, replaced. Kept as history." },
       ].map((l) => (
         <div key={l.time} className="flex gap-2.5 rounded-lg border border-zinc-200 bg-[#FAFAFB] p-3">
           <span className={cn("mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full", l.tint)}>
@@ -568,18 +569,18 @@ function AgentRadar() {
 
 const USE_CASES = [
   {
-    title: "Point it at a repo",
-    body: "One command reads a GitHub repo's PRs, issues, commits, and reviews into the graph.",
+    title: "Seed it from a repo",
+    body: "One command reads a GitHub repo's PRs, issues, commits, and reviews into the store, so the agent starts with history.",
     art: <SourceCards />,
   },
   {
-    title: "Inspect what landed",
-    body: "Every PR and issue becomes typed entities and edges. Check what your agents will read before they read it.",
+    title: "Watch what it learns",
+    body: "Every write is a typed fact with a source and a time. Check what your agent will remember before it answers from it.",
     art: <LogFeed />,
   },
   {
-    title: "One graph, every agent",
-    body: "Any MCP client can read the same graph. Packaged Claude Code and Cursor setup is next.",
+    title: "One memory, every agent",
+    body: "Any MCP client reads the same store, and writes to it when you give it a write token.",
     art: <AgentRadar />,
   },
 ];
@@ -588,8 +589,7 @@ function UseCases() {
   return (
     <section className="mx-auto max-w-6xl px-5 py-20">
       <SectionHead
-        eyebrow="Use cases"
-        title="Show your agents how the codebase actually evolved."
+        title="A memory that starts full and keeps learning"
       />
       <div className="mt-12 grid grid-cols-1 gap-5 md:grid-cols-3">
         {USE_CASES.map((u, i) => (
@@ -686,12 +686,12 @@ function CollabCard() {
 }
 
 const BENEFITS = [
-  { icon: Brain, tint: "text-emerald-500", title: "Query, don't re-read", body: "Agents hit the graph instead of grepping the repo again." },
-  { icon: GitBranch, tint: "text-sky-500", title: "Causal chains", body: "ticket → PR → file, read from the API rather than guessed." },
-  { icon: HardDrive, tint: "text-orange-500", title: "Local by default", body: "One graph file per repo. No server to run, nothing to sync." },
-  { icon: Github, tint: "text-pink-500", title: "GitHub ingest", body: "One command turns a repo's PRs, issues, and commits into a graph." },
-  { icon: Route, tint: "text-teal-500", title: "Traced answers", body: "Every answer ships the path and the scores that produced it." },
-  { icon: Coins, tint: "text-amber-500", title: "Retrieved vs used", body: "See which context the answer used, and what it ignored." },
+  { icon: Brain, tint: "text-emerald-500", title: "Facts, not chat logs", body: "Memory is stored as subject, relation, object. It can be queried, replaced and ended." },
+  { icon: GitBranch, tint: "text-sky-500", title: "Provenance on every fact", body: "Each fact names its source, and the model is told which facts were remembered." },
+  { icon: HardDrive, tint: "text-orange-500", title: "Local by default", body: "One file holds the graph and the vectors. No server to run, nothing to sync." },
+  { icon: Github, tint: "text-pink-500", title: "Source facts are protected", body: "An agent can’t overwrite or forget what was read from GitHub." },
+  { icon: Route, tint: "text-teal-500", title: "Traced recall", body: "Every answer ships the path and the scores that produced it." },
+  { icon: Coins, tint: "text-amber-500", title: "Retrieved vs used", body: "See which memories the answer used, and which it ignored." },
 ];
 
 function Benefits() {
@@ -699,9 +699,8 @@ function Benefits() {
     <section className="border-y border-zinc-200 bg-[#FAFAFB]">
       <div className="mx-auto max-w-6xl px-5 py-20">
         <SectionHead
-          eyebrow="Why Graphsight"
-          title="What changes when retrieval is traceable"
-          sub="Six things that stop being your problem once retrieval is traceable."
+          title="Memory you can inspect"
+          sub="A memory you can’t see into is a liability. Every recall here leaves a trace you can open."
         />
 
         {/* row 1: wide integrate card + tall collab card */}
@@ -742,12 +741,12 @@ function FinalCta() {
             <Terminal className="h-5 w-5 text-white" strokeWidth={2} />
           </span>
           <h2 className="mt-5 font-display text-3xl font-bold tracking-[-0.02em] text-[#131316] sm:text-4xl">
-            Start with the tracer
+            Give your agent a memory
           </h2>
           <p className="mx-auto mt-3 max-w-md text-[15px] leading-relaxed text-zinc-600">
             Both packages are on PyPI. Nothing to wait for, nothing to sign up for.
-            Leave your email only if you want to hear when the MCP server lands in
-            Claude Code and Cursor.
+            Leave your email only if you want to hear when one-command MCP setup
+            for Claude Code and Cursor ships.
           </p>
         </Reveal>
         <Reveal delay={0.08} className="mt-8 flex justify-center">
@@ -865,7 +864,7 @@ export function LandingPage() {
   const [paused, setPaused] = useState(false);
 
   useEffect(() => {
-    document.title = `${BRAND} · Graph memory for AI coding agents`;
+    document.title = `${BRAND} · Project memory for coding agents`;
     const onScroll = () => setScrolled(window.scrollY > 24);
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
@@ -889,9 +888,7 @@ export function LandingPage() {
       >
         <div className="mx-auto flex h-full max-w-6xl items-center justify-between px-5">
           <span className="flex items-center gap-2">
-            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#131316]">
-              <Terminal className="h-3.5 w-3.5 text-white" strokeWidth={2} />
-            </span>
+            <LogoMark />
             <span className="text-[16px] font-bold tracking-tight text-[#131316]">{BRAND}</span>
           </span>
           <div className="flex items-center gap-2">
@@ -923,11 +920,13 @@ export function LandingPage() {
       <main tabIndex={-1} className="outline-none">
         <Hero />
         <Marquee paused={paused} onToggle={() => setPaused((v) => !v)} />
+        <MemoryLedger />
+        <MemoryKinds />
         <CodeShowcase />
+        <Results />
         <TraceXray />
         <Install />
         <HowItWorks />
-        <Stats />
         <UseCases />
         <Benefits />
         <FinalCta />
@@ -937,9 +936,7 @@ export function LandingPage() {
       <footer className="border-t border-zinc-200 bg-white">
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-3 px-5 py-7 sm:flex-row">
           <span className="flex items-center gap-2">
-            <span className="flex h-5 w-5 items-center justify-center rounded bg-[#131316]">
-              <Terminal className="h-2.5 w-2.5 text-white" strokeWidth={2} />
-            </span>
+            <LogoMark className="h-5 w-5" />
             <span className="text-sm font-bold text-[#131316]">{BRAND}</span>
             <span className="text-xs text-zinc-500">© 2026</span>
           </span>

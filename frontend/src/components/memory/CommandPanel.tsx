@@ -1,6 +1,7 @@
 import { useState, type RefObject } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
+  BookMarked,
   ChevronRight,
   CornerDownLeft,
   History,
@@ -109,12 +110,12 @@ export function CommandPanel({
             <input
               ref={inputRef}
               name="trace-query"
-              aria-label="Trace query"
+              aria-label="Question for the memory"
               autoComplete="off"
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && submit()}
-              placeholder="Trace anything…"
+              placeholder="Ask the memory…"
               spellCheck={false}
               className={cn(
                 "min-w-0 flex-1 bg-transparent text-base text-[#131316] md:text-[13px]",
@@ -125,7 +126,7 @@ export function CommandPanel({
               <button
                 type="button"
                 onClick={submit}
-                aria-label="Run trace"
+                aria-label="Ask"
                 className="rounded-md border border-[#131316] bg-white p-1.5 text-[#131316] shadow-[1px_2px_0_0_#131316] transition-transform duration-150 hover:-translate-y-0.5"
               >
                 <CornerDownLeft className="h-3 w-3" strokeWidth={2.5} />
@@ -187,6 +188,37 @@ export function CommandPanel({
           )}
         </AnimatePresence>
 
+        {/* the facts behind the answer, remembered ones marked with their source */}
+        {answer !== null && !tracing && !!trace.facts?.length && (
+          <section className="mt-4 px-1">
+            <SectionLabel icon={BookMarked}>Memories used</SectionLabel>
+            <ul className="mt-2 space-y-1.5">
+              {trace.facts.map((f) => (
+                <li
+                  key={f.text}
+                  className={cn(
+                    "rounded-lg border px-2.5 py-2",
+                    f.remembered ? "border-emerald-600 bg-emerald-50" : "border-zinc-300 bg-white"
+                  )}
+                >
+                  <p translate="no" className="break-words font-mono text-[11px] font-bold leading-normal text-[#131316]">
+                    {f.text}
+                  </p>
+                  <p className="mt-0.5 text-[11px] text-zinc-600">
+                    {f.remembered ? (
+                      <>
+                        <span className="font-bold text-emerald-700">remembered</span>, source: {f.source || "unknown"}
+                      </>
+                    ) : (
+                      "read from the source"
+                    )}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
         {/* session history — present only for signed-in users */}
         {sessions && onSelectSession && (
           <Accordion title="Sessions" icon={MessageSquare} defaultOpen={sessions.length > 0}>
@@ -216,7 +248,7 @@ export function CommandPanel({
         {onQuery && (
           <>
             {/* suggested traces */}
-            <Accordion title="Suggested Traces" icon={Route} defaultOpen>
+            <Accordion title="Try asking" icon={Route} defaultOpen>
               {suggestions.map((s) => (
                 <RowButton key={s.query} onClick={() => onQuery(s.query)}>
                   {s.label}
@@ -225,9 +257,9 @@ export function CommandPanel({
             </Accordion>
 
             {/* recent queries */}
-            <Accordion title="Recent Queries" icon={History} defaultOpen={recentQueries.length > 0}>
+            <Accordion title="Asked before" icon={History} defaultOpen={recentQueries.length > 0}>
               {recentQueries.length === 0 ? (
-                <p className="px-2 py-1.5 text-xs text-zinc-500">Nothing traced yet.</p>
+                <p className="px-2 py-1.5 text-xs text-zinc-500">Nothing asked yet.</p>
               ) : (
                 recentQueries.map((q, i) => (
                   <RowButton key={`${q}-${i}`} onClick={() => onQuery(q)} mono>
@@ -243,8 +275,8 @@ export function CommandPanel({
       {/* ── metrics footer — the speed is the brand, keep it visible ── */}
       <div className="flex items-center justify-between border-t border-[#131316] px-4 py-3">
         <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-zinc-500">
-          {trace.graph.nodes.length} nodes ·{" "}
-          {trace.graph.edges.filter((e) => e.active).length} traced
+          entities {trace.graph.nodes.length} ·{" "}
+          memories used {trace.facts?.length ?? 0}
         </span>
         <span className="font-mono text-[11px] font-bold text-emerald-700">
           {trace.metrics.queryTimeSec > 0
@@ -265,7 +297,7 @@ function SectionLabel({
 }) {
   return (
     <span className="flex items-center gap-1.5 font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-700">
-      <Icon className="h-3 w-3" />
+      <Icon className="h-3 w-3" aria-hidden="true" />
       {children}
     </span>
   );

@@ -158,7 +158,7 @@ function CanvasInner({ trace, tracing, focusNode, onSelectNode, readOnly }: Grap
               <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
             </span>
             <span className="font-mono text-[11px] font-bold tracking-wide text-[#131316]">
-              traversing graph…
+              searching memory…
             </span>
           </div>
         </div>
@@ -172,7 +172,7 @@ function CanvasInner({ trace, tracing, focusNode, onSelectNode, readOnly }: Grap
               No matches for &ldquo;{trace.query}&rdquo;
             </h1>
             <p className="mt-3 text-sm leading-relaxed text-zinc-600">
-              Nothing in this graph is close to that. Try a person, a PR number, or a file name.
+              Nothing in memory is close to that. Try a person, a PR number, or a file name.
             </p>
           </div>
         </div>
@@ -185,24 +185,24 @@ function CanvasInner({ trace, tracing, focusNode, onSelectNode, readOnly }: Grap
               {"Graphsight · Memory"}
             </p>
             <h1 className="mt-4 font-display text-4xl font-bold leading-[1.12] tracking-tight text-[#131316]">
-              Your codebase remembers{" "}
+              Ask what your agent{" "}
               <span
                 className="inline-block -rotate-1 rounded-lg px-2"
                 style={{ backgroundColor: LIME }}
               >
-                everything.
+                remembers.
               </span>
             </h1>
             <p className="mx-auto mt-4 max-w-sm text-sm leading-relaxed text-zinc-600">
-              Trace any bug to the PR that shipped it, the person who wrote it,
-              and the ticket that asked for it.
+              Every answer shows the facts it used, where each one came from,
+              and which the agent was told rather than read.
             </p>
             {!readOnly && (
               <p className="mt-8 flex items-center justify-center gap-2 text-xs text-zinc-500">
                 <kbd className="rounded-md border border-[#131316] bg-white px-2 py-1 font-mono text-[11px] font-bold text-[#131316] shadow-[2px_2px_0_0_#131316]">
                   {MOD_KEY}K
                 </kbd>
-                to start a trace
+                to ask
               </p>
             )}
           </div>

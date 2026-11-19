@@ -43,7 +43,7 @@ inspector). No glassmorphism, no soft drop shadows, no glows. Hover =
 - Easing `[0.16, 1, 0.3, 1]`; entrances are 6–12px rise + fade.
 - **Tracing** (query running): no spinner ever — staggered sonar rings on
   nodes (`animate-trace-ping`), an emerald light sweep (`animate-scan`), and
-  a hard-shadow status chip ("traversing graph…").
+  a hard-shadow status chip ("searching memory…").
 - **Camera pan** (citation click): `setCenter`, 650ms, zoom 1.25.
 - Landing extras: tilted logo marquee (32s loop), floating hero stickers
   (`lp2-float`). Everything loops respects `prefers-reduced-motion`.
@@ -79,5 +79,5 @@ Contracts: everything renders from `TraceState` (`types/trace.ts`).
 ## 7. Voice
 
 Interface copy is instrument-panel terse and never anthropomorphic:
-"traversing graph…", "Recall", "49ms". No "I found…", no "Thinking…",
+"searching memory…", "Recall", "49ms". No "I found…", no "Thinking…",
 no chat bubbles, no avatars.

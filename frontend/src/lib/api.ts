@@ -1,4 +1,4 @@
-import type { EntityType, TraceEdge, TraceNode, TraceState } from "@/types/trace";
+import type { EntityType, MemoryFact, TraceEdge, TraceNode, TraceState } from "@/types/trace";
 import { layoutGraph } from "@/lib/layout";
 import { getAuthToken } from "@/lib/authToken";
 
@@ -60,6 +60,8 @@ export interface TraceResponse {
   results: TraceResult[];
   trace_log: TraceLog;
   context?: string;
+  // "A REL B", with " (remembered, source: X)" on agent-written facts
+  facts?: string[];
 }
 
 export interface SubgraphNode {
@@ -299,6 +301,17 @@ function resultSourceUrl(r: TraceResult): string | undefined {
   return r.documents?.find((d) => /^https?:\/\//.test(d.path ?? ""))?.path;
 }
 
+const REMEMBERED = / \(remembered, source: (.*)\)$/;
+
+export function parseFacts(facts: string[] = []): MemoryFact[] {
+  return facts.map((f) => {
+    const m = f.match(REMEMBERED);
+    return m
+      ? { text: f.replace(REMEMBERED, ""), remembered: true, source: m[1] }
+      : { text: f, remembered: false };
+  });
+}
+
 // merge trace_log + subgraph into the single TraceState the UI renders
 export function adaptToTraceState(
   query: string,
@@ -431,6 +444,7 @@ export function adaptToTraceState(
     metrics: { queryTimeSec: +(elapsedMs / 1000).toFixed(2) },
     graph: { nodes: positioned, edges },
     context: trace.context,
+    facts: parseFacts(trace.facts),
   };
 }
 
