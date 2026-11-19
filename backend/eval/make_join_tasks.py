@@ -1,4 +1,4 @@
-"""Build tasks/join_pytest.json: questions that need a remembered fact AND a GitHub
+"""Build tasks/join_<repo>.json: questions that need a remembered fact AND a GitHub
 fact. The GitHub half of every gold answer is read from the frozen snapshot and
 asserted here; the remembered half is invented team knowledge.
 
@@ -25,33 +25,57 @@ NOTE = (
     "prompt, is reported beside them as the ceiling."
 )
 
+PYDANTIC_NOTE = (
+    "Join tasks on pydantic/pydantic, a repo no earlier run or fix has seen. Written and "
+    "committed before the three-hop change and before any run on this repo. The remembered "
+    "facts are invented. Same reading as join_pytest: graph memory has to beat episodic "
+    "recall on the tasks where a join exists (two-sided sign test, p<0.05). A second "
+    "reading is fixed here too: with three hops, graph memory should answer at least 4 of "
+    "the 6 memory_then_github tasks, the direction it lost on pytest."
+)
 
-def main() -> int:
-    data = json.loads((HERE / "corpus/pytest_dev_pytest.json").read_text(encoding="utf-8"))
-    pulls = {p["number"]: p for p in data["pulls"]}
-    touched = Counter(f["filename"] for p in data["pulls"] for f in p.get("files", []))
 
-    def author(n: int) -> str:
-        return pulls[n]["user"]["login"]
+class Snapshot:
+    def __init__(self, name: str) -> None:
+        data = json.loads((HERE / f"corpus/{name}.json").read_text(encoding="utf-8"))
+        self.pulls = {p["number"]: p for p in data["pulls"]}
+        self.issues = {i["number"]: i for i in data["issues"]}
+        self.touched = Counter(f["filename"] for p in data["pulls"] for f in p.get("files", []))
+        self.tasks: list[dict] = []
 
-    def reviewers(n: int) -> list[str]:
-        return sorted({r["user"]["login"] for r in pulls[n].get("reviews", [])})
+    def author(self, n: int) -> str:
+        return self.pulls[n]["user"]["login"]
 
-    def only_file(n: int, path: str) -> str:
+    def reporter(self, n: int) -> str:
+        return self.issues[n]["user"]["login"]
+
+    def reviewers(self, n: int) -> list[str]:
+        return sorted({r["user"]["login"] for r in self.pulls[n].get("reviews", [])})
+
+    def only_file(self, n: int, path: str) -> str:
         # the file must lead to exactly this PR, or the join has more than one answer
-        assert path in [f["filename"] for f in pulls[n]["files"]] and touched[path] == 1, (n, path)
+        assert path in [f["filename"] for f in self.pulls[n]["files"]] and self.touched[path] == 1, (n, path)
         return path
 
-    def resolves(n: int) -> int:
-        (issue,) = sorted(set(CLOSES.findall(pulls[n].get("body") or "")))
+    def resolves(self, n: int) -> int:
+        (issue,) = sorted(set(CLOSES.findall(self.pulls[n].get("body") or "")))
         return int(issue)
 
-    tasks: list[dict] = []
+    def add(self, category: str, statements: list[str], question: str, gold: list[str], **extra) -> None:
+        n = sum(t["category"] == category for t in self.tasks) + 1
+        self.tasks.append({"id": f"{category}-{n}", "category": category, "statements": statements,
+                           "question": question, "gold": gold, **extra})
 
-    def add(category: str, statements: list[str], question: str, gold: list[str], **extra) -> None:
-        n = sum(t["category"] == category for t in tasks) + 1
-        tasks.append({"id": f"{category}-{n}", "category": category, "statements": statements,
-                      "question": question, "gold": gold, **extra})
+    def write(self, name: str, note: str) -> None:
+        out = HERE / f"tasks/{name}.json"
+        lines = ",\n".join("    " + json.dumps(t) for t in self.tasks)
+        out.write_text('{\n  "note": ' + json.dumps(note) + ',\n  "tasks": [\n' + lines + "\n  ]\n}\n", encoding="utf-8")
+        print(f"{len(self.tasks)} tasks -> {out.name}:", dict(Counter(t["category"] for t in self.tasks)))
+
+
+def pytest_tasks() -> None:
+    s = Snapshot("pytest_dev_pytest")
+    pulls, author, reviewers, only_file, resolves, add = s.pulls, s.author, s.reviewers, s.only_file, s.resolves, s.add
 
     # remembered fact first, then a GitHub hop: team -> file -> PR -> person or issue
     for pr, path, team in [
@@ -106,15 +130,71 @@ def main() -> int:
         "Which group does the author of PR #9999 sit in?", ["unknown"])
     assert 9999 not in pulls and len(pulls[15266]["files"]) == 1
     # nobody above was given a group or squad who authored a "missing" PR
-    stated = " ".join(s for t in tasks for s in t["statements"])
+    stated = " ".join(st for t in s.tasks for st in t["statements"])
     assert author(15255) not in stated, author(15255)
 
-    out = HERE / "tasks/join_pytest.json"
-    lines = ",\n".join("    " + json.dumps(t) for t in tasks)
-    out.write_text('{\n  "note": ' + json.dumps(NOTE) + ',\n  "tasks": [\n' + lines + "\n  ]\n}\n", encoding="utf-8")
-    print(f"{len(tasks)} tasks -> {out.name}:", dict(Counter(t["category"] for t in tasks)))
-    return 0
+    s.write("join_pytest", NOTE)
+
+
+def pydantic_tasks() -> None:
+    s = Snapshot("pydantic_pydantic")
+    pulls, author, reporter, reviewers, only_file, add = s.pulls, s.author, s.reporter, s.reviewers, s.only_file, s.add
+
+    # told fact first, then GitHub: team -> file -> PR -> person. Three hops from the team.
+    for pr, path, team in [
+        (14299, "tests/test_titles.py", "schema team"),
+        (14261, "pydantic/_internal/_repr.py", "internals team"),
+        (14260, "docs/concepts/serialization.md", "docs team"),
+        (14307, "tests/types/test_bytesize.py", "types team"),
+        (14255, "pydantic/_internal/_signature.py", "signature team"),
+    ]:
+        add("memory_then_github", [f"The {team} owns {only_file(pr, path)}."],
+            f"Who authored the PR that touches the file the {team} owns?", [author(pr)])
+    add("memory_then_github", [f"The root model team owns {only_file(14225, 'tests/test_root_model.py')}."],
+        "Who reviewed the PR that touches the file the root model team owns?", reviewers(14225))
+
+    # GitHub first, then the told fact: PR -> author -> group
+    for pr, group in [(14299, "validation guild"), (14268, "settings guild"), (14244, "mypy guild"),
+                      (14226, "json schema guild"), (14248, "serialization guild"), (14223, "dataclasses guild")]:
+        add("github_then_memory", [f"{author(pr)} sits in the {group}."],
+            f"Which group does the author of PR #{pr} sit in?", [group])
+
+    # issue -> the person who reported it -> where they work
+    for issue, office in [(14310, "Lisbon office"), (14309, "Toronto office"), (14297, "Pune office"),
+                          (14291, "Austin office"), (14272, "Perth office"), (14264, "Taipei office")]:
+        add("through_a_reporter", [f"{reporter(issue)} works from the {office}."],
+            f"Which office does the reporter of Issue #{issue} work from?", [office])
+
+    # PR -> its one file -> the team that owns it; ownership was stated above
+    for pr, team in [(14299, "schema team"), (14260, "docs team")]:
+        assert len(pulls[pr]["files"]) == 1
+        add("through_a_file", [], f"PR #{pr} changes one file. Which team owns that file?", [team])
+
+    # the told half changed: only the newer value is right
+    for pr, old, new in [(14261, "core squad", "rust squad"), (14250, "packaging squad", "ci squad"),
+                         (14225, "triage squad", "typing squad")]:
+        (reviewer,) = reviewers(pr)
+        add("join_after_update",
+            [f"{reviewer} is in the {old}.", f"{reviewer} moved from the {old} to the {new}."],
+            f"Which squad is the reviewer of PR #{pr} in?", [new], stale=[old])
+
+    # one half of the join is missing, so the right answer is unknown
+    add("join_missing", [], "Which group does the author of PR #14279 sit in?", ["unknown"])
+    add("join_missing", [], "Which office does the reporter of Issue #14275 work from?", ["unknown"])
+    add("join_missing", [], "Which office does the reporter of Issue #14237 work from?", ["unknown"])
+    add("join_missing", [], "PR #14268 changes one file. Which team owns that file?", ["unknown"])
+    add("join_missing", ["Avery-Quill sits in the benchmarks guild."],
+        "Which group does the author of PR #9999 sit in?", ["unknown"])
+    assert 9999 not in pulls and len(pulls[14268]["files"]) == 1
+    stated = " ".join(st for t in s.tasks for st in t["statements"])
+    for login in (author(14279), reporter(14275), reporter(14237)):
+        assert login not in stated, login
+    # the owned files of the "missing" file task were never given an owner
+    assert not any(f["filename"] in stated for f in pulls[14268]["files"])
+
+    s.write("join_pydantic", PYDANTIC_NOTE)
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    pytest_tasks()
+    pydantic_tasks()
