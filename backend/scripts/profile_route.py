@@ -16,8 +16,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from tracerag.db import TraceDB           # noqa: E402
-from tracerag.router import TraceRouter   # noqa: E402
+from graphsight_memory.db import TraceDB           # noqa: E402
+from graphsight_memory.router import TraceRouter   # noqa: E402
 
 # mix of marker and keyword-less queries to exercise both LLM and LLM-free phases
 DEFAULT_QUERIES = [

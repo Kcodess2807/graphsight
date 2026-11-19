@@ -2,6 +2,8 @@
 # CREATE_VECTOR_INDEX throws 'Caught an unknown exception!', so ingestion fails
 # at the index build. Verified on 3.12.3 and 3.13.7.
 
+# The engine is its own package: pip install -e ../graphsight-memory first.
+
 # --- Storage Core ---
 # ponytail: pinned. 0.21+ needs a separately downloaded C API lib
 # (LBUG_C_API_LIB_PATH); unpin once that's wired into setup and CI.

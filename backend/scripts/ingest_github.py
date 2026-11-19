@@ -22,31 +22,23 @@ import logging
 import os
 import re
 import sys
-from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
-import requests
 from tqdm import tqdm
 
 _SCRIPTS = Path(__file__).resolve().parent
 sys.path.insert(0, str(_SCRIPTS.parent))
 sys.path.insert(0, str(_SCRIPTS))
 
-from tracerag import config                       # noqa: E402
-from tracerag.db import TraceDB                    # noqa: E402
-from tracerag.extract import EntityExtractor       # noqa: E402
-from tracerag.curation import CurationEngine, IngestStats  # noqa: E402
-from tracerag.github_graph import GitHubGraphBuilder       # noqa: E402
+from graphsight_memory.db import TraceDB                    # noqa: E402
+from graphsight_memory.extract import EntityExtractor       # noqa: E402
+from graphsight_memory.curation import CurationEngine, IngestStats  # noqa: E402
+from graphsight_memory.github import (  # noqa: E402
+    attach_pr_details, fetch_commits, fetch_issues, fetch_merged_prs, prune)
+from graphsight_memory.github_graph import GitHubGraphBuilder       # noqa: E402
 from ingest import ingest_text                     # noqa: E402
 
 logger = logging.getLogger("tracerag.github")
-
-GITHUB_API = "https://api.github.com"
-_PER_PAGE = 100          # GitHub's max page size
-_MAX_PR_FILES = 3000     # GitHub's own hard cap on a PR's file list
-_MAX_PR_REVIEWS = 200
-_DETAIL_WORKERS = 8      # concurrent per-PR detail fetches
-
 
 _MD_IMAGE = re.compile(r"!\[[^\]]*\]\([^)]*\)")
 _HTML_COMMENT = re.compile(r"<!--.*?-->", re.DOTALL)
@@ -71,128 +63,6 @@ def assemble_text(pr: dict) -> tuple[str, str]:
     body = clean_pr_body(pr.get("body")).rstrip(". ")
     text = f"PR #{number} merged by {author}. Title: {title}. Description: {body}."
     return f"pr-{number}", text
-
-
-def _headers(token: str | None) -> dict[str, str]:
-    h = {
-        "Accept": "application/vnd.github+json",
-        "X-GitHub-Api-Version": "2022-11-28",
-    }
-    if token:
-        h["Authorization"] = f"Bearer {token}"
-    return h
-
-
-def _get(url: str, token: str | None, params: dict | None = None):
-    resp = requests.get(url, headers=_headers(token), params=params, timeout=30)
-    if resp.status_code != 200:
-        raise RuntimeError(f"GitHub API {resp.status_code} for {url}: {resp.text[:200]}")
-    return resp.json()
-
-
-def _paged(url: str, limit: int, token: str | None, params: dict,
-           keep=lambda item: True) -> list[dict]:
-    """Page an endpoint until `limit` kept items, or the listing runs out."""
-    out: list[dict] = []
-    page = 1
-    while len(out) < limit:
-        batch = _get(url, token, {**params, "per_page": _PER_PAGE, "page": page})
-        if not batch:
-            break
-        out.extend(item for item in batch if keep(item))
-        # a short page is the last page — checking this saves one request per
-        # call, which matters when it runs once per PR
-        if len(batch) < _PER_PAGE:
-            break
-        page += 1
-    return out[:limit]
-
-
-def fetch_merged_prs(repo: str, limit: int, token: str | None) -> list[dict]:
-    """Page through closed PRs, keeping only merged ones (merged_at != null), until limit."""
-    return _paged(
-        f"{GITHUB_API}/repos/{repo}/pulls", limit, token,
-        {"state": "closed"}, keep=lambda pr: bool(pr.get("merged_at")),
-    )
-
-
-def fetch_issues(repo: str, limit: int, token: str | None) -> list[dict]:
-    """Issues only — the endpoint also returns PRs, which the builder skips."""
-    if limit <= 0:
-        return []
-    return _paged(
-        f"{GITHUB_API}/repos/{repo}/issues", limit, token,
-        {"state": "all"}, keep=lambda i: "pull_request" not in i,
-    )
-
-
-def fetch_commits(repo: str, limit: int, token: str | None) -> list[dict]:
-    if limit <= 0:
-        return []
-    return _paged(f"{GITHUB_API}/repos/{repo}/commits", limit, token, {})
-
-
-def attach_pr_details(
-    repo: str, prs: list[dict], token: str | None, *,
-    files: bool = False, reviews: bool = False, workers: int = _DETAIL_WORKERS,
-) -> None:
-    """Fill each PR's `files` / `reviews` in place — one request per PR per kind.
-
-    Fetched concurrently: serially this dominated ingest wall time (100 PRs took
-    ~110s of the 143s total). GitHub allows this comfortably inside 5000/hr.
-    """
-    if not (files or reviews):
-        return
-
-    def fetch_one(pr: dict) -> None:
-        number = pr.get("number")
-        if number is None:
-            return
-        base = f"{GITHUB_API}/repos/{repo}/pulls/{number}"
-        if files:
-            # paged: the endpoint caps at 100 per page, so a wide PR would
-            # otherwise be silently truncated at its first hundred files
-            pr["files"] = _paged(f"{base}/files", _MAX_PR_FILES, token, {})
-        if reviews:
-            pr["reviews"] = _paged(f"{base}/reviews", _MAX_PR_REVIEWS, token, {})
-
-    kinds = "+".join(k for k, on in (("files", files), ("reviews", reviews)) if on)
-    with ThreadPoolExecutor(max_workers=workers) as pool:
-        futures = {pool.submit(fetch_one, pr): pr for pr in prs}
-        for fut in tqdm(as_completed(futures), total=len(futures),
-                        desc=f"{repo} {kinds}", unit="pr", leave=False):
-            try:
-                fut.result()
-            except Exception as exc:  # noqa: BLE001 — one bad PR isn't fatal
-                logger.debug("[%s] detail fetch for #%s failed: %s",
-                             repo, futures[fut].get("number"), exc)
-
-
-def _prune_snapshot(prs: list[dict], issues: list[dict], commits: list[dict]) -> dict:
-    """Only the fields ingest reads: a raw GitHub payload is mostly URLs."""
-    user = lambda x: {"login": (x.get("user") or {}).get("login")}  # noqa: E731
-    return {
-        "pulls": [{
-            **{k: pr.get(k) for k in ("number", "title", "body", "html_url",
-                                      "merged_at", "closed_at", "created_at")},
-            "user": user(pr),
-            "files": [{"filename": f.get("filename")} for f in pr.get("files") or []],
-            "reviews": [{"user": user(r)} for r in pr.get("reviews") or []],
-        } for pr in prs],
-        "issues": [{
-            **{k: i.get(k) for k in ("number", "title", "body", "html_url", "created_at")},
-            "user": user(i),
-        } for i in issues],
-        "commits": [{
-            "sha": c.get("sha"),
-            "author": {"login": (c.get("author") or {}).get("login")},
-            "commit": {
-                "message": (c.get("commit") or {}).get("message"),
-                "author": {k: ((c.get("commit") or {}).get("author") or {}).get(k)
-                           for k in ("name", "date")},
-            },
-        } for c in commits],
-    }
 
 
 def repo_db_path(repo: str, graphs_dir: Path) -> Path:
@@ -256,7 +126,7 @@ def ingest_repo(
         commits = fetch_commits(repo, args.commits, token)
         attach_pr_details(repo, prs, token, files=args.files, reviews=args.reviews)
         if args.snapshot:
-            frozen = _prune_snapshot(prs, issues, commits)
+            frozen = prune(prs, issues, commits)
             args.snapshot.write_text(json.dumps(frozen, indent=1), encoding="utf-8")
     logger.info(
         "[%s] fetched %d PRs, %d issues, %d commits -> %s",
@@ -322,8 +192,9 @@ def main(argv: list[str] | None = None) -> int:
         logger.warning("GITHUB_TOKEN not set — unauthenticated requests are capped "
                        "at 60/hr. Add it to .env to raise the limit.")
 
-    repo_root = config.PROJECT_ROOT.parent
-    graphs_dir = args.graphs_dir or (config.PROJECT_ROOT / "graphs")
+    backend_dir = Path(__file__).resolve().parents[1]
+    repo_root = backend_dir.parent
+    graphs_dir = args.graphs_dir or (backend_dir / "graphs")
     if not graphs_dir.is_absolute():
         graphs_dir = repo_root / graphs_dir
 

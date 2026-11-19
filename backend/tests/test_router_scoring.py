@@ -7,8 +7,8 @@ import time
 
 import pytest
 
-from tracerag import config
-from tracerag.router import TraceRouter
+from graphsight_memory import config
+from graphsight_memory.router import TraceRouter
 
 DAY = 86400
 NOW = time.time()
@@ -189,7 +189,7 @@ if __name__ == "__main__":
 
 
 def test_remembered_facts_have_their_own_budget():
-    from tracerag.router import graph_facts
+    from graphsight_memory.router import graph_facts
 
     hops = [{"from_id": f"p{i}", "to_id": "svc", "relation": "AUTHORED", "origin": "api"} for i in range(config.GRAPH_MAX_FACTS + 10)]
     hops.append({"from_id": "svc", "to_id": "team", "relation": "OWNED_BY", "origin": "agent", "source": "r1"})

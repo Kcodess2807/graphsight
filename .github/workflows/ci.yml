@@ -25,9 +25,8 @@ jobs:
       - name: run tests
         run: pytest graphsight-langgraph/tests graphsight/tests -q
 
-  # The graph engine: scoring maths plus the real LadybugDB path (schema,
-  # migration, MERGE semantics). Deliberately avoids torch/spacy — these tests
-  # stub the embedder, so the whole job installs in seconds.
+  # The graph engine (graphsight-memory) and the backend tests that need only it.
+  # No torch or spacy: every test stubs the embedder, so no model is downloaded.
   engine-tests:
     runs-on: ubuntu-latest
     steps:
@@ -36,7 +35,9 @@ jobs:
         with:
           python-version: "3.12"
       - name: install engine test deps
-        run: pip install pytest ladybug==0.18.3 numpy pandas requests tqdm
+        run: pip install -e ./graphsight-memory pytest tqdm
+      - name: run graphsight-memory tests
+        run: pytest -q graphsight-memory/tests
       # named explicitly: the rest of backend/tests needs the full API stack
       - name: run engine tests
         run: >

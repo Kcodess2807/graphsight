@@ -1,4 +1,5 @@
-# Publish both packages to PyPI on a version tag (e.g. v0.3.0).
+# Publish the packages to PyPI on a version tag (e.g. v0.3.0). A package whose
+# version didn't change is skipped, so each can be bumped on its own.
 #
 # One-time setup on pypi.org (per project, Publishing -> "Add a new publisher"):
 #   owner: Kcodess2807   repo: graphsight   workflow: release.yml   environment: pypi
@@ -44,9 +45,11 @@ jobs:
           pip install build twine
           python -m build ./graphsight-langgraph -o dist/
           python -m build ./graphsight -o dist/
+          python -m build ./graphsight-memory -o dist/
           twine check dist/*
 
       - name: publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           packages-dir: dist/
+          skip-existing: true

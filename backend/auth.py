@@ -21,7 +21,7 @@ import jwt
 from fastapi import Header, HTTPException, Request, status
 from jwt import PyJWKClient, PyJWKClientError
 
-from tracerag import config
+from graphsight_memory import config
 
 logger = logging.getLogger("tracerag.auth")
 

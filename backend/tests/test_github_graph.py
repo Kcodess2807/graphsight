@@ -1,8 +1,8 @@
 """GitHub payloads -> typed, timestamped edges. No DB, no embedder."""
 import pytest
 
-from tracerag import config
-from tracerag.github_graph import GitHubGraphBuilder, parse_ts
+from graphsight_memory import config
+from graphsight_memory.github_graph import GitHubGraphBuilder, parse_ts
 
 
 class FakeDB:
@@ -60,7 +60,7 @@ def test_parse_ts():
 
 def test_pull_request_emits_every_structural_relation(build):
     db, b = build
-    from tracerag.github_graph import GraphStats
+    from graphsight_memory.github_graph import GraphStats
     b.add_pull_request(PR, GraphStats())
 
     authored = db.rel(config.RELATION_AUTHORED)
@@ -79,7 +79,7 @@ def test_pull_request_emits_every_structural_relation(build):
 
 def test_merge_time_lands_on_the_pr_node(build):
     db, b = build
-    from tracerag.github_graph import GraphStats
+    from graphsight_memory.github_graph import GraphStats
     b.add_pull_request(PR, GraphStats())
     node = db.nodes["pr:acme/platform#4977"]
     assert node["ts"] == parse_ts("2026-07-24T09:12:31Z")  # merged_at, not created_at
@@ -88,14 +88,14 @@ def test_merge_time_lands_on_the_pr_node(build):
 
 def test_no_co_occurrence_edges_from_structured_input(build):
     db, b = build
-    from tracerag.github_graph import GraphStats
+    from graphsight_memory.github_graph import GraphStats
     b.add_pull_request(PR, GraphStats())
     assert db.rel(config.RELATION_CO_OCCURS) == []
 
 
 def test_issues_endpoint_skips_pull_requests(build):
     db, b = build
-    from tracerag.github_graph import GraphStats
+    from graphsight_memory.github_graph import GraphStats
     stats = GraphStats()
     b.add_issue({"number": 1, "pull_request": {}, "created_at": "2026-07-01T00:00:00Z"}, stats)
     assert db.edges == []
@@ -106,7 +106,7 @@ def test_issues_endpoint_skips_pull_requests(build):
 
 def test_commit_author_and_closes(build):
     db, b = build
-    from tracerag.github_graph import GraphStats
+    from graphsight_memory.github_graph import GraphStats
     b.add_commit({
         "sha": "7a2b4159fbc",
         "commit": {"message": "fix auth flow\n\nFixes #2291",
@@ -164,7 +164,7 @@ def test_requested_reviewers_are_not_counted_as_reviews(build):
     """`requested_reviewers` is a pending ask, not a completed review — crediting
     it would claim someone reviewed code they never opened."""
     db, b = build
-    from tracerag.github_graph import GraphStats
+    from graphsight_memory.github_graph import GraphStats
     b.add_pull_request(
         {"number": 1, "user": {"login": "lena"},
          "requested_reviewers": [{"login": "nobody"}]}, GraphStats())
@@ -173,7 +173,7 @@ def test_requested_reviewers_are_not_counted_as_reviews(build):
 
 def test_self_approval_is_not_a_review(build):
     db, b = build
-    from tracerag.github_graph import GraphStats
+    from graphsight_memory.github_graph import GraphStats
     b.add_pull_request(
         {"number": 2, "user": {"login": "lena"},
          "reviews": [{"user": {"login": "lena"}}]}, GraphStats())
@@ -182,7 +182,7 @@ def test_self_approval_is_not_a_review(build):
 
 def test_repeat_reviews_collapse_to_one_edge(build):
     db, b = build
-    from tracerag.github_graph import GraphStats
+    from graphsight_memory.github_graph import GraphStats
     stats = GraphStats()
     b.add_pull_request(
         {"number": 3, "user": {"login": "lena"},

@@ -6,10 +6,10 @@ import pytest
 
 lb = pytest.importorskip("ladybug", reason="LadybugDB driver not installed")
 
-from tracerag import config                     # noqa: E402
-from tracerag.db import TraceDB                 # noqa: E402
-from tracerag.memory import AgentMemory         # noqa: E402
-from tracerag.router import TraceRouter         # noqa: E402
+from graphsight_memory import config                     # noqa: E402
+from graphsight_memory.db import TraceDB                 # noqa: E402
+from graphsight_memory.memory import AgentMemory         # noqa: E402
+from graphsight_memory.router import TraceRouter         # noqa: E402
 
 TEAM_A = [1.0] + [0.0] * (config.EMBED_DIM - 1)
 

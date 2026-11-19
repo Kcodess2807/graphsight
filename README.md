@@ -108,18 +108,20 @@ that uses this with the graph engine, and `--no-memory` gives you the baseline.
 
 ### Graph memory
 
-Experimental, and not on PyPI: it runs from a clone of this repo.
+`graphsight-memory` is its own package: no torch, no API key, one local file.
+[Its README](graphsight-memory/README.md) has the full API.
 
 An agent can write facts into the graph, correct them, and delete them. They sit beside the facts
 read from GitHub without ever overwriting them.
 
 ```python
-from tracerag.memory import AgentMemory
+from graphsight_memory import Memory
 
-memory = AgentMemory(db, router.embed_query)
-memory.remember("checkout-service", "owned by", "payments team", source="run-42")
-memory.remember("checkout-service", "owned by", "billing team", source="run-57", replace=True)
-memory.forget("checkout-service", "owned by", "billing team")
+mem = Memory("team.lbug")
+mem.sync_github("org/repo")
+mem.remember("checkout-service", "OWNED_BY", "payments team", source="run-42")
+mem.remember("checkout-service", "OWNED_BY", "billing team", source="run-57", replace=True)
+print(mem.recall("who owns checkout-service?"))
 ```
 
 - **Labelled.** Remembered facts reach the model as
@@ -160,7 +162,7 @@ Two halves, deliberately separable.
 This half works on **flat traces**. No graph, no database, no ingestion. If your agent does
 plain vector RAG, you still get the retrieved-vs-used signal, run history, and run diffing.
 
-### 2. The graph memory engine: experimental, clone to use
+### 2. The graph memory engine: `graphsight-memory`
 
 A local-first hybrid store where **vectors and the relationship graph live in one `.lbug`
 file**, no graph-DB ↔ vector-DB sync problem, behind a two-tier entity resolver and an
@@ -170,11 +172,10 @@ This is what makes retrieval *causal* rather than merely similar: an agent askin
 the session flow?" should reach yesterday's PR through `AUTHORED → RESOLVES`, not an
 eight-month-old PR that happens to read like the question.
 
-**The engine is not the thing you install first.** It needs `torch` for embeddings, a spaCy
-model, and two API keys. Start with the tracer.
-
-> **Naming note:** the product is Graphsight. The internal Python package is still
-> `backend/tracerag/`, renaming it is churn we haven't paid for yet.
+The engine is the `graphsight-memory` package. It embeds with MiniLM on ONNX, so it installs
+without torch and runs without API keys. An LLM is optional: it extracts facts from text in
+`learn()`, and classifies a question the keyword check can't place. The backend adds the
+web API, document ingest with spaCy and GLiNER, and the Studio.
 
 ---
 
@@ -304,7 +305,11 @@ populate real timestamps and relations.
 backend/
 ├── api.py                  # FastAPI app + lifespan (warmup, pools, MCP mount)
 ├── auth.py                 # Clerk JWT verify
-├── tracerag/               # the engine (product name: Graphsight)
+graphsight-memory/graphsight_memory/   # the engine, its own package
+│   ├── api.py              # Memory: sync_github, remember, retract, forget, learn, recall
+│   ├── embed.py            # MiniLM on ONNX (fastembed), sentence-transformers fallback
+│   ├── github.py           # GitHub REST: merged PRs, issues, commits, files, reviews
+│   ├── relations.py        # the fixed relation vocabulary
 │   ├── config.py           # single source of truth: weights, half-lives, thresholds
 │   ├── db.py               # LadybugDB: pools, HNSW, typed edges, schema migration
 │   ├── extract.py          # GLiNER (→ spaCy fallback) + sliding window + LRU cache
@@ -495,6 +500,7 @@ so vector relevance itself has no regression coverage. And the accuracy ceiling 
 > Either enable Long Path support or put the venv somewhere short like `C:\venv`.
 
 ```powershell
+pip install -e ./graphsight-memory
 cd backend
 pip install -r requirements.txt
 python -m spacy download en_core_web_sm        # NER fallback
@@ -573,8 +579,9 @@ pip install pytest langgraph
 pytest graphsight/tests graphsight-langgraph/tests -q
 
 # engine tests, no torch needed (the embedder is stubbed)
+pip install -e ./graphsight-memory pytest tqdm
+pytest -q graphsight-memory/tests
 cd backend
-pip install pytest ladybug==0.18.3 numpy pandas requests tqdm
 pytest -q tests/test_recency.py tests/test_router_scoring.py \
           tests/test_github_graph.py tests/test_db_integration.py \
           tests/test_ingest_github_wiring.py

@@ -9,7 +9,7 @@ from __future__ import annotations
 import json
 import re
 import time
-from typing import Callable, Sequence
+from typing import Callable, Collection, Sequence
 
 from . import config
 from .curation import slugify
@@ -45,7 +45,7 @@ _EXTRACT = """Extract the durable facts in this message as JSON, and nothing els
   reassigned, now, instead, took over, slipped.
 - When the message says a fact no longer holds and nothing replaces it, give that fact with
   "object": null and "retracts": true.
-- Return {{"facts": []}} if there is nothing durable.
+- Return {{"facts": []}} if there is nothing durable.{vocabulary}
 
 Already remembered (subject | relation | object):
 {known}
@@ -106,18 +106,24 @@ class AgentMemory:
         self.db.add_memory_edge(a, b, relation, config.AGENT_FACT_WEIGHT, source, now)
         return {"subject": a, "relation": relation, "object": b, "replaced": replaced}
 
-    def learn(self, text: str, llm, model: str, *, source: str) -> list[dict]:
+    def learn(self, text: str, llm, model: str, *, source: str,
+              relations: Collection[str] | None = None) -> list[dict]:
         """Have the model pull facts out of a message, then remember each one.
-        A fact the model got wrong is skipped rather than failing the rest."""
+        A fact the model got wrong is skipped rather than failing the rest.
+        relations, when given, is the only vocabulary the model may use."""
         known = "\n".join(f"{f['subject']} | {f['relation']} | {f['object']}"
                           for f in self.db.live_memory_facts(_KNOWN_LIMIT)) or "(none)"
+        vocabulary = ("\n- relation must be one of: " + ", ".join(relations)
+                      + ". Skip a fact that fits none of them.") if relations else ""
+        prompt = _EXTRACT.format(text=text, known=known, vocabulary=vocabulary)
         resp = llm.chat.completions.create(
-            model=model, temperature=0,
-            messages=[{"role": "user", "content": _EXTRACT.format(text=text, known=known)}],
+            model=model, temperature=0, messages=[{"role": "user", "content": prompt}],
         )
         stored = []
         for fact in _parse_facts(resp.choices[0].message.content or ""):
             try:
+                if relations and _relation(fact.get("relation", "")) not in relations:
+                    continue
                 if fact.get("retracts"):
                     ended = self.retract(fact["subject"], fact["relation"])
                     stored.append({"subject": fact["subject"], "relation": fact["relation"],

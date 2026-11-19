@@ -113,7 +113,7 @@ class TraceRouter:
         threads, so the first real query skips the cold-start latency spike.
 
         Routes through ``embed_query`` (not the raw embedder) so the bounded embed
-        executor's threads are created and the torch graph is traced; and through
+        executor's threads are created and the model is loaded; and through
         the extractor so the spaCy pipeline is loaded into memory.
         """
         self.embed_query("warmup query")          # warms embedder + executor threads
@@ -124,10 +124,9 @@ class TraceRouter:
 
     def _get_embedder(self):
         if self._embedder is None:
-            from sentence_transformers import SentenceTransformer
+            from .embed import embedder
 
-            logger.info("Loading embedder: %s", self.embed_model)
-            self._embedder = SentenceTransformer(self.embed_model)
+            self._embedder = embedder(self.embed_model)
         return self._embedder
 
     def _get_extractor(self):
@@ -159,8 +158,7 @@ class TraceRouter:
         return list(dict.fromkeys(ids))
 
     def _encode(self, text: str) -> list[float]:
-        vec = self._get_embedder().encode(text, normalize_embeddings=True)
-        return [float(x) for x in vec]
+        return self._get_embedder()(text)
 
     def embed_query(self, text: str) -> list[float]:
         # Offload the encode to the dedicated bounded pool: concurrent embeds are
@@ -199,6 +197,10 @@ class TraceRouter:
             w = config.ROUTER_WEIGHTS_RELATIONAL
             return w["vector"], w["graph"], "relational"
         if _SEMANTIC_RE.search(q):
+            w = config.ROUTER_WEIGHTS_CONCEPTUAL
+            return w["vector"], w["graph"], "semantic"
+        if not (config.GROQ_API_KEY or config.OPENROUTER_API_KEY):
+            # no key: the same default a failed call falls back to, without the call
             w = config.ROUTER_WEIGHTS_CONCEPTUAL
             return w["vector"], w["graph"], "semantic"
         return self._classify_intent_llm(query)

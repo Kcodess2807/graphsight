@@ -16,8 +16,8 @@ import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from tracerag import config                      # noqa: E402
-from tracerag.db import TraceDB                   # noqa: E402
+from graphsight_memory import config                      # noqa: E402
+from graphsight_memory.db import TraceDB                   # noqa: E402
 
 logger = logging.getLogger("tracerag.audit")
 

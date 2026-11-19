@@ -55,15 +55,13 @@ class CurationEngine:
 
     def _get_embedder(self):
         if self._embedder is None:
-            from sentence_transformers import SentenceTransformer
+            from .embed import embedder
 
-            logger.info("Loading embedder: %s", self.embed_model)
-            self._embedder = SentenceTransformer(self.embed_model)
+            self._embedder = embedder(self.embed_model)
         return self._embedder
 
     def _embed(self, text: str) -> list[float]:
-        vec = self._get_embedder().encode(text, normalize_embeddings=True)
-        return [float(x) for x in vec]
+        return self._get_embedder()(text)
 
     def embed(self, text: str) -> list[float]:
         """Public handle on the shared vector space. The GitHub graph builder
