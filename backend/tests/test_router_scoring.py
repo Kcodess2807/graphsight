@@ -198,9 +198,23 @@ def test_remembered_facts_have_their_own_budget():
     assert len(out) == config.GRAPH_MAX_FACTS + 1
 
 
-def test_intent_markers_match_whole_words():
+def test_intent_markers_match_whole_words(monkeypatch):
     """Regression: "who" fired on "whole", sending a summary question down the graph."""
+    monkeypatch.setattr(config, "OPENROUTER_API_KEY", "set")
     router = make_router(hits=[], neighbours={})
     router._classify_intent_llm = lambda q: (0.5, 0.5, "llm")
     assert router._classify_intent("who reviewed it")[2] == "relational"
     assert router._classify_intent("the whole design")[2] == "llm"
+
+
+def test_no_key_means_no_intent_call(monkeypatch):
+    """Without a key the model can't be reached, so don't try on every question."""
+    monkeypatch.setattr(config, "OPENROUTER_API_KEY", None)
+    monkeypatch.setattr(config, "GROQ_API_KEY", None)
+    router = make_router(hits=[], neighbours={})
+
+    def called(q):
+        raise AssertionError("intent model called with no key")
+
+    router._classify_intent_llm = called
+    assert router._classify_intent("the whole design")[2] == "semantic"
