@@ -148,8 +148,11 @@ TOP_K_GRAPH = int(os.getenv("TRACERAG_TOP_K_GRAPH", "10"))
 GRAPH_SEED_TOP_N = int(os.getenv("TRACERAG_GRAPH_SEED_TOP_N", "3"))
 GRAPH_SEED_MIN_SIM = float(os.getenv("TRACERAG_GRAPH_SEED_MIN_SIM", "0.35"))
 GRAPH_NEIGHBOR_K = int(os.getenv("TRACERAG_GRAPH_NEIGHBOR_K", "5"))
-GRAPH_MAX_HOPS = int(os.getenv("TRACERAG_GRAPH_MAX_HOPS", "2"))
-GRAPH_MAX_FACTS = int(os.getenv("TRACERAG_GRAPH_MAX_FACTS", "20"))  # relations handed to the answer model
+# Three hops, because a told fact is one hop on its own: team -> file -> PR -> author.
+# At two the walk found the PR and never its author, and at a cap of 20 the fact that
+# answered was cut. Both were needed: either change alone left 4 of 6 joins unanswered.
+GRAPH_MAX_HOPS = int(os.getenv("TRACERAG_GRAPH_MAX_HOPS", "3"))
+GRAPH_MAX_FACTS = int(os.getenv("TRACERAG_GRAPH_MAX_FACTS", "60"))  # relations handed to the answer model
 MAX_DEGREE = int(os.getenv("TRACERAG_MAX_DEGREE", "10"))  # skip hub nodes above this degree
 
 

@@ -191,7 +191,7 @@ if __name__ == "__main__":
 def test_remembered_facts_have_their_own_budget():
     from tracerag.router import graph_facts
 
-    hops = [{"from_id": f"p{i}", "to_id": "svc", "relation": "AUTHORED", "origin": "api"} for i in range(30)]
+    hops = [{"from_id": f"p{i}", "to_id": "svc", "relation": "AUTHORED", "origin": "api"} for i in range(config.GRAPH_MAX_FACTS + 10)]
     hops.append({"from_id": "svc", "to_id": "team", "relation": "OWNED_BY", "origin": "agent", "source": "r1"})
     out = graph_facts(hops, {})
     assert out[0] == "svc OWNED_BY team (remembered, source: r1)"

@@ -1,0 +1,1560 @@
+{
+ "pulls": [
+  {
+   "number": 14308,
+   "title": "Fix clippy 1.100 lints",
+   "body": null,
+   "html_url": "https://github.com/pydantic/pydantic/pull/14308",
+   "merged_at": "2026-11-18T15:28:05Z",
+   "closed_at": "2026-11-18T15:28:05Z",
+   "created_at": "2026-11-18T15:08:19Z",
+   "user": {
+    "login": "Viicos"
+   },
+   "files": [
+    {
+     "filename": "pydantic-core/src/recursion_guard.rs"
+    },
+    {
+     "filename": "pydantic-core/src/serializers/shared.rs"
+    }
+   ],
+   "reviews": []
+  },
+  {
+   "number": 14307,
+   "title": "Compute exact `ByteSize` values for strings with units",
+   "body": "Fixes https://github.com/pydantic/pydantic/issues/14297.",
+   "html_url": "https://github.com/pydantic/pydantic/pull/14307",
+   "merged_at": "2026-11-18T15:43:11Z",
+   "closed_at": "2026-11-18T15:43:11Z",
+   "created_at": "2026-11-18T10:14:23Z",
+   "user": {
+    "login": "Viicos"
+   },
+   "files": [
+    {
+     "filename": "pydantic/types.py"
+    },
+    {
+     "filename": "tests/types/test_bytesize.py"
+    }
+   ],
+   "reviews": [
+    {
+     "user": {
+      "login": "veria-ai[bot]"
+     }
+    }
+   ]
+  },
+  {
+   "number": 14299,
+   "title": "Remove unreachable statement from title generator test",
+   "body": "### Summary\n- Remove the unreachable `model_json_schema(MyDataclass)` statement from `test_field_title_generator_returns_invalid_type`.\n\n### Reason\nThe dataclass decorator raises the expected `TypeError` during class definition, so execution never reaches the schema-generation statement.\n\n### Testing\n- `uv run pytest tests/test_titles.py::test_field_title_generator_returns_invalid_type -q`\n- 24 tests passed.\n- `uv run ruff check tests/test_titles.py`\n- `uv run ruff format --check tests/test_titles.py`",
+   "html_url": "https://github.com/pydantic/pydantic/pull/14299",
+   "merged_at": "2026-11-17T07:57:59Z",
+   "closed_at": "2026-11-17T07:57:59Z",
+   "created_at": "2026-11-16T17:16:21Z",
+   "user": {
+    "login": "Manan1801"
+   },
+   "files": [
+    {
+     "filename": "tests/test_titles.py"
+    }
+   ],
+   "reviews": []
+  },
+  {
+   "number": 14294,
+   "title": "Remove unused `test-examples` make target",
+   "body": "Closes https://github.com/pydantic/pydantic/issues/14289.",
+   "html_url": "https://github.com/pydantic/pydantic/pull/14294",
+   "merged_at": "2026-11-16T08:54:46Z",
+   "closed_at": "2026-11-16T08:54:47Z",
+   "created_at": "2026-11-16T08:44:34Z",
+   "user": {
+    "login": "Viicos"
+   },
+   "files": [
+    {
+     "filename": "Makefile"
+    }
+   ],
+   "reviews": []
+  },
+  {
+   "number": 14293,
+   "title": "Respect validation-time `strict=True` for `complex`",
+   "body": "Fixes https://github.com/pydantic/pydantic/issues/14291.",
+   "html_url": "https://github.com/pydantic/pydantic/pull/14293",
+   "merged_at": "2026-11-16T08:57:58Z",
+   "closed_at": "2026-11-16T08:57:58Z",
+   "created_at": "2026-11-16T08:42:14Z",
+   "user": {
+    "login": "Viicos"
+   },
+   "files": [
+    {
+     "filename": "pydantic-core/src/validators/complex.rs"
+    },
+    {
+     "filename": "tests/types/test_complex.py"
+    }
+   ],
+   "reviews": []
+  },
+  {
+   "number": 14287,
+   "title": "Fix Graalpy CI",
+   "body": null,
+   "html_url": "https://github.com/pydantic/pydantic/pull/14287",
+   "merged_at": "2026-11-15T11:01:01Z",
+   "closed_at": "2026-11-15T11:01:02Z",
+   "created_at": "2026-11-15T10:32:41Z",
+   "user": {
+    "login": "Viicos"
+   },
+   "files": [
+    {
+     "filename": "pydantic-core/tests/test_build.py"
+    },
+    {
+     "filename": "pydantic-core/tests/validators/test_dataclasses.py"
+    },
+    {
+     "filename": "pydantic-core/tests/validators/test_model_init.py"
+    },
+    {
+     "filename": "pydantic-core/tests/validators/test_nullable.py"
+    },
+    {
+     "filename": "pydantic-core/tests/validators/test_typed_dict.py"
+    },
+    {
+     "filename": "pydantic-core/tests/validators/test_with_default.py"
+    }
+   ],
+   "reviews": []
+  },
+  {
+   "number": 14279,
+   "title": "Bump dnspython from 2.7.0 to 2.9.2",
+   "body": "Bumps [dnspython](https://github.com/rthalley/dnspython) from 2.7.0 to 2.9.2.\n<details>\n<summary>Release notes</summary>\n<p><em>Sourced from <a href=\"https://github.com/rthalley/dnspython/releases\">dnspython's releases</a>.</em></p>\n<blockquote>\n<h2>dnspython 2.9.2</h2>\n<p>A malicious WKS record in text format can consume excessive  memory and CPU when parsed, possibly causing the process to exit due to memory exhaustion.  Thanks to Jace (GitHub <a href=\"https://github.com/manus-use\"><code>@\u200bmanus-use</code></a>) for discovering and reporting this issue.</p>\n<p>See <a href=\"https://dnspython.readthedocs.io/en/stable/whatsnew.html\">What's New</a> for details.</p>\n<p>The minimum supported version of Python is 3.11.</p>\n<p>My thanks to the many people who have contributed to this release. Also thanks to my co-maintainers: Nicki K\u0159\u00ed\u017eek, Petr \u0160pa\u010dek, and Brian Wellington.</p>\n<p>This release was published to PyPI using Trusted Publishing.</p>\n<h2>dnspython 2.9.1</h2>\n<p>See <a href=\"https://dnspython.readthedocs.io/en/stable/whatsnew.html\">What's New</a> for details.</p>\n<p>The minimum supported version of Python is 3.11.</p>\n<p>My thanks to the many people who have contributed to this release.  Also thanks to my co-maintainers: Nicki K\u0159\u00ed\u017eek, Petr \u0160pa\u010dek, and Brian Wellington.</p>\n<p>This release was published to PyPI using Trusted Publishing.</p>\n<h2>dnspython 2.9.0</h2>\n<p>This release fixes a potential <a href=\"https://github.com/rthalley/dnspython/security/advisories/GHSA-45c3-73f7-pv4m\">excessive CPU consumption</a> issue.   Thanks to Evgenios Gkritsis, Constantinos Patsakis, and George Stergiopoulos, for discovering and reporting this issue.</p>\n<p>See <a href=\"https://dnspython.readthedocs.io/en/stable/whatsnew.html\">What's New</a> for details.</p>\n<p>The minimum supported version of Python is 3.11.</p>\n<p>My thanks to the many people who have contributed to this release. Also thanks to my co-maintainers: Nicki K\u0159\u00ed\u017eek, Petr \u0160pa\u010dek, and Brian Wellington.</p>\n<p>This release was published to PyPI using Trusted Publishing.</p>\n<h2>dnspython 2.8.0</h2>\n<p>See <a href=\"https://dnspython.readthedocs.io/en/stable/whatsnew.html\">What's New</a> for details.</p>\n<p>The minimum supported version of Python is 3.10.</p>\n<p>My thanks to the many people who have contributed to this release. Also thanks to my co-maintainers: Tom\u00e1\u0161 K\u0159\u00ed\u017eek, Petr \u0160pa\u010dek, and Brian Wellington.</p>\n<p>This release was published to PyPI using Trusted Publishing.</p>\n</blockquote>\n</details>\n<details>\n<summary>Changelog</summary>\n<p><em>Sourced from <a href=\"https://github.com/rthalley/dnspython/blob/main/doc/whatsnew.rst\">dnspython's changelog</a>.</em></p>\n<blockquote>\n<h2>2.9.2</h2>\n<ul>\n<li>A maliciously crafted zone file could use a WKS record to consume excessive\nmemory and CPU, possibly causing the process to exit due to memory exhaustion.\nThanks to Jace (GitHub <a href=\"https://github.com/manus-use\"><code>@\u200bmanus-use</code></a>) for discovering and reporting this issue.</li>\n</ul>\n<h2>2.9.1</h2>\n<ul>\n<li>\n<p>LOC text parsing now converts the altitude, size, horizontal precision, and\nvertical precision fields to centimeters exactly, and requires them to be\ndecimal numbers of meters with at most two fractional digits, as RFC 1876\nsection 3 specifies.  They were converted with <code>float()</code>, so <code>9.29m</code>\nbecame 928 cm rather than 929 cm and the text and wire forms of the record\ndisagreed, forms such as <code>1e3m</code>, <code>1_000m</code>, <code>+10m</code>, <code>nanm</code>, and\n<code>infm</code> were accepted, extra fractional digits were silently dropped, and an\naltitude outside the representable range was accepted and then failed in\n<code>to_wire()</code> with a non-DNS exception.  <code>dns.exception.SyntaxError</code> is\nnow raised for all of these.</p>\n</li>\n<li>\n<p>The resolver now assigns a new random query id to every query.</p>\n</li>\n<li>\n<p>For transports that require a 0 query id, set it in a way that does not break\nTSIG.</p>\n</li>\n<li>\n<p><code>dns.message.QueryMessage.resolve_chaining()</code> now caps the minimum TTL of\na negative response with no SOA record at 300 seconds\n(<code>dns.message.NEGATIVE_TTL_WITHOUT_SOA</code>).  Previously the TTL was left at\nits initial value of 2^32 - 1, so a single NXDOMAIN or NODATA response with\nno SOA, e.g. a spoofed one, stayed in the resolver cache for the life of\nthe process.</p>\n</li>\n<li>\n<p>DNSSEC validation now rejects an RRSIG whose type covered or class does not\nmatch the RRset, as RFC 4035 section 5.3.1 requires.  This was not checked,\nso a revoked DNSKEY, which may only validate the DNSKEY RRset, still\nvalidated any RRset signed with its private key if the RRSIG claimed to\ncover DNSKEY.</p>\n</li>\n<li>\n<p><code>dns.tokenizer.Tokenizer</code> now ends a line at a carriage return, or at a\ncarriage return followed by a line feed, unless the carriage return is in a\nquoted string.  The carriage return of CRLF line ends used to stay in the\nlast token of each line and in the text of a comment, so e.g.\n<code>dns.zone.from_text()</code> rejected a zone with CRLF line ends.</p>\n</li>\n<li>\n<p>DNSSEC validation no longer uses a DNSKEY with the REVOKE flag set to\nvalidate anything other than the DNSKEY RRset.  RFC 5011 section 2.1 says a\nrevoked key must not be used for any other purpose, but it was a candidate\nkey like any other, so as long as the revoked key was still published, data\nsigned with its private key, e.g. by whoever compromised it, validated.</p>\n</li>\n</ul>\n<!-- raw HTML omitted -->\n</blockquote>\n<p>... (truncated)</p>\n</details>\n<details>\n<summary>Commits</summary>\n<ul>\n<li><a href=\"https://github.com/rthalley/dnspython/commit/854bedd6d641cb42785d26ca674ed2c0f20131e0\"><code>854bedd</code></a> bump README.md version</li>\n<li><a href=\"https://github.com/rthalley/dnspython/commit/388db14ee9923288f6e73f86e482c77706e59d73\"><code>388db14</code></a> Constrain WKS bitmap size.</li>\n<li><a href=\"https://github.com/rthalley/dnspython/commit/7e1832f58a9f1583db00461ae97f7a8603c6989f\"><code>7e1832f</code></a> version bump</li>\n<li><a href=\"https://github.com/rthalley/dnspython/commit/dddd69c1ca32a94d18d2662a2dc6085c8750dd6d\"><code>dddd69c</code></a> black lint</li>\n<li><a href=\"https://github.com/rthalley/dnspython/commit/185cc38a0ab2d2ca1837b53d91b915e0f020b895\"><code>185cc38</code></a> release prep</li>\n<li><a href=\"https://github.com/rthalley/dnspython/commit/cf22838ab0c64f3c6a4d157278ae7e9fb707de8d\"><code>cf22838</code></a> Randomize the id of every message the resolver sends. (<a href=\"https://redirect.github.com/rthalley/dnspython/issues/1395\">#1395</a>)</li>\n<li><a href=\"https://github.com/rthalley/dnspython/commit/e0fce7f5a9962325d64873c31103fb33dae55112\"><code>e0fce7f</code></a> use a short negative TTL for a negative answer with no SOA in resolve_chainin...</li>\n<li><a href=\"https://github.com/rthalley/dnspython/commit/ad0803c88d90fbba86ee20de747fcc676ce769ec\"><code>ad0803c</code></a> check the RRSIG type covered and class against the RRset (<a href=\"https://redirect.github.com/rthalley/dnspython/issues/1388\">#1388</a>)</li>\n<li><a href=\"https://github.com/rthalley/dnspython/commit/8c38a048424b7f44b46b0e4b4318c08de00e0457\"><code>8c38a04</code></a> Strictly apply RFC 3597 compression rules when decompressing. (<a href=\"https://redirect.github.com/rthalley/dnspython/issues/1383\">#1383</a>)</li>\n<li><a href=\"https://github.com/rthalley/dnspython/commit/ab5ade8af1b0cd3ecd1e38410df07f38da67841e\"><code>ab5ade8</code></a> end a line at a carriage return in the tokenizer (<a href=\"https://redirect.github.com/rthalley/dnspython/issues/1387\">#1387</a>)</li>\n<li>Additional commits viewable in <a href=\"https://github.com/rthalley/dnspython/compare/v2.7.0...v2.9.2\">compare view</a></li>\n</ul>\n</details>\n<br />\n\n\n[![Dependabot compatibility score](https://dependabot-badges.githubapp.com/badges/compatibility_score?dependency-name=dnspython&package-manager=uv&previous-version=2.7.0&new-version=2.9.2)](https://docs.github.com/en/github/managing-security-vulnerabilities/about-dependabot-security-updates#about-compatibility-scores)\n\nDependabot will resolve any conflicts with this PR as long as you don't alter it yourself. You can also trigger a rebase manually by commenting `@dependabot rebase`.\n\n[//]: # (dependabot-automerge-start)\n[//]: # (dependabot-automerge-end)\n\n---\n\n<details>\n<summary>Dependabot commands and options</summary>\n<br />\n\nYou can trigger Dependabot actions by commenting on this PR:\n- `@dependabot rebase` will rebase this PR\n- `@dependabot recreate` will recreate this PR, overwriting any edits that have been made to it\n- `@dependabot show <dependency name> ignore conditions` will show all of the ignore conditions of the specified dependency\n- `@dependabot ignore this major version` will close this PR and stop Dependabot creating any more for this major version (unless you reopen the PR or upgrade to it yourself)\n- `@dependabot ignore this minor version` will close this PR and stop Dependabot creating any more for this minor version (unless you reopen the PR or upgrade to it yourself)\n- `@dependabot ignore this dependency` will close this PR and stop Dependabot creating any more for this dependency (unless you reopen the PR or upgrade to it yourself)\nYou can disable automated security fix PRs for this repo from the [Security Alerts page](https://github.com/pydantic/pydantic/network/alerts).\n\n</details>",
+   "html_url": "https://github.com/pydantic/pydantic/pull/14279",
+   "merged_at": "2026-11-15T11:59:26Z",
+   "closed_at": "2026-11-15T11:59:26Z",
+   "created_at": "2026-11-14T03:16:15Z",
+   "user": {
+    "login": "dependabot[bot]"
+   },
+   "files": [
+    {
+     "filename": "uv.lock"
+    }
+   ],
+   "reviews": []
+  },
+  {
+   "number": 14268,
+   "title": "Correct typo in contribution guide",
+   "body": "<!-- Thank you for your contribution! -->\n<!-- Unless your change is trivial, please create an issue to discuss the change before creating a PR -->\n\n## Change Summary\n\nCorrect a spelling error in the contribution guide. This is a trivial documentation-only correction; it does not close an issue.\n\nRelates to #14267.\n\n* [ ] I have read the [contributing guide](https://pydantic.dev/docs/validation/latest/get-started/contributing/) and I am assigned\n      to the issue I am closing.",
+   "html_url": "https://github.com/pydantic/pydantic/pull/14268",
+   "merged_at": "2026-11-10T11:17:52Z",
+   "closed_at": "2026-11-10T11:17:52Z",
+   "created_at": "2026-11-10T11:08:53Z",
+   "user": {
+    "login": "agarwalla-chirag"
+   },
+   "files": [
+    {
+     "filename": "docs/contributing.md"
+    }
+   ],
+   "reviews": []
+  },
+  {
+   "number": 14261,
+   "title": "Fix display of `Callable` parameters in type representations",
+   "body": "## Change Summary\n\n`display_as_type()` renders each type argument with `display_as_type()`, but the parameters of a `Callable` come back from `get_args()` as a list, which is shown as `list`:\n\n```python\nfrom collections.abc import Callable\nfrom typing import Generic, TypeVar\n\nfrom pydantic import BaseModel, TypeAdapter\n\nT = TypeVar('T')\n\n\nclass Model(BaseModel, Generic[T]):\n    x: T\n\n\nTypeAdapter(Callable[[int], str])\n#> before: TypeAdapter(Callable[list, str])\n#> after:  TypeAdapter(Callable[[int], str])\n\nModel[Callable[[int], str]].__name__, Model[Callable[[str], str]].__name__\n#> before: ('Model[Callable[list, str]]', 'Model[Callable[list, str]]')\n#> after:  ('Model[Callable[[int], str]]', 'Model[Callable[[str], str]]')\n```\n\nThe same goes for `FieldInfo` reprs. List arguments are now shown in brackets. A top-level list (`display_as_type([1, 2, 3])`) is unchanged.\n\nAI-assisted; I reviewed the change and understand it.\n\n* [x] Followed the [contributing guide](https://pydantic.dev/docs/validation/latest/get-started/contributing/). No linked issue; this is a small fix.\n",
+   "html_url": "https://github.com/pydantic/pydantic/pull/14261",
+   "merged_at": "2026-11-16T09:07:41Z",
+   "closed_at": "2026-11-16T09:07:41Z",
+   "created_at": "2026-11-09T02:08:25Z",
+   "user": {
+    "login": "aidxhxr"
+   },
+   "files": [
+    {
+     "filename": "pydantic/_internal/_repr.py"
+    },
+    {
+     "filename": "tests/test_utils.py"
+    }
+   ],
+   "reviews": [
+    {
+     "user": {
+      "login": "Viicos"
+     }
+    }
+   ]
+  },
+  {
+   "number": 14260,
+   "title": "Correct the polymorphic serialization example description",
+   "body": "## Change Summary\n\nThe text refers to `PolymorphicUser`, `PolymorphicUserLogin`, and a `User.model_dump()` call that do not appear in the example. Update the description to match the code and its two outputs.\n\nValidation: serialization documentation examples, existing serialization tests, Markdown checks, Python lint/format checks, and the strict documentation build passed on both baseline and patch ([fork run](https://github.com/liorma6/pydantic/actions/runs/42522968779)).\n\nAI assistance: Codex. I reviewed and understand the change.\n\n* [x] I have read the [contributing guide](https://pydantic.dev/docs/validation/latest/get-started/contributing/). No linked issue; this is a small documentation correction.\n",
+   "html_url": "https://github.com/pydantic/pydantic/pull/14260",
+   "merged_at": "2026-11-09T08:44:26Z",
+   "closed_at": "2026-11-09T08:44:26Z",
+   "created_at": "2026-11-08T21:41:49Z",
+   "user": {
+    "login": "liorma6"
+   },
+   "files": [
+    {
+     "filename": "docs/concepts/serialization.md"
+    }
+   ],
+   "reviews": []
+  },
+  {
+   "number": 14256,
+   "title": "Cache UTC `TzInfo` instance",
+   "body": "Fixes https://github.com/pydantic/pydantic/issues/7897.\n\nWe only implement caching for UTC, like CPython does. We could expand in the future.",
+   "html_url": "https://github.com/pydantic/pydantic/pull/14256",
+   "merged_at": "2026-11-08T11:44:53Z",
+   "closed_at": "2026-11-08T11:44:53Z",
+   "created_at": "2026-11-08T11:01:48Z",
+   "user": {
+    "login": "Viicos"
+   },
+   "files": [
+    {
+     "filename": "pydantic-core/src/input/datetime.rs"
+    },
+    {
+     "filename": "pydantic-core/tests/test_tzinfo.py"
+    }
+   ],
+   "reviews": []
+  },
+  {
+   "number": 14255,
+   "title": "Fix model signature when a field alias is the name used for extra kwargs",
+   "body": "## Change Summary\n\nWith `extra='allow'`, the model signature names the extra kwargs parameter `extra_data` (with trailing underscores added on conflict). The conflict check only looked at field names, but signature parameters use the alias, so a field aliased `extra_data` was replaced by `**extra_data`:\n\n```python\nfrom inspect import signature\n\nfrom pydantic import BaseModel, ConfigDict, Field\n\n\nclass Model(BaseModel):\n    model_config = ConfigDict(extra='allow')\n\n    x: str = Field(alias='extra_data')\n\n\nsignature(Model)\n#> before: (**extra_data: Any) -> None\n#> after:  (*, extra_data: str, **extra_data_: Any) -> None\n```\n\nIf another field comes after it, `signature(Model)` raises `ValueError: wrong parameter order: variadic keyword parameter before keyword-only parameter`.\n\nThe name is now also checked against the parameters already collected. Signatures without such a conflict are unchanged.\n\nAI-assisted; I reviewed the change and understand it.\n\n* [x] Followed the [contributing guide](https://pydantic.dev/docs/validation/latest/get-started/contributing/). No linked issue; this is a small fix.\n",
+   "html_url": "https://github.com/pydantic/pydantic/pull/14255",
+   "merged_at": "2026-11-09T08:46:17Z",
+   "closed_at": "2026-11-09T08:46:17Z",
+   "created_at": "2026-11-08T00:05:16Z",
+   "user": {
+    "login": "aidxhxr"
+   },
+   "files": [
+    {
+     "filename": "pydantic/_internal/_signature.py"
+    },
+    {
+     "filename": "tests/test_model_signature.py"
+    }
+   ],
+   "reviews": []
+  },
+  {
+   "number": 14254,
+   "title": "Fix validation constraints leaking into the `Decimal` JSON Schema",
+   "body": "## Change Summary\n\nSince #13714, `str_min_length` and `str_max_length` from the config end up in the `Decimal` JSON Schema, because `decimal_schema()` builds its string branch with `str_schema()`. Validation never applies them to decimals, so a model's own JSON output can fail its schema:\n\n```python\nfrom decimal import Decimal\n\nfrom pydantic import BaseModel, ConfigDict\n\n\nclass Model(BaseModel):\n    model_config = ConfigDict(str_max_length=3)\n\n    d: Decimal\n\n\nm = Model(d='12345.6789')  # valid\nModel.model_json_schema(mode='serialization')['properties']['d']\n#> {'maxLength': 3, 'title': 'D', 'type': 'string'}\n# so `m.model_dump(mode='json')` fails validation against the schema\n```\n\nThe string branch is now built directly. Schemas without these config values are unchanged.\n\nAI-assisted; I reviewed the change and understand it.\n\n* [x] Followed the [contributing guide](https://pydantic.dev/docs/validation/latest/get-started/contributing/). No linked issue; this is a small fix.\n",
+   "html_url": "https://github.com/pydantic/pydantic/pull/14254",
+   "merged_at": "2026-11-08T13:06:40Z",
+   "closed_at": "2026-11-08T13:06:41Z",
+   "created_at": "2026-11-07T23:56:58Z",
+   "user": {
+    "login": "aidxhxr"
+   },
+   "files": [
+    {
+     "filename": "pydantic/json_schema.py"
+    },
+    {
+     "filename": "tests/test_json_schema.py"
+    }
+   ],
+   "reviews": []
+  },
+  {
+   "number": 14253,
+   "title": "Fix more issues about GC tracking in `pydantic-core`",
+   "body": "Missed in https://github.com/pydantic/pydantic/pull/13819... \n\nFixes https://github.com/pydantic/pydantic/issues/14237.",
+   "html_url": "https://github.com/pydantic/pydantic/pull/14253",
+   "merged_at": "2026-11-08T11:52:38Z",
+   "closed_at": "2026-11-08T11:52:38Z",
+   "created_at": "2026-11-07T12:59:41Z",
+   "user": {
+    "login": "Viicos"
+   },
+   "files": [
+    {
+     "filename": "pydantic-core/src/argument_markers.rs"
+    },
+    {
+     "filename": "pydantic-core/src/build_tools.rs"
+    },
+    {
+     "filename": "pydantic-core/src/errors/types.rs"
+    },
+    {
+     "filename": "pydantic-core/src/errors/validation_exception.rs"
+    },
+    {
+     "filename": "pydantic-core/src/errors/value_exception.rs"
+    },
+    {
+     "filename": "pydantic-core/tests/test_garbage_collection.py"
+    }
+   ],
+   "reviews": []
+  },
+  {
+   "number": 14250,
+   "title": "Drop support for Python 3.10",
+   "body": "While it is a bit early according to [our policy](https://pydantic.dev/docs/validation/latest/get-started/version-policy/#support-for-python-versions):\r\n\r\n```sql\r\nSELECT\r\n  num_downloads,\r\n  ROUND(num_downloads/ total * 100, 2) as percent_downloads,\r\n  python_version\r\nfrom (\r\n  SELECT\r\n    COUNT(*) AS num_downloads,\r\n    sum(count(*)) OVER() AS total,\r\n    REGEXP_EXTRACT(details.python, r\"[0-9]+\\.[0-9]+\") AS python_version\r\n  FROM `bigquery-public-data.pypi.file_downloads`\r\n  WHERE\r\n    -- timestamp filter is just to avoid full table scan\r\n    file.project = 'pydantic' and STARTS_WITH(file.version, '2.14') and DATE(timestamp) > DATE('2026-10-01')\r\n  GROUP BY `python_version`\r\n  ORDER BY `num_downloads` DESC\r\n)\r\n```\r\n\r\n<img width=\"451\" height=\"223\" alt=\"image\" src=\"https://github.com/user-attachments/assets/6c200b61-7cdb-4244-bd27-aa65f3c54cf0\" />\r\n\r\nI'm proactively doing the drop for V3 which will likely not be released before December, and even if we don't meet the 5% threshold by then, it is acceptable given it's a major bump.",
+   "html_url": "https://github.com/pydantic/pydantic/pull/14250",
+   "merged_at": "2026-11-07T10:06:02Z",
+   "closed_at": "2026-11-07T10:06:02Z",
+   "created_at": "2026-11-06T22:22:50Z",
+   "user": {
+    "login": "Viicos"
+   },
+   "files": [
+    {
+     "filename": ".github/build-constraints.txt"
+    },
+    {
+     "filename": ".github/workflows/ci.yml"
+    },
+    {
+     "filename": ".github/workflows/integration.yml"
+    },
+    {
+     "filename": ".github/workflows/third-party.yml"
+    },
+    {
+     "filename": ".github/workflows/upload-previews.yml"
+    },
+    {
+     "filename": ".pre-commit-config.yaml"
+    },
+    {
+     "filename": "CITATION.cff"
+    },
+    {
+     "filename": "Makefile"
+    },
+    {
+     "filename": "README.md"
+    },
+    {
+     "filename": "docs/api/standard_library_types.md"
+    },
+    {
+     "filename": "docs/concepts/dataclasses.md"
+    },
+    {
+     "filename": "docs/concepts/fields.md"
+    },
+    {
+     "filename": "docs/concepts/forward_annotations.md"
+    },
+    {
+     "filename": "docs/concepts/models.md"
+    },
+    {
+     "filename": "docs/concepts/types.md"
+    },
+    {
+     "filename": "docs/contributing.md"
+    },
+    {
+     "filename": "docs/examples/dynamic_models.md"
+    },
+    {
+     "filename": "docs/index.md"
+    },
+    {
+     "filename": "docs/install.md"
+    },
+    {
+     "filename": "docs/integrations/aws_lambda.md"
+    },
+    {
+     "filename": "docs/plugins/main.py"
+    },
+    {
+     "filename": "docs/plugins/using_update.py"
+    },
+    {
+     "filename": "mkdocs.yml"
+    },
+    {
+     "filename": "pydantic-core/pyproject.toml"
+    },
+    {
+     "filename": "pydantic-core/python/pydantic_core/__init__.py"
+    },
+    {
+     "filename": "pydantic-core/python/pydantic_core/_pydantic_core/__init__.pyi"
+    },
+    {
+     "filename": "pydantic-core/python/pydantic_core/core_schema.py"
+    },
+    {
+     "filename": "pydantic-core/src/errors/validation_exception.rs"
+    },
+    {
+     "filename": "pydantic-core/tests/benchmarks/test_micro_benchmarks.py"
+    },
+    {
+     "filename": "pydantic-core/tests/serializers/test_any.py"
+    },
+    {
+     "filename": "pydantic-core/tests/serializers/test_datetime.py"
+    },
+    {
+     "filename": "pydantic-core/tests/serializers/test_enum.py"
+    },
+    {
+     "filename": "pydantic-core/tests/serializers/test_json_or_python.py"
+    },
+    {
+     "filename": "pydantic-core/tests/serializers/test_literal.py"
+    },
+    {
+     "filename": "pydantic-core/tests/serializers/test_string.py"
+    },
+    {
+     "filename": "pydantic-core/tests/test_custom_errors.py"
+    },
+    {
+     "filename": "pydantic-core/tests/test_errors.py"
+    },
+    {
+     "filename": "pydantic-core/tests/test_garbage_collection.py"
+    },
+    {
+     "filename": "pydantic-core/tests/test_hypothesis.py"
+    },
+    {
+     "filename": "pydantic-core/tests/test_tzinfo.py"
+    },
+    {
+     "filename": "pydantic-core/tests/validators/test_date.py"
+    },
+    {
+     "filename": "pydantic-core/tests/validators/test_datetime.py"
+    },
+    {
+     "filename": "pydantic-core/tests/validators/test_enums.py"
+    },
+    {
+     "filename": "pydantic-core/tests/validators/test_literal.py"
+    },
+    {
+     "filename": "pydantic-core/tests/validators/test_string.py"
+    },
+    {
+     "filename": "pydantic-core/tests/validators/test_tagged_union.py"
+    },
+    {
+     "filename": "pydantic-core/tests/validators/test_time.py"
+    },
+    {
+     "filename": "pydantic-core/tests/validators/test_union.py"
+    },
+    {
+     "filename": "pydantic-core/wasm-preview/run_tests.py"
+    },
+    {
+     "filename": "pydantic/_internal/_config.py"
+    },
+    {
+     "filename": "pydantic/_internal/_decorators.py"
+    },
+    {
+     "filename": "pydantic/_internal/_generate_schema.py"
+    },
+    {
+     "filename": "pydantic/_internal/_generics.py"
+    },
+    {
+     "filename": "pydantic/_internal/_namespace_utils.py"
+    },
+    {
+     "filename": "pydantic/_internal/_typing_extra.py"
+    },
+    {
+     "filename": "pydantic/config.py"
+    },
+    {
+     "filename": "pydantic/dataclasses.py"
+    },
+    {
+     "filename": "pydantic/errors.py"
+    },
+    {
+     "filename": "pydantic/functional_validators.py"
+    },
+    {
+     "filename": "pydantic/json_schema.py"
+    },
+    {
+     "filename": "pydantic/main.py"
+    },
+    {
+     "filename": "pydantic/mypy.py"
+    },
+    {
+     "filename": "pydantic/networks.py"
+    },
+    {
+     "filename": "pydantic/plugin/_schema_validator.py"
+    },
+    {
+     "filename": "pydantic/root_model.py"
+    },
+    {
+     "filename": "pydantic/types.py"
+    },
+    {
+     "filename": "pyproject.toml"
+    },
+    {
+     "filename": "tests/benchmarks/corpus/google-genai/README.md"
+    },
+    {
+     "filename": "tests/benchmarks/test_model_corpus.py"
+    },
+    {
+     "filename": "tests/benchmarks/test_model_schema_generation.py"
+    },
+    {
+     "filename": "tests/mypy/configs/mypy-default.ini"
+    },
+    {
+     "filename": "tests/mypy/configs/mypy-plugin-strict-no-any.ini"
+    },
+    {
+     "filename": "tests/mypy/configs/mypy-plugin-strict.ini"
+    },
+    {
+     "filename": "tests/mypy/configs/mypy-plugin-unknown-param.ini"
+    },
+    {
+     "filename": "tests/mypy/configs/mypy-plugin-very-strict.ini"
+    },
+    {
+     "filename": "tests/mypy/configs/mypy-plugin.ini"
+    },
+    {
+     "filename": "tests/mypy/configs/pyproject-default.toml"
+    },
+    {
+     "filename": "tests/mypy/configs/pyproject-plugin-bad-param.toml"
+    },
+    {
+     "filename": "tests/mypy/configs/pyproject-plugin-no-strict-optional.toml"
+    },
+    {
+     "filename": "tests/mypy/configs/pyproject-plugin-strict-equality.toml"
+    },
+    {
+     "filename": "tests/mypy/configs/pyproject-plugin-strict.toml"
+    },
+    {
+     "filename": "tests/mypy/configs/pyproject-plugin-unknown-param.toml"
+    },
+    {
+     "filename": "tests/mypy/configs/pyproject-plugin.toml"
+    },
+    {
+     "filename": "tests/plugin/pyproject.toml"
+    },
+    {
+     "filename": "tests/test_config.py"
+    },
+    {
+     "filename": "tests/test_datetime.py"
+    },
+    {
+     "filename": "tests/test_deprecated_fields.py"
+    },
+    {
+     "filename": "tests/test_edge_cases.py"
+    },
+    {
+     "filename": "tests/test_errors.py"
+    },
+    {
+     "filename": "tests/test_forward_ref.py"
+    },
+    {
+     "filename": "tests/test_generics.py"
+    },
+    {
+     "filename": "tests/test_internal.py"
+    },
+    {
+     "filename": "tests/test_json.py"
+    },
+    {
+     "filename": "tests/test_json_schema.py"
+    },
+    {
+     "filename": "tests/test_main.py"
+    },
+    {
+     "filename": "tests/test_pickle.py"
+    },
+    {
+     "filename": "tests/test_pipeline.py"
+    },
+    {
+     "filename": "tests/test_private_attributes.py"
+    },
+    {
+     "filename": "tests/test_types.py"
+    },
+    {
+     "filename": "tests/test_types_self.py"
+    },
+    {
+     "filename": "tests/test_types_typeddict.py"
+    },
+    {
+     "filename": "tests/test_validate_call.py"
+    },
+    {
+     "filename": "tests/test_validators.py"
+    },
+    {
+     "filename": "tests/typechecking/base_model.py"
+    },
+    {
+     "filename": "tests/typechecking/decorators.py"
+    },
+    {
+     "filename": "tests/typechecking/pyproject.toml"
+    },
+    {
+     "filename": "tests/typechecking/root_model.py"
+    },
+    {
+     "filename": "tests/typechecking/type_adapter.py"
+    },
+    {
+     "filename": "tests/typechecking/validate_call.py"
+    },
+    {
+     "filename": "tests/typechecking/with_config_decorator.py"
+    },
+    {
+     "filename": "tests/types/test_datetime.py"
+    },
+    {
+     "filename": "tests/types/test_enum.py"
+    },
+    {
+     "filename": "tests/types/test_fraction.py"
+    },
+    {
+     "filename": "tests/types/test_namedtuple.py"
+    },
+    {
+     "filename": "tests/types/test_str.py"
+    },
+    {
+     "filename": "tests/types/test_time.py"
+    },
+    {
+     "filename": "tests/types/test_zoneinfo.py"
+    },
+    {
+     "filename": "tests/types/unions/test_discriminated_union.py"
+    },
+    {
+     "filename": "tests/types/unions/test_union.py"
+    },
+    {
+     "filename": "uv.lock"
+    }
+   ],
+   "reviews": [
+    {
+     "user": {
+      "login": "dolfinus"
+     }
+    }
+   ]
+  },
+  {
+   "number": 14249,
+   "title": "Support list and `DecimalTuple` inputs for `Decimal`",
+   "body": "## Change Summary\n\nLike the `Decimal` constructor, accept the `(sign, digits, exponent)` form as a list or a tuple subclass (e.g. `Decimal.as_tuple()`), not only as a tuple:\n\n```python\nfrom decimal import Decimal\n\nfrom pydantic import TypeAdapter\n\nta = TypeAdapter(Decimal)\nta.validate_python([0, [1, 4], -1])\nta.validate_python(Decimal(\"1.4\").as_tuple())\n#> Before: ValidationError (decimal_type)\n#> After: Decimal(\"1.4\")\n```\n\nAlso documents the list/JSON array forms in the conversion table, and the `allow_inf_nan` defaults for `float` (`True`) and `Decimal` (`False`).\n\n* [x] I have read the [contributing guide](https://pydantic.dev/docs/validation/latest/get-started/contributing/) and I am assigned\n      to the issue I am closing.",
+   "html_url": "https://github.com/pydantic/pydantic/pull/14249",
+   "merged_at": "2026-11-07T11:29:48Z",
+   "closed_at": "2026-11-07T11:29:48Z",
+   "created_at": "2026-11-06T21:08:55Z",
+   "user": {
+    "login": "Viicos"
+   },
+   "files": [
+    {
+     "filename": "docs/api/standard_library_types.md"
+    },
+    {
+     "filename": "docs/plugins/conversion_table.py"
+    },
+    {
+     "filename": "pydantic-core/src/input/input_python.rs"
+    },
+    {
+     "filename": "tests/types/test_decimal.py"
+    }
+   ],
+   "reviews": [
+    {
+     "user": {
+      "login": "copilot-pull-request-reviewer[bot]"
+     }
+    }
+   ]
+  },
+  {
+   "number": 14248,
+   "title": "Correct the documented `Decimal` validation inputs",
+   "body": "## Change Summary\n\nThe Decimal docs say any input accepted by the constructor is valid, but `Decimal(True)` succeeds while Pydantic rejects it. List the accepted inputs and explain that floats are converted to strings before calling the constructor.\n\nThe existing Decimal tests, standard-library documentation examples, Markdown checks, Python lint/format checks and strict documentation build passed on both the [baseline and patch](https://github.com/liorma6/pydantic/actions/runs/42291282153).\n\nAI assistance: Codex.\n\n* [x] Followed the [contributing guide](https://pydantic.dev/docs/validation/latest/get-started/contributing/). No linked issue; this is a small documentation correction.\n",
+   "html_url": "https://github.com/pydantic/pydantic/pull/14248",
+   "merged_at": "2026-11-06T21:04:27Z",
+   "closed_at": "2026-11-06T21:04:27Z",
+   "created_at": "2026-11-06T20:50:59Z",
+   "user": {
+    "login": "liorma6"
+   },
+   "files": [
+    {
+     "filename": "docs/api/standard_library_types.md"
+    }
+   ],
+   "reviews": []
+  },
+  {
+   "number": 14247,
+   "title": "Bump jiter to v0.19.0",
+   "body": "To address memory issues reported in https://github.com/pydantic/pydantic/issues/14234.",
+   "html_url": "https://github.com/pydantic/pydantic/pull/14247",
+   "merged_at": "2026-11-06T21:09:19Z",
+   "closed_at": "2026-11-06T21:09:20Z",
+   "created_at": "2026-11-06T20:49:02Z",
+   "user": {
+    "login": "Viicos"
+   },
+   "files": [
+    {
+     "filename": "pydantic-core/Cargo.lock"
+    },
+    {
+     "filename": "pydantic-core/Cargo.toml"
+    }
+   ],
+   "reviews": []
+  },
+  {
+   "number": 14246,
+   "title": "Change the arguments schema for `@validate_call`\u00a0",
+   "body": "And fixes a couple misses about the `arguments-v3` schema.\n\nHere's how `TypeAdapter(func)` validation changes with the v3 arguments schema. The common setup for all examples:\n\n```python\nfrom typing_extensions import TypedDict, Unpack\n\nfrom pydantic import TypeAdapter\n```\n\n### Positional arguments as a list\n\n```python\ndef f(a: int, b: int = 0):\n    return (a, b)\n\nta = TypeAdapter(f)\n```\n\nBefore:\n\n```python\nprint(ta.validate_python({'a': 1}))\n#> (1, 0)\nprint(ta.validate_python([1, 2]))\n#> (1, 2)\n```\n\nAfter:\n\n```python\nprint(ta.validate_python({'a': 1}))\n#> (1, 0)\nta.validate_python([1, 2])\n#> 1 validation error for call[f]\n#>   Arguments must be a tuple, list or a dictionary [type=arguments_type, input_value=[1, 2], input_type=list]\n```\n\n### Unexpected keys\n\nBefore:\n\n```python\nta.validate_python({'a': 1, 'x': 2})\n#> 1 validation error for call[f]\n#> x\n#>   Unexpected keyword argument [type=unexpected_keyword_argument, input_value=2, input_type=int]\n```\n\nAfter:\n\n```python\nta.validate_python({'a': 1, 'x': 2})\n#> 1 validation error for call[f]\n#> x\n#>   Extra inputs are not permitted [type=extra_forbidden, input_value=2, input_type=int]\n```\n\n### `*args` and `**kwargs`\n\n```python\ndef g(a: int, *args: int, **kwargs: int):\n    return (a, args, kwargs)\n\nta = TypeAdapter(g)\n```\n\nBefore (extra keys are spread at the top level; `*args` can only be passed through a list):\n\n```python\nprint(ta.validate_python({'a': 1, 'x': 2}))\n#> (1, (), {'x': 2})\nprint(ta.validate_python([1, 2, 3]))\n#> (1, (2, 3), {})\n```\n\nAfter (`*args` and `**kwargs` go under their parameter names):\n\n```python\nprint(ta.validate_python({'a': 1, 'kwargs': {'x': 2}}))\n#> (1, (), {'x': 2})\nprint(ta.validate_python({'a': 1, 'args': [2, 3]}))\n#> (1, (2, 3), {})\n```\n\n### Positional-only parameters\n\n```python\ndef h(a: int, /, b: int):\n    return (a, b)\n\nta = TypeAdapter(h)\n```\n\nBefore (a mapping can't supply `a`):\n\n```python\nprint(ta.validate_python([1, 2]))\n#> (1, 2)\nta.validate_python({'a': 1, 'b': 2})\n#> 2 validation errors for call[h]\n#> 0\n#>   Missing required positional only argument [type=missing_positional_only_argument, input_value={'a': 1, 'b': 2}, input_type=dict]\n#> a\n#>   Unexpected keyword argument [type=unexpected_keyword_argument, input_value=1, input_type=int]\n```\n\nAfter (positional-only parameters are passed by name):\n\n```python\nprint(ta.validate_python({'a': 1, 'b': 2}))\n#> (1, 2)\n```\n\n### `**kwargs: Unpack[TypedDict]`\n\n```python\nclass Options(TypedDict):\n    timeout: int\n\ndef u(a: int, **kwargs: Unpack[Options]):\n    return (a, kwargs)\n\nta = TypeAdapter(u)\n```\n\nBefore:\n\n```python\nprint(ta.validate_python({'a': 1, 'timeout': 5}))\n#> (1, {'timeout': 5})\n```\n\nAfter:\n\n```python\nprint(ta.validate_python({'a': 1, 'kwargs': {'timeout': 5}}))\n#> (1, {'timeout': 5})\nta.validate_python({'a': 1, 'timeout': 5})\n#> 2 validation errors for call[u]\n#> kwargs.timeout\n#>   Field required [type=missing, input_value={}, input_type=dict]\n#> timeout\n#>   Extra inputs are not permitted [type=extra_forbidden, input_value=5, input_type=int]\n```",
+   "html_url": "https://github.com/pydantic/pydantic/pull/14246",
+   "merged_at": "2026-11-06T20:57:56Z",
+   "closed_at": "2026-11-06T20:57:56Z",
+   "created_at": "2026-11-06T19:52:41Z",
+   "user": {
+    "login": "Viicos"
+   },
+   "files": [
+    {
+     "filename": "docs/errors/validation_errors.md"
+    },
+    {
+     "filename": "pydantic-core/python/pydantic_core/core_schema.py"
+    },
+    {
+     "filename": "pydantic-core/src/errors/types.rs"
+    },
+    {
+     "filename": "pydantic-core/src/validators/arguments_v3.rs"
+    },
+    {
+     "filename": "pydantic-core/tests/benchmarks/test_micro_benchmarks.py"
+    },
+    {
+     "filename": "pydantic-core/tests/serializers/test_model.py"
+    },
+    {
+     "filename": "pydantic-core/tests/test_errors.py"
+    },
+    {
+     "filename": "pydantic-core/tests/test_schema_functions.py"
+    },
+    {
+     "filename": "pydantic-core/tests/validators/test_arguments.py"
+    },
+    {
+     "filename": "pydantic-core/tests/validators/test_call.py"
+    },
+    {
+     "filename": "pydantic-core/tests/validators/test_with_default.py"
+    },
+    {
+     "filename": "pydantic/_internal/_generate_schema.py"
+    },
+    {
+     "filename": "pydantic/experimental/arguments_schema.py"
+    },
+    {
+     "filename": "pydantic/json_schema.py"
+    },
+    {
+     "filename": "tests/test_experimental_arguments_schema.py"
+    },
+    {
+     "filename": "tests/test_json_schema.py"
+    },
+    {
+     "filename": "tests/test_schema_gather.py"
+    },
+    {
+     "filename": "tests/test_validate_call.py"
+    }
+   ],
+   "reviews": [
+    {
+     "user": {
+      "login": "veria-ai[bot]"
+     }
+    }
+   ]
+  },
+  {
+   "number": 14244,
+   "title": "Fix `Decimal` JSON Schema patterns accepting bare `0` when no whole digits are allowed",
+   "body": "## Change Summary\n\nThe patterns generated for `Decimal` fields disagreed with validation when `decimal_places >= max_digits`. pydantic-core canonicalizes any zero to one digit, so a bare `0` counts as one whole digit and is rejected when no whole digits are allowed \u2014 but both generated patterns accepted it:\n\n```python\nfrom decimal import Decimal\nfrom typing import Annotated\n\nfrom pydantic import Field, TypeAdapter\n\nta = TypeAdapter(Annotated[Decimal, Field(max_digits=2, decimal_places=2)])\nta.validate_python('0')\n# ValidationError (whole digit count exceeds the maximum allowed)\n\n# With a schema generator returning `build_decimal_pattern()`, the validation\n# pattern still matched '0', '00', '-0' and '0.', and the serialization\n# pattern matched '0', '-0' and '0E+1'.\n```\n\n`max_digits=0` was mishandled as well: no finite decimal satisfies it (even zero counts as one digit), yet the patterns accepted plain forms such as `0`.\n\nChanges in `pydantic/json_schema.py`:\n\n* Validation pattern: when no whole digits are allowed, only forms with a fractional part are included; for `max_digits=0`, only the exponent alternative remains.\n* Serialization pattern: the plain form requires a fractional part when no whole digits are allowed, the zero-with-exponent alternative (`0E...`) is restricted to negative exponents in that case, and `max_digits=0` matches no finite output.\n\nTests added in `tests/test_json_schema.py`, next to the existing decimal pattern tests, covering the cases above (including new `(2, 2)` and `(0, ...)` entries in the serialization pattern tests). Verified locally:\n\n* `pytest tests/test_json_schema.py -k decimal`: 241 passed with the fix; 12 failed with only `pydantic/json_schema.py` reverted.\n* `pytest tests/test_json_schema.py`: 693 passed, 5 skipped, 2 xfailed.\n* `ruff check` and `ruff format --check` pass on both changed files.\n\nThis change was prepared with AI assistance (Claude Code), and was reviewed and tested locally before submission.\n\n* [ ] I have read the [contributing guide](https://pydantic.dev/docs/validation/latest/get-started/contributing/) and I am assigned to the issue I am closing.\n",
+   "html_url": "https://github.com/pydantic/pydantic/pull/14244",
+   "merged_at": "2026-11-06T21:28:06Z",
+   "closed_at": "2026-11-06T21:28:06Z",
+   "created_at": "2026-11-06T19:08:31Z",
+   "user": {
+    "login": "b84330808"
+   },
+   "files": [
+    {
+     "filename": "pydantic/json_schema.py"
+    },
+    {
+     "filename": "tests/test_json_schema.py"
+    }
+   ],
+   "reviews": []
+  },
+  {
+   "number": 14235,
+   "title": "Bump oauthlib from 4.0.0 to 4.0.1",
+   "body": "Bumps [oauthlib](https://github.com/oauthlib/oauthlib) from 4.0.0 to 4.0.1.\n<details>\n<summary>Release notes</summary>\n<p><em>Sourced from <a href=\"https://github.com/oauthlib/oauthlib/releases\">oauthlib's releases</a>.</em></p>\n<blockquote>\n<h2>4.0.1</h2>\n<h2>Security</h2>\n<ul>\n<li><strong>CVE-2026-49272</strong> / GHSA-3jp2-3mrg-2vxc: The device code flow token endpoint did not validate the <code>device_code</code> parameter. A request with a known <code>client_id</code> and a bogus <code>device_code</code> could obtain a bearer token. <code>DeviceCodeGrant.validate_token_request</code> now calls <code>DeviceCodeGrant.validate_device_code()</code>, which rejects missing or unknown device codes (<code>invalid_request</code> / <code>invalid_grant</code>) and delegates the code's authorization status to the new <code>RequestValidator.validate_device_code()</code> hook, per RFC 8628 Section 3.5. (cherry-picked from <a href=\"https://redirect.github.com/oauthlib/oauthlib/issues/954\">#954</a>)</li>\n</ul>\n<h2>Upgrade note for device flow integrators</h2>\n<p>Custom <code>RequestValidator</code> implementations using the device flow must now implement <code>validate_device_code(client_id, code, request)</code>. Return one of the <code>DeviceCodeGrant.DEVICE_CODE_*</code> statuses for known codes, or <code>None</code> for an unknown code. When returning <code>AUTHORIZED</code>, the validator must also populate <code>request.user</code> and <code>request.scopes</code> from the stored authorization.</p>\n</blockquote>\n</details>\n<details>\n<summary>Changelog</summary>\n<p><em>Sourced from <a href=\"https://github.com/oauthlib/oauthlib/blob/v4.0.1/CHANGELOG.rst\">oauthlib's changelog</a>.</em></p>\n<blockquote>\n<h2>4.0.1 (2026-11-04):</h2>\n<p>OAuth2.0 Provider (Security):</p>\n<ul>\n<li>\n<p><strong>Security</strong>: CVE-2026-49272 / GHSA-3jp2-3mrg-2vxc: The device code flow\ntoken endpoint did not validate the <code>device_code</code> parameter. A request\nwith a known <code>client_id</code> and a bogus <code>device_code</code> could obtain a\nbearer token. <code>DeviceCodeGrant.validate_token_request</code> now calls a new\n<code>DeviceCodeGrant.validate_device_code()</code> which rejects missing or\nunknown device codes (<code>400 invalid_request</code> / <code>400 invalid_grant</code>)\nand delegates the code's authorization status to a new required\n<code>RequestValidator.validate_device_code()</code> hook, per RFC 8628\nSection 3.5. (cherry-picked from <a href=\"https://redirect.github.com/oauthlib/oauthlib/issues/954\">#954</a>, merged as 1c91d64)</p>\n<p><strong>Upgrade note for device flow integrators</strong>: custom\n<code>RequestValidator</code> implementations using the device flow must now\nimplement <code>validate_device_code(client_id, code, request)</code>. Return one\nof the <code>DeviceCodeGrant.DEVICE_CODE_*</code> statuses (<code>AUTHORIZED</code>,\n<code>PENDING</code>, <code>SLOW_DOWN</code> or <code>EXPIRED</code>) for known codes, or <code>None</code>\nfor an unknown code. When returning <code>AUTHORIZED</code>, the validator must\nalso populate <code>request.user</code> and <code>request.scopes</code> from the stored\nauthorization.</p>\n</li>\n</ul>\n</blockquote>\n</details>\n<details>\n<summary>Commits</summary>\n<ul>\n<li><a href=\"https://github.com/oauthlib/oauthlib/commit/6e3aa05af92978755939a18cb4dd655ced156c1e\"><code>6e3aa05</code></a> Release 4.0.1: fix CVE-2026-49272 (device_code validation in device flow)</li>\n<li><a href=\"https://github.com/oauthlib/oauthlib/commit/77a5f1c8ce00da2b0b8c5f6e9cc129920085f114\"><code>77a5f1c</code></a> Merge pull request <a href=\"https://redirect.github.com/oauthlib/oauthlib/issues/954\">#954</a> from hekhuisk/improve-device-workflow</li>\n<li>See full diff in <a href=\"https://github.com/oauthlib/oauthlib/compare/v4.0.0...v4.0.1\">compare view</a></li>\n</ul>\n</details>\n<br />\n\n\n[![Dependabot compatibility score](https://dependabot-badges.githubapp.com/badges/compatibility_score?dependency-name=oauthlib&package-manager=uv&previous-version=4.0.0&new-version=4.0.1)](https://docs.github.com/en/github/managing-security-vulnerabilities/about-dependabot-security-updates#about-compatibility-scores)\n\nDependabot will resolve any conflicts with this PR as long as you don't alter it yourself. You can also trigger a rebase manually by commenting `@dependabot rebase`.\n\n[//]: # (dependabot-automerge-start)\n[//]: # (dependabot-automerge-end)\n\n---\n\n<details>\n<summary>Dependabot commands and options</summary>\n<br />\n\nYou can trigger Dependabot actions by commenting on this PR:\n- `@dependabot rebase` will rebase this PR\n- `@dependabot recreate` will recreate this PR, overwriting any edits that have been made to it\n- `@dependabot show <dependency name> ignore conditions` will show all of the ignore conditions of the specified dependency\n- `@dependabot ignore this major version` will close this PR and stop Dependabot creating any more for this major version (unless you reopen the PR or upgrade to it yourself)\n- `@dependabot ignore this minor version` will close this PR and stop Dependabot creating any more for this minor version (unless you reopen the PR or upgrade to it yourself)\n- `@dependabot ignore this dependency` will close this PR and stop Dependabot creating any more for this dependency (unless you reopen the PR or upgrade to it yourself)\nYou can disable automated security fix PRs for this repo from the [Security Alerts page](https://github.com/pydantic/pydantic/network/alerts).\n\n</details>",
+   "html_url": "https://github.com/pydantic/pydantic/pull/14235",
+   "merged_at": "2026-11-06T09:40:11Z",
+   "closed_at": "2026-11-06T09:40:12Z",
+   "created_at": "2026-11-05T23:53:23Z",
+   "user": {
+    "login": "dependabot[bot]"
+   },
+   "files": [
+    {
+     "filename": "uv.lock"
+    }
+   ],
+   "reviews": []
+  },
+  {
+   "number": 14226,
+   "title": "Fix typo in `ErrorTypeDefaults` comment",
+   "body": "## Summary\nFix `dont` \u2192 `don't` in the `ErrorTypeDefaults` comment in `pydantic-core`.\n\n## Test plan\n- [x] Comment-only change",
+   "html_url": "https://github.com/pydantic/pydantic/pull/14226",
+   "merged_at": "2026-11-06T09:40:52Z",
+   "closed_at": "2026-11-06T09:40:52Z",
+   "created_at": "2026-11-05T00:35:09Z",
+   "user": {
+    "login": "ninglinLiu"
+   },
+   "files": [
+    {
+     "filename": "pydantic-core/src/errors/types.rs"
+    }
+   ],
+   "reviews": []
+  },
+  {
+   "number": 14225,
+   "title": "Respect `repr=False` on the `root` field of `RootModel`",
+   "body": "## Change Summary\n\n`RootModel.__repr_args__` always yields `root`, so `Field(repr=False)` on it has no effect, unlike on `BaseModel` fields:\n\n```python\nfrom pydantic import BaseModel, Field, RootModel\n\nclass Token(RootModel[str]):\n    root: str = Field(repr=False)\n\nclass Model(BaseModel):\n    token: str = Field(repr=False)\n\nrepr(Token('secret'))\n#> \"Token(root='secret')\"\nrepr(Model(token='secret'))\n#> 'Model()'\n```\n\nIt now checks the field's `repr` flag, same as `BaseModel`.\n\n* [x] I have read the [contributing guide](https://pydantic.dev/docs/validation/latest/get-started/contributing/) and I am assigned\n      to the issue I am closing.\n",
+   "html_url": "https://github.com/pydantic/pydantic/pull/14225",
+   "merged_at": "2026-11-06T09:42:13Z",
+   "closed_at": "2026-11-06T09:42:14Z",
+   "created_at": "2026-11-05T00:26:35Z",
+   "user": {
+    "login": "Alvi-Rahman"
+   },
+   "files": [
+    {
+     "filename": "pydantic/root_model.py"
+    },
+    {
+     "filename": "tests/test_root_model.py"
+    }
+   ],
+   "reviews": [
+    {
+     "user": {
+      "login": "koriyoshi2041"
+     }
+    }
+   ]
+  },
+  {
+   "number": 14223,
+   "title": "Exclude `InitVar` fields from the serialization JSON schema",
+   "body": "## Change Summary\n\nDataclass `InitVar` fields are passed to `__post_init__` and never serialized, but the serialization JSON schema still listed them as required properties:\n\n```python\nfrom dataclasses import InitVar\nfrom pydantic import TypeAdapter\nfrom pydantic.dataclasses import dataclass\n\n@dataclass\nclass User:\n    name: str\n    password: InitVar[str]\n\nTypeAdapter(User).dump_python(User(name='a', password='b'))\n#> {'name': 'a'}\nTypeAdapter(User).json_schema(mode='serialization')['required']\n#> ['name', 'password']\n```\n\n`field_is_present` now leaves out `init_only` fields in serialization mode. The validation schema is unchanged.\n\n* [x] I have read the [contributing guide](https://pydantic.dev/docs/validation/latest/get-started/contributing/) and I am assigned\n      to the issue I am closing.\n",
+   "html_url": "https://github.com/pydantic/pydantic/pull/14223",
+   "merged_at": "2026-11-08T18:43:41Z",
+   "closed_at": "2026-11-08T18:43:41Z",
+   "created_at": "2026-11-04T21:22:31Z",
+   "user": {
+    "login": "Alvi-Rahman"
+   },
+   "files": [
+    {
+     "filename": "pydantic/json_schema.py"
+    },
+    {
+     "filename": "tests/test_json_schema.py"
+    }
+   ],
+   "reviews": [
+    {
+     "user": {
+      "login": "chrikrah"
+     }
+    },
+    {
+     "user": {
+      "login": "Viicos"
+     }
+    }
+   ]
+  },
+  {
+   "number": 14221,
+   "title": "Bump `pytest-codspeed` to v5.0.4",
+   "body": null,
+   "html_url": "https://github.com/pydantic/pydantic/pull/14221",
+   "merged_at": "2026-11-04T20:03:03Z",
+   "closed_at": "2026-11-04T20:03:03Z",
+   "created_at": "2026-11-04T18:26:38Z",
+   "user": {
+    "login": "Viicos"
+   },
+   "files": [
+    {
+     "filename": "uv.lock"
+    }
+   ],
+   "reviews": []
+  }
+ ],
+ "issues": [
+  {
+   "number": 14310,
+   "title": "`ValueError: zip() argument 2 is shorter than argument 1` for a generic type alias with type parameter defaults used with fewer arguments (regression in 2.14)",
+   "body": "### Initial Checks\n\n- [x] I confirm that I'm using Pydantic V2\n\n### Description\n\nSince 2.14.0, a generic type alias (PEP 695 `type` statement or `typing_extensions.TypeAliasType`) whose trailing type parameter has a default (PEP 696) can no longer be subscripted with fewer arguments than it has type parameters. Schema generation fails with a bare `ValueError` raised by `zip()`. In 2.13.5 the same code works and the missing argument falls back to its default.\n\n```\nTraceback (most recent call last):\n  ...\n  File \".../pydantic/_internal/_generate_schema.py\", line 1464, in _type_alias_type_schema\n    typevars_map = get_standard_typevars_map(obj)\n  File \".../pydantic/_internal/_generics.py\", line 239, in get_standard_typevars_map\n    return dict(zip(parameters, args, strict=True))\nValueError: zip() argument 2 is shorter than argument 1\n```\n\nAt runtime `Pair[str].__args__` is `(str,)`, while `Pair.__type_params__` has two parameters, so the strict `zip()` raises. `strict=True` was added to `get_standard_typevars_map()` in #13070 (Drop support for Python 3.9), together with the other `zip()` calls in the code base, so this looks like an unintended side effect rather than a deliberate change.\n\nOn 2.14.3, the related cases still work:\n- a generic `BaseModel` with a type parameter default (`class Model[A, B = int](BaseModel)` used as `Model[str]`),\n- the bare alias without subscription (`TypeAdapter(Pair)`), which uses the default,\n- the fully parameterized alias (`Pair[str, int]`).\n\nExpected: missing trailing arguments are filled from the type parameters' `__default__`, as they are for generic models. If partially parameterized aliases are not meant to be supported, a `PydanticSchemaGenerationError` would be clearer than a bare `ValueError` from `zip()`.\n\n### Example Code\n\n```Python\nfrom pydantic import BaseModel, TypeAdapter\n\ntype Pair[A, B = int] = tuple[A, B]\n\nprint(TypeAdapter(Pair[str, int]).validate_python(('a', 1)))  # works\n\nprint(TypeAdapter(Pair[str]).validate_python(('a', 1)))\n# 2.13.5: ('a', 1)\n# 2.14.3: ValueError: zip() argument 2 is shorter than argument 1\n\n\nclass Model(BaseModel):\n    value: Pair[str]  # same error at class creation\n\n\n# typing_extensions.TypeAliasType with TypeVar defaults fails the same way:\nimport typing_extensions\n\nA = typing_extensions.TypeVar('A')\nB = typing_extensions.TypeVar('B', default=int)\nTEPair = typing_extensions.TypeAliasType('TEPair', tuple[A, B], type_params=(A, B))\nTypeAdapter(TEPair[str])  # 2.14.3: same ValueError\n```\n\n### Python, Pydantic & OS Version\n\n```Text\npydantic version: 2.14.3\n        pydantic-core version: 2.50.4\n          pydantic-core build: profile=release pgo=false\n               python version: 3.14.0 (v3.14.0:ebf955df7a8, Oct  7 2025, 08:20:14) [Clang 16.0.0 (clang-1600.0.26.6)]\n                     platform: macOS-27.2.1-arm64-arm-64bit-Mach-O\n             related packages: typing_extensions-4.16.0\n                       commit: unknown\n```",
+   "html_url": "https://github.com/pydantic/pydantic/issues/14310",
+   "created_at": "2026-11-18T18:21:54Z",
+   "user": {
+    "login": "chuckyblack"
+   }
+  },
+  {
+   "number": 14309,
+   "title": "`use_attribute_docstrings` re-parses a stdlib dataclass's whole module per class on every schema build on Python < 3.13",
+   "body": "> This issue was posted by Claude Code using claude-opus-5-5 on behalf of David.\n\n### Summary\n\nOn Python 3.11 and 3.12, building a schema with `use_attribute_docstrings=True` that reaches stdlib dataclasses re-parses each class's whole module, once per class, on every schema build. The cost grows with the number of classes times the size of their module, and nothing caches it. On Python 3.13+ the same build is fast.\n\n### Repro\n\n```python\nimport sys\nimport time\nfrom pathlib import Path\nfrom typing import Union\n\nimport pydantic\nfrom pydantic import BaseModel, ConfigDict\n\n# A module with many stdlib dataclasses, like a library's message types.\nN = 200\nlines = ['from dataclasses import dataclass', '']\nfor i in range(N):\n    lines += ['@dataclass', f'class Part{i}:', f'    \"\"\"Part {i}.\"\"\"', '']\n    for f in range(4):\n        lines += [f'    field_{f}: int = 0', f'    \"\"\"Field {f} of part {i}.\"\"\"', '']\nPath(__file__).with_name('parts.py').write_text('\\n'.join(lines))\nsys.path.insert(0, str(Path(__file__).parent))\nimport parts  # noqa: E402\n\nPartUnion = Union[tuple(getattr(parts, f'Part{i}') for i in range(N))]\n\n\ndef build(use_attribute_docstrings: bool) -> float:\n    start = time.perf_counter()\n\n    class Root(BaseModel):\n        model_config = ConfigDict(use_attribute_docstrings=use_attribute_docstrings)\n        parts: list[PartUnion]\n\n    return time.perf_counter() - start\n\n\nprint(f'Python {sys.version.split()[0]}, pydantic {pydantic.VERSION}, {N} dataclasses in a {len(lines)}-line module')\nfor flag in (False, True):\n    print(f'  use_attribute_docstrings={flag}: best of 3 builds {min(build(flag) for _ in range(3)):.2f}s')\n```\n\nRun with `uv run --no-project --python <version> --with pydantic==2.14.3 python repro.py`:\n\n| Python | `use_attribute_docstrings=False` | `use_attribute_docstrings=True` |\n|---|---|---|\n| 3.11.18 | 0.02 s | 1.22 s |\n| 3.12.15 | 0.01 s | 1.19 s |\n| 3.13.17 | 0.02 s | 0.03 s |\n| 3.14.10 | 0.02 s | 0.03 s |\n\nThe time is best of three builds, so it is paid again on every build, not once per class.\n\n### Cause\n\n`collect_dataclass_fields` calls `extract_docstrings_from_cls(cls, use_inspect=True)` for a stdlib dataclass, which calls `inspect.getsourcelines(cls)`. On Python \u2264 3.12, `inspect.findsource` locates a class by running `ast.parse` over its module's whole source and walking the tree with `_ClassFinder`. Python 3.13 reads `__firstlineno__` instead. In a 9,000-line module that is about 32 ms per class on 3.12 and 0.1 ms on 3.15.\n\nCaching the extracted docstrings per class, or parsing each module once on < 3.13, would remove the repeat cost.\n\n### Impact\n\nIn Pydantic AI, this cost makes some agent constructions take seconds on 3.11/3.12, and pushes a CI job past its time limit: https://github.com/pydantic/pydantic-ai/issues/12625.\n\n### Python, Pydantic & OS Version\n\npydantic 2.14.3, pydantic-core 2.50.4, Linux x86_64, CPython 3.11.18 / 3.12.15 / 3.13.17 / 3.14.10 (uv-managed).\n",
+   "html_url": "https://github.com/pydantic/pydantic/issues/14309",
+   "created_at": "2026-11-18T16:55:36Z",
+   "user": {
+    "login": "dsfaccini"
+   }
+  },
+  {
+   "number": 14304,
+   "title": "Negative indices in include/exclude fail on Sequence fields",
+   "body": "### Initial Checks\n\n- [x] I confirm that I'm using Pydantic V2\n\n### Description\n\nNegative indices in include/exclude work for list[...] fields, but the same call on a Sequence[...] (or MutableSequence[...]) field raises a PydanticSerializationError, saying negative indices can\u2019t be used on unsized iterables, even though the value is a plain list.\n\nSequence fields are serialized through serialize_sequence_via_list, which calls handler(item, index). The handler builds its index filter without the sequence length (for_sequence(state, None) in function.rs), so negative indices are rejected. The length is known on the Python side, but there is currently no way to pass it to the handler.\n\n### Example Code\n\n```Python\nfrom typing import Sequence\n\nfrom pydantic import BaseModel\n\n\nclass Item(BaseModel):\n    a: int = 1\n\n\nclass Model(BaseModel):\n    items: Sequence[Item] = [Item(), Item(), Item()]\n\n\nModel().model_dump(exclude={'items': {-1}})\n# PydanticSerializationError: Error calling function `serialize_sequence_via_list`:\n# ValueError: Negative indices cannot be used to exclude items on unsized iterables\n\n# With `items: list[Item]`, this works and excludes the last item.\n```\n\n### Python, Pydantic & OS Version\n\n```Text\npydantic version: 2.14.3\n        pydantic-core version: 2.50.4\n          pydantic-core build: profile=release pgo=false\n               python version: 3.12.16\n                     platform: macOS-27.0.1-arm64-arm-64bit\n             related packages: typing_extensions-4.16.0\n                       commit: unknown\n```",
+   "html_url": "https://github.com/pydantic/pydantic/issues/14304",
+   "created_at": "2026-11-17T16:29:39Z",
+   "user": {
+    "login": "Manan1801"
+   }
+  },
+  {
+   "number": 14303,
+   "title": "Out of range indices in include/exclude match the wrong sequence items",
+   "body": "### Initial Checks\n\n- [x] I confirm that I'm using Pydantic V2\n\n### Description\n\nWhen serializing a list or tuple with index-based include/exclude, an index that is out of range doesn\u2019t get ignored: it wraps around and matches an existing item. Excluding index 10 from a 3 item list removes the item at index 1 (10 % 3), and -4 removes the item at index 2. With include, the wrong items are kept. This silently drops or keeps data in model_dump()/model_dump_json().\n\nThe cause seems to be map_negative_index() in pydantic-core/src/serializers/filter.rs, which applies index % len to all indices instead of only shifting negative ones by len. I have a fix with a test ready, and would like to be assigned to this issue.\n\n### Example Code\n\n```Python\nfrom pydantic import BaseModel, TypeAdapter\n\nta = TypeAdapter(list[int])\nprint(ta.dump_python([1, 2, 3], exclude={3}))   # [2, 3], expected [1, 2, 3]\nprint(ta.dump_python([1, 2, 3], exclude={10}))  # [1, 3], expected [1, 2, 3]\nprint(ta.dump_python([1, 2, 3], exclude={-4}))  # [1, 2], expected [1, 2, 3]\nprint(ta.dump_python([1, 2, 3], include={10}))  # [2], expected []\n\n\nclass Item(BaseModel):\n    a: int = 1\n\n\nclass Model(BaseModel):\n    items: list[Item] = [Item(), Item(), Item()]\n\n\nprint(Model().model_dump(exclude={'items': {10}}))  # one item is missing\n```\n\n### Python, Pydantic & OS Version\n\n```Text\npydantic version: 2.14.3\n pydantic-core version: 2.50.4\n pydantic-core build: profile=release pgo=false\n python version: 3.12.16\n platform: macOS-27.0.1-arm64-arm-64bit\n related packages: typing_extensions-4.16.0\n commit: unknown\\\n```",
+   "html_url": "https://github.com/pydantic/pydantic/issues/14303",
+   "created_at": "2026-11-17T16:27:07Z",
+   "user": {
+    "login": "Manan1801"
+   }
+  },
+  {
+   "number": 14297,
+   "title": "ByteSize float conversion changes exact byte counts and affects field bounds",
+   "body": "### Initial Checks\n\n- [x] I confirm that I'm using Pydantic V2\n\n### Description\n\n`ByteSize` converts the numeric part of a unit-bearing string through `float` before multiplying and truncating to an integer. This loses bytes even for ordinary decimal values: `1.005 KB` validates as 1004 instead of 1005. Exact integers above 2**53 also lose precision when a unit is present.\n\nThe changed byte count affects validation constraints. With `Field(le=1004)`, `1.005 KB` is accepted even though it represents 1005 bytes. Conversely, `Field(ge=1005)` rejects that valid value. Python and JSON validation both reproduce the conversion error on current main (`fa156283`).\n\nExamples of actual and expected byte counts:\n\n| Input | Actual | Expected |\n| --- | ---: | ---: |\n| `1.005 KB` | 1004 | 1005 |\n| `1.003 KB` | 1002 | 1003 |\n| `9007199254740993 B` | 9007199254740992 | 9007199254740993 |\n| `9007199254740993 KB` | 9007199254740992000 | 9007199254740993000 |\n\nI have a [focused patch](https://github.com/krish-goradia/pydantic/commit/e4670a5) that computes the scaled byte count using exact integer ratios, preserves fractional-byte truncation and the existing overflow check, and adds regression tests for both input modes and field bounds. All 31 ByteSize tests pass with the correction. May I be assigned this issue to submit the patch under the contribution guidelines?\n\nAI assistance: this investigation, proposed patch, tests, and report were prepared with Codex assistance.\n\n### Example Code\n\n```python\nfrom pydantic import BaseModel, ByteSize, Field\n\n\nclass Size(BaseModel):\n    value: ByteSize\n\n\nclass LimitedSize(BaseModel):\n    value: ByteSize = Field(le=1004)\n\n\nprint(Size(value='1.005 KB').value)  # 1004; expected 1005\nprint(Size.model_validate_json('{\"value\":\"1.005 KB\"}').value)  # also 1004\nprint(LimitedSize(value='1.005 KB'))  # accepted; expected ValidationError\nprint(Size(value='9007199254740993 B').value)  # loses one byte\n```\n\n### Python, Pydantic & OS Version\n\n```text\n             pydantic version: 2.15.0a0+dev\n        pydantic-core version: 2.50.0\n          pydantic-core build: profile=release pgo=false\n               python version: 3.11.15 (main, Mar  3 2026, 00:52:57) [Clang 21.0.0 (clang-2100.0.123.102)]\n                     platform: macOS-26.6.2-arm64-arm-64bit\n             related packages: email-validator-2.4.0 typing_extensions-4.16.0\n                       commit: fa15628\n```\n",
+   "html_url": "https://github.com/pydantic/pydantic/issues/14297",
+   "created_at": "2026-11-16T13:25:33Z",
+   "user": {
+    "login": "krish-goradia"
+   }
+  },
+  {
+   "number": 14291,
+   "title": "`strict=True` passed at validation time is ignored for `complex`",
+   "body": "### Initial Checks\n\n- [x] I confirm that I'm using Pydantic V2\n\n### Description\n\nPassing `strict=True` to `validate_python()`, `validate_json()` or `model_validate()` has no effect on `complex` fields, so `5` is still coerced to `(5+0j)`. Strict mode set with `Field(strict=True)` or `ConfigDict(strict=True)` works and rejects the same inputs.\n\nI expected `strict=True` at validation time to reject `int` input for `complex`, the same way it does for `float`, `Decimal` and `Fraction`. The [conversion table](https://pydantic.dev/docs/validation/latest/concepts/conversion_table/) also lists `int` input for `complex` as lax-only.\n\nThe cause is in [`ComplexValidator::validate()`](https://github.com/pydantic/pydantic/blob/cd1d8be820a8036818d6e82603a3ab07e0f855b5/pydantic-core/src/validators/complex.rs#L57). It passes the schema-level `self.strict` to `validate_complex()`, while the other validators use `state.strict_or(self.strict)` (e.g. [`float.rs`](https://github.com/pydantic/pydantic/blob/cd1d8be820a8036818d6e82603a3ab07e0f855b5/pydantic-core/src/validators/float.rs#L76)).\n\nI have a one-line fix with a regression test in `tests/types/test_complex.py` ready on a branch. With the fix, the three calls below raise `ValidationError`, and lax validation is unchanged. Could I be assigned to open the PR?\n\n### Example Code\n\n```Python\nfrom pydantic import BaseModel, TypeAdapter\n\nta = TypeAdapter(complex)\n\nta.validate_python(5, strict=True)\n#> current:  (5+0j)\n#> expected: ValidationError (Input should be an instance of complex)\n\nta.validate_json('5', strict=True)\n#> current:  (5+0j)\n#> expected: ValidationError (Input should be a valid complex string)\n\n\nclass Model(BaseModel):\n    c: complex\n\n\nModel.model_validate({'c': 5}, strict=True)\n#> current:  Model(c=(5+0j))\n#> expected: ValidationError\n```\n\n### Python, Pydantic & OS Version\n\n```Text\n             pydantic version: 2.14.3\n        pydantic-core version: 2.50.4\n          pydantic-core build: profile=release pgo=false\n               python version: 3.13.16 (main, Oct  9 2026, 15:23:36) [Clang 22.1.3 ]\n                     platform: Linux-7.2.15-1-omarchy-x86_64-with-glibc2.44\n             related packages: typing_extensions-4.16.0\n                       commit: unknown\n```\n",
+   "html_url": "https://github.com/pydantic/pydantic/issues/14291",
+   "created_at": "2026-11-16T01:00:43Z",
+   "user": {
+    "login": "phatstraws"
+   }
+  },
+  {
+   "number": 14289,
+   "title": "`make test-examples` does not discover current Markdown examples",
+   "body": "## Initial Checks\n\n- [x] I confirm that I'm using Pydantic V2.\n\n## Description\n\nAt commit `cd1d8be820a8036818d6e82603a3ab07e0f855b5`, `make help` describes `test-examples` as \u201cRun only the tests from the documentation\u201d, but `make test-examples` exits successfully without evaluating documentation examples on Linux.\n\nThe recipe searches `docs/examples` for `*.py`. All eight files currently in that directory are Markdown, so the search has no matches. Contributors using this target to check an edited example receive no test results and can miss errors.\n\nThe existing `tests/test_docs.py` suite discovers Markdown and docstring examples and handles their skip, Python-version, grouping and expected-failure settings. Could this target delegate to that suite? Normal pytest already covers these examples; the problem is the dedicated Makefile command.\n\nSource references:\n\n- [Makefile recipe](https://github.com/pydantic/pydantic/blob/cd1d8be820a8036818d6e82603a3ab07e0f855b5/Makefile#L94-L97)\n- [Current documentation runner](https://github.com/pydantic/pydantic/blob/cd1d8be820a8036818d6e82603a3ab07e0f855b5/tests/test_docs.py#L88-L227)\n- [Contributor instructions for example testing](https://github.com/pydantic/pydantic/blob/cd1d8be820a8036818d6e82603a3ab07e0f855b5/docs/contributing.md#L238-L243)\n\n## Example Code\n\nWith the development testing dependencies available, run these commands from that checkout:\n\n```sh\nfind docs/examples -type f -name '*.py'\nmake test-examples\n```\n\nThe search produces no output. The target prints the uv version and `running examples`, then exits 0.\n\nFor a failure control, temporarily add this assertion after `pydantic_model = MyModel.model_validate(sql_model)` in the Python code block in `docs/examples/orms.md`:\n\n```python\nassert pydantic_model.model_dump() == {'metadata': {'key': 'wrong'}}\n```\n\nThe original target still exits 0. Replacing its recipe with `uv run pytest tests/test_docs.py` detects the assertion (`'val' != 'wrong'`): 730 collected, 625 passed, 104 skipped, 1 failed; make exits 2. Removing the temporary assertion gives 626 passed and 104 skipped with make exiting 0.\n\n## Python, Pydantic & OS Version\n\n```text\n             pydantic version: 2.15.0a0+dev\n        pydantic-core version: 2.50.0\n          pydantic-core build: profile=debug pgo=false\n               python version: 3.12.16 (main, Nov  5 2026, 09:50:02) [GCC 12.2.0]\n                     platform: Linux-6.8.0-117-generic-aarch64-with-glibc2.36\n             related packages: typing_extensions-4.16.0 pyright-1.1.411\n                       commit: unknown\n```\n\nThe source archive is pinned to the commit above; it has no Git metadata. Validation used pytest 9.1.1, pytest-examples 0.0.15 and uv 0.13.8. Other platforms were not tested.\n",
+   "html_url": "https://github.com/pydantic/pydantic/issues/14289",
+   "created_at": "2026-11-15T19:55:32Z",
+   "user": {
+    "login": "llbohacll"
+   }
+  },
+  {
+   "number": 14288,
+   "title": "TypeAdapter.validate_python segfaults (SIGSEGV) when with_default_schema uses on_error='default' with validate_default=True and an invalid default",
+   "body": "## Environment\n\n- pydantic: 2.15.0a0+dev (commit 560f0f96)\n- pydantic-core: 2.50.0\n- Python: 3.13.9\n- OS: macOS 14 (Darwin 24.6.0)\n\n## Description\n\nCalling `TypeAdapter.validate_python` with `PydanticUndefined` on a type that uses `core_schema.with_default_schema` configured with `on_error='default'` and `validate_default=True` causes the Python process to crash with SIGSEGV (exit code 139). The crash only happens when the default value itself fails validation for the wrapped type. Passing a normal value works fine.\n\nUsing `on_error='raise'` in the same setup raises `ValidationError` as expected rather than crashing.\n\n## Reproduction\n\n```python\nfrom typing import Any, Annotated\nfrom pydantic import TypeAdapter\nfrom pydantic.functional_validators import GetCoreSchemaHandler\nfrom pydantic_core import core_schema, PydanticUndefined\n\n\nclass InvalidDefault:\n    def __get_pydantic_core_schema__(\n        self, source_type: Any, handler: GetCoreSchemaHandler\n    ):\n        return core_schema.with_default_schema(\n            handler(source_type),\n            default=\"bad\",\n            on_error=\"default\",\n            validate_default=True,\n        )\n\n\nta = TypeAdapter(Annotated[int, InvalidDefault()])\n\nprint(ta.validate_python(1))           # works, prints 1\nta.validate_python(PydanticUndefined)  # process crashes, exit code 139\n```\n\n## Expected behavior\n\nWhen `on_error='default'` is set and the default value fails its own validation, pydantic should raise a `ValidationError` or `ValueError` explaining that the default is invalid. It should not crash the process.\n\n## Actual behavior\n\nThe process exits with signal 11 (SIGSEGV). No exception is raised. The crash happens in pydantic-core's Rust extension. The equivalent setup with `on_error='raise'` raises `ValidationError` cleanly.\n\n## Additional notes\n\nThe existing test in `tests/test_types.py` (the `test_invalid_validated_default` parametrized test) covers `on_error='raise'` and `on_error='default'`. The `on_error='default'` variant is not marked `xfail`, so the test suite itself will segfault if that parameterized case runs. My guess is that the Rust code handling this path enters infinite recursion or corrupts memory when the error fallback tries to use the same invalid default that just failed validation.\n\n## Severity\n\nHigh. This is a hard crash in the main process with no traceback. Any application that constructs a `TypeAdapter` with this combination of options (which is a valid API combination according to the docs) will silently crash on certain inputs.",
+   "html_url": "https://github.com/pydantic/pydantic/issues/14288",
+   "created_at": "2026-11-15T12:12:16Z",
+   "user": {
+    "login": "saanvimundra"
+   }
+  },
+  {
+   "number": 14284,
+   "title": "[BUG] OpenAPI discriminator in serialization JSON schema does not reflect serialization_alias",
+   "body": "### Initial Checks\n\n- [x] I confirm that I'm using Pydantic V2\n\n### Description\n\nWhen generating a JSON Schema in serialization mode (`model_json_schema(mode='serialization')`) for a discriminated union, the generated discriminator metadata does not correctly reflect the serialization alias of the discriminator field.\n\nThere are two related problems:\n\n**1. `discriminator.propertyName` does not reflect `serialization_alias`**\n\nWhen union member models define a `serialization_alias` on the discriminator field using `Field(serialization_alias=...)`, the generated `$defs` correctly use the serialized property name (for example, `petType`). However, the generated `discriminator.propertyName` still uses the internal Python field name (for example, `pet_type`).\n\nAs a result:\n- `discriminator.propertyName` refers to a property name that does not exist in the referenced definitions.\n- It does not match the actual key emitted by `model_dump(by_alias=True)`.\n- This makes the discriminator metadata inconsistent with the serialized representation.\n\n**2. The discriminator mapping is omitted when both `validation_alias` and `serialization_alias` are specified**\n\nWhen the discriminator field defines both a `validation_alias` and a `serialization_alias`, for example:\n\n`Field(validation_alias='in_shape', serialization_alias='out_shape')`\n\nthe validation schema includes discriminator metadata, but the serialization schema omits the `discriminator` mapping entirely.\n\nThis appears to happen because `_extract_discriminator()` in `pydantic/json_schema.py` cannot match the validation-side discriminator paths against the serialized property name.\n\n**Expected behavior**\n\nWhen generating a serialization JSON Schema, the discriminator metadata should use the serialized property name corresponding to the discriminator field's `serialization_alias`. The discriminator mapping should also remain present when both validation and serialization aliases are configured.\n\n**Actual behavior**\n\nThe generated serialization schema either:\n- Uses the internal Python field name instead of the serialization alias in `discriminator.propertyName`, or\n- Omits the discriminator metadata entirely when both aliases are specified.\n\n### Example Code\n\n```Python\nfrom typing import Annotated, Literal, Union\n\nfrom pydantic import BaseModel, Field\n\n\n# Case 1: discriminator.propertyName does not match serialization_alias\n\nclass Cat(BaseModel):\n    pet_type: Literal['cat'] = Field(serialization_alias='petType')\n    meows: int\n\n\nclass Dog(BaseModel):\n    pet_type: Literal['dog'] = Field(serialization_alias='petType')\n    barks: float\n\n\nPet = Annotated[Union[Cat, Dog], Field(discriminator='pet_type')]\n\n\nclass Household(BaseModel):\n    pet: Pet\n\n\nserialization_schema = Household.model_json_schema(mode='serialization')\n\ndiscriminator_property = (\n    serialization_schema['properties']['pet']['discriminator']['propertyName']\n)\n\ncat_properties = list(\n    serialization_schema['$defs']['Cat']['properties'].keys()\n)\n\nhousehold = Household(pet=Cat(pet_type='cat', meows=3))\nserialized_payload = household.model_dump(by_alias=True)\npayload_keys = list(serialized_payload['pet'].keys())\n\nprint(\"Case 1:\")\nprint(\"Discriminator propertyName:\", repr(discriminator_property))\nprint(\"Cat schema properties:\", cat_properties)\nprint(\"Serialized payload keys:\", payload_keys)\nprint(\"Does discriminator match payload:\", discriminator_property in payload_keys)\n\n\n# Case 2: discriminator metadata is omitted when both aliases are specified\n\nclass Circle(BaseModel):\n    shape_type: Literal['circle'] = Field(\n        validation_alias='in_shape',\n        serialization_alias='out_shape',\n    )\n    radius: float\n\n\nclass Square(BaseModel):\n    shape_type: Literal['square'] = Field(\n        validation_alias='in_shape',\n        serialization_alias='out_shape',\n    )\n    side: float\n\n\nShape = Annotated[Union[Circle, Square], Field(discriminator='shape_type')]\n\n\nclass Canvas(BaseModel):\n    shape: Shape\n\n\nvalidation_schema = Canvas.model_json_schema(mode='validation')\nserialization_schema = Canvas.model_json_schema(mode='serialization')\n\nprint(\"\\\\nCase 2:\")\nprint(\n    \"Validation schema has discriminator:\",\n    'discriminator' in validation_schema['properties']['shape'],\n)\nprint(\n    \"Serialization schema has discriminator:\",\n    'discriminator' in serialization_schema['properties']['shape'],\n)\n```\n\n### Python, Pydantic & OS Version\n\n```Text\nPydantic: 2.14.3\npydantic-core: 2.50.4\nPython: 3.13.4\nPlatform: Windows 11\n\nFull Diagnostics:\n             pydantic version: 2.14.3\n        pydantic-core version: 2.50.4\n          pydantic-core build: profile=release pgo=false\n               python version: 3.13.4 (tags/v3.13.4:8a526ec, Jun  3 2025, 17:46:04) [MSC v.1943 64 bit (AMD64)]\n                     platform: Windows-11-10.0.26300-SP0\n             related packages: typing_extensions-4.16.0\n```",
+   "html_url": "https://github.com/pydantic/pydantic/issues/14284",
+   "created_at": "2026-11-14T14:24:46Z",
+   "user": {
+    "login": "Gowthamsuryagolla"
+   }
+  },
+  {
+   "number": 14278,
+   "title": "Specification Comliance Misses",
+   "body": "Hi,\n\nWe checked your library against the published specification, and it did not pass the compliance test.\n\nYou can view the details here: https://leo-gan.github.io/GLD.SerializerBenchmark/dashboard\n\nTo view your compliance report:\n\n1.  Click 'Compliance'.\n2.  Select your library's 'Language' and 'Standard'.\n3.  Click on the cell corresponding to your library name and standard specification (e.g., Row: 'cJSON', Column: 'RFC 4627'). The cell will display your results (e.g., '87% / 296/342').\n\nIf you find any inaccuracies in the compliance report, please let us know.\n\nThank you for your work on the library. If you find our benchmark helpful, feel free to star our repository on GitHub: https://github.com/leo-gan/GLD.SerializerBenchmark\n\nBest regards,\n",
+   "html_url": "https://github.com/pydantic/pydantic/issues/14278",
+   "created_at": "2026-11-14T02:41:06Z",
+   "user": {
+    "login": "leo-gan"
+   }
+  },
+  {
+   "number": 14275,
+   "title": "exclude_defaults=True uses untyped equality, omitting non-default union scalar types and -0.0",
+   "body": "### Initial Checks\n\n- [x] I confirm that I'm using Pydantic V2\n\n### Description\n\nWhen serializing with `exclude_defaults=True`, Pydantic (`pydantic-core`) compares field values against their default using untyped equality (`0 == False`, `True == 1`, `0.0 == 0`, `-0.0 == 0.0`).\n\nAs a result, non-default scalar union variants and signed zero are omitted from the serialized JSON/dict payload:\n1. `flag: Union[bool, int] = False` initialized with `flag=0` (`int`) dumps as `\"{}\"`, so `model_validate_json` reconstructs `flag=False` (`bool`).\n2. `code: Union[int, bool] = 1` initialized with `code=True` (`bool`) dumps as `\"{}\"`, reconstructing `code=1` (`int`).\n3. `num: Union[int, float] = 0` initialized with `num=0.0` (`float`) dumps as `\"{}\"`, reconstructing `num=0` (`int`).\n4. `z: float = 0.0` initialized with `z=-0.0` dumps as `\"{}\"`, losing the IEEE-754 sign bit (`+0.0`).\n\n### Example Code\n\n```python\nimport math\nfrom typing import Union\nfrom pydantic import BaseModel\n\nclass Packet(BaseModel):\n    flag: Union[bool, int] = False\n    code: Union[int, bool] = 1\n    num: Union[int, float] = 0\n    z: float = 0.0\n\np = Packet(flag=0, code=True, num=0.0, z=-0.0)\nwire = p.model_dump_json(exclude_defaults=True)\nrestored = Packet.model_validate_json(wire)\n\nprint(\"wire    :\", wire)  # {}\nprint(\"original:\", (type(p.flag), p.flag), (type(p.code), p.code), (type(p.num), p.num), math.copysign(1.0, p.z))\nprint(\"restored:\", (type(restored.flag), restored.flag), (type(restored.code), restored.code), (type(restored.num), restored.num), math.copysign(1.0, restored.z))\n# original: (<class 'int'>, 0) (<class 'bool'>, True) (<class 'float'>, 0.0) -1.0\n# restored: (<class 'bool'>, False) (<class 'int'>, 1) (<class 'int'>, 0) 1.0\n```\n\n### Python, Pydantic & OS Version\n\n```text\n             pydantic version: 2.14.3\n        pydantic-core version: 2.50.4\n          pydantic-core build: profile=release pgo=false\n               python version: 3.12.0 (tags/v3.12.0:0fb18b0, Oct  2 2023, 13:03:39) [MSC v.1935 64 bit (AMD64)]\n                     platform: Windows-11-10.0.26200-SP0\n             related packages: typing_extensions-4.16.0\n                       commit: unknown\n```\n",
+   "html_url": "https://github.com/pydantic/pydantic/issues/14275",
+   "created_at": "2026-11-13T03:06:43Z",
+   "user": {
+    "login": "xgbtxy"
+   }
+  },
+  {
+   "number": 14272,
+   "title": "are there any plans to make `GenerateSchema` public again? (or something like it)",
+   "body": "### Initial Checks\n\n- [x] I have searched Google & GitHub for similar requests and couldn't find anything\n- [x] I have read and followed [the docs](https://pydantic.dev/docs/validation/latest/get-started/) and still think this feature is missing\n\n### Description\n\nin my project we made the mistake of heavily relying on `GenerateSchema` before it was removed in 2.10. since then, we've had to patch it back in in a very hacky way.\n\ni've seen comments that mention refactoring it such as https://github.com/pydantic/pydantic/issues/10706#issuecomment-2437460996, but it's not clear whether that means it will become public again\n\n### Affected Components\n\n- [ ] [Compatibility between releases](https://pydantic.dev/docs/validation/latest/get-started/changelog/)\n- [ ] [Data validation/parsing](https://pydantic.dev/docs/validation/latest/concepts/models/#basic-model-usage)\n- [ ] [Data serialization](https://pydantic.dev/docs/validation/latest/concepts/serialization/) - `.model_dump()` and `.model_dump_json()`\n- [ ] [JSON Schema](https://pydantic.dev/docs/validation/latest/concepts/json_schema/)\n- [ ] [Dataclasses](https://pydantic.dev/docs/validation/latest/concepts/dataclasses/)\n- [x] [Model Config](https://pydantic.dev/docs/validation/latest/concepts/config/)\n- [ ] [Field Types](https://pydantic.dev/docs/validation/latest/api/pydantic/types/) - adding or changing a particular data type\n- [ ] [Function validation decorator](https://pydantic.dev/docs/validation/latest/concepts/validation_decorator/)\n- [ ] [Generic Models](https://pydantic.dev/docs/validation/latest/concepts/models/#generic-models)\n- [ ] [Other Model behaviour](https://pydantic.dev/docs/validation/latest/concepts/models/) - `model_construct()`, pickling, private attributes, ORM mode\n- [ ] [Plugins](https://pydantic.dev/docs/validation/latest/integrations/dev-tools/mypy/) and integration with other tools - mypy, FastAPI, python-devtools, Hypothesis, VS Code, PyCharm, etc.",
+   "html_url": "https://github.com/pydantic/pydantic/issues/14272",
+   "created_at": "2026-11-12T05:29:11Z",
+   "user": {
+    "login": "DetachHead"
+   }
+  },
+  {
+   "number": 14270,
+   "title": "`str_strip_whitespace`, `str_to_lower`/`str_to_upper` and `coerce_numbers_to_str` change `Path` values",
+   "body": "### Initial Checks\n\n- [x] I confirm that I'm using Pydantic V2\n\n### Description\n\nThe `str_*` config options are documented as applying to `str`, but path types (`pathlib.Path`, `os.PathLike`, `os.PathLike[str]`) validate their input through an inner `str_schema` that picks up the config, so the path itself is changed:\n\n- `str_to_upper` / `str_to_lower` change the case of the path (a different file on case-sensitive filesystems),\n- `str_strip_whitespace` strips the path,\n- `coerce_numbers_to_str` makes JSON `1` validate as `Path('1')` (Python input `1` is already rejected with `path_type`).\n\nThis also applies to `Path | None`, `list[Path]`, etc. in a model, and to JSON input. `os.PathLike[bytes]` is not affected.\n\nI'd suggest passing these four options explicitly as `False` to the inner `str_schema` in `_path_schema`, which takes precedence over the config. `str_min_length`/`str_max_length` would keep applying, since they are also emitted in the JSON Schema (`minLength`/`maxLength`), so validation and schema stay consistent.\n\nIt is a behaviour change for anyone relying on `str_strip_whitespace` to clean up paths; they could use `Annotated[Path, BeforeValidator(lambda v: v.strip() if isinstance(v, str) else v)]` instead.\n\nI have a fix with tests ready and would be happy to open a PR if you agree with this direction.\n\n### Example Code\n\n```python\nfrom pathlib import Path\n\nfrom pydantic import ConfigDict, TypeAdapter\n\nta = TypeAdapter(Path, config=ConfigDict(str_to_upper=True, str_strip_whitespace=True))\nprint(repr(ta.validate_python(' /a/b ')))\n#> PosixPath('/A/B')  expected: PosixPath(' /a/b ')\n\nta = TypeAdapter(Path, config=ConfigDict(coerce_numbers_to_str=True))\nprint(repr(ta.validate_json('1')))\n#> PosixPath('1')  expected: ValidationError (path_type), as for Python input\n```\n\n### Python, Pydantic & OS Version\n\n```text\n             pydantic version: 2.15.0a0+dev\n        pydantic-core version: 2.50.0\n               python version: 3.12.7\n                     platform: macOS-15.7.3-arm64-arm-64bit\n                       commit: 560f0f9 (main)\n```\n",
+   "html_url": "https://github.com/pydantic/pydantic/issues/14270",
+   "created_at": "2026-11-11T14:18:14Z",
+   "user": {
+    "login": "MaiAditya"
+   }
+  },
+  {
+   "number": 14269,
+   "title": "Strict mode on a model-typed field accepts mappings",
+   "body": "### Initial Checks\n\n- [x] I confirm that I'm using Pydantic V2\n\n### Description\n\nFor a field whose type is a model, strict mode behaves differently depending on how it is enabled, and none of the behaviors matches the docs.\n\n- **The docs.** [Strict Mode](https://docs.pydantic.dev/latest/concepts/strict_mode/) says that, as a general rule, strict mode \"will only allow instances of the type to be provided\", with looser rules only for JSON input. The [Conversion Table](https://docs.pydantic.dev/latest/concepts/conversion_table/) has no row for model types.\n- **Field-level and config-level strictness have no effect.** With `Annotated[Inner, Strict()]`, `Field(strict=True)` or `ConfigDict(strict=True)` on the outer model, the field accepts any mapping, like a `mappingproxy`. The nested fields are still coerced, e.g. `{\"x\": \"1\"}` gives `x=1`. This is identical to lax mode.\n- **Call-level strictness applies, but still accepts a dict.** With `model_validate(..., strict=True)`, a `mappingproxy` is rejected with `Input should be a valid dictionary or instance of Inner`. The nested fields are validated strictly. A `dict` is still accepted.\n\nAt the very least, field-level and config-level strictness should behave the same as call-level strictness. Then either the docs or the implementation should be adjusted to match.\n\nThis also affects type checkers that model strict mode. ty, for example, follows the documented rule and rejects `StrictField(inner={\"x\": 1})`, though it passes at runtime.\n\n### Example Code\n\n```Python\nfrom collections.abc import Callable\nfrom types import MappingProxyType\nfrom typing import Annotated\n\nfrom pydantic import BaseModel, ConfigDict, Field, Strict, ValidationError\n\n\nclass Inner(BaseModel):\n    x: int\n\n\nclass NotStrict(BaseModel):\n    inner: Inner\n\n\nclass StrictAnnotated(BaseModel):\n    inner: Annotated[Inner, Strict()]\n\n\nclass StrictField(BaseModel):\n    inner: Inner = Field(strict=True)\n\n\nclass StrictConfig(BaseModel):\n    model_config = ConfigDict(strict=True)\n    inner: Inner\n\n\nINPUTS = {\n    \"dict\": {\"x\": 1},\n    \"mappingproxy\": MappingProxyType({\"x\": 1}),\n    \"dict, x='1'\": {\"x\": \"1\"},\n}\n\n\ndef check(model: type[BaseModel], label: str, method: str, validate: Callable[[], object]) -> None:\n    try:\n        validate()\n    except ValidationError as e:\n        result = f\"ValidationError ({e.errors()[0]['type']})\"\n    else:\n        result = \"instance created\"\n    print(f\"{model.__name__:<15} | {label:<12} | {method:<28} | {result}\")\n\n\nfor model in (NotStrict, StrictAnnotated, StrictField, StrictConfig):\n    for label, value in INPUTS.items():\n        check(model, label, \"constructor\", lambda: model(inner=value))\n        check(model, label, \"model_validate\", lambda: model.model_validate({\"inner\": value}))\n        check(\n            model,\n            label,\n            \"model_validate(strict=True)\",\n            lambda: model.model_validate({\"inner\": value}, strict=True),\n        )\n\n    print()\n```\n\nOutput:\n\n```text\nNotStrict       | dict         | constructor                  | instance created\nNotStrict       | dict         | model_validate               | instance created\nNotStrict       | dict         | model_validate(strict=True)  | instance created\nNotStrict       | mappingproxy | constructor                  | instance created\nNotStrict       | mappingproxy | model_validate               | instance created\nNotStrict       | mappingproxy | model_validate(strict=True)  | ValidationError (model_type)\nNotStrict       | dict, x='1'  | constructor                  | instance created\nNotStrict       | dict, x='1'  | model_validate               | instance created\nNotStrict       | dict, x='1'  | model_validate(strict=True)  | ValidationError (int_type)\n\nStrictAnnotated | dict         | constructor                  | instance created\nStrictAnnotated | dict         | model_validate               | instance created\nStrictAnnotated | dict         | model_validate(strict=True)  | instance created\nStrictAnnotated | mappingproxy | constructor                  | instance created\nStrictAnnotated | mappingproxy | model_validate               | instance created\nStrictAnnotated | mappingproxy | model_validate(strict=True)  | ValidationError (model_type)\nStrictAnnotated | dict, x='1'  | constructor                  | instance created\nStrictAnnotated | dict, x='1'  | model_validate               | instance created\nStrictAnnotated | dict, x='1'  | model_validate(strict=True)  | ValidationError (int_type)\n\nStrictField     | dict         | constructor                  | instance created\nStrictField     | dict         | model_validate               | instance created\nStrictField     | dict         | model_validate(strict=True)  | instance created\nStrictField     | mappingproxy | constructor                  | instance created\nStrictField     | mappingproxy | model_validate               | instance created\nStrictField     | mappingproxy | model_validate(strict=True)  | ValidationError (model_type)\nStrictField     | dict, x='1'  | constructor                  | instance created\nStrictField     | dict, x='1'  | model_validate               | instance created\nStrictField     | dict, x='1'  | model_validate(strict=True)  | ValidationError (int_type)\n\nStrictConfig    | dict         | constructor                  | instance created\nStrictConfig    | dict         | model_validate               | instance created\nStrictConfig    | dict         | model_validate(strict=True)  | instance created\nStrictConfig    | mappingproxy | constructor                  | instance created\nStrictConfig    | mappingproxy | model_validate               | instance created\nStrictConfig    | mappingproxy | model_validate(strict=True)  | ValidationError (model_type)\nStrictConfig    | dict, x='1'  | constructor                  | instance created\nStrictConfig    | dict, x='1'  | model_validate               | instance created\nStrictConfig    | dict, x='1'  | model_validate(strict=True)  | ValidationError (int_type)\n```\n\n### Python, Pydantic & OS Version\n\n```Text\npydantic version:      2.13.4\npydantic-core version: 2.46.4\npydantic-core build:   profile=release pgo=false\npython version:        3.12.10 (tags/v3.12.10:0cc8128, Apr  8 2025, 12:21:36) [MSC v.1943 64 bit (AMD64)]\nplatform:              Windows-10-10.0.19044-SP0\nrelated packages:      fastapi-0.141.1 pydantic-settings-2.14.2 typing_extensions-4.16.0\ncommit:                unknown\n```",
+   "html_url": "https://github.com/pydantic/pydantic/issues/14269",
+   "created_at": "2026-11-10T18:31:02Z",
+   "user": {
+    "login": "Prometheus3375"
+   }
+  },
+  {
+   "number": 14267,
+   "title": "Correct a typo in the contribution guide",
+   "body": "### Description\n\nThe Pull Requests section of `docs/contributing.md` says \u201cintrocuding a test for a specific issue/feature request.\u201d This should be \u201cintroducing.\u201d\n\n### Expected behavior\n\nThe contribution guide should use the correctly spelled \u201cintroducing.\u201d\n\nThis is a documentation-only issue; no runtime or platform details apply.",
+   "html_url": "https://github.com/pydantic/pydantic/issues/14267",
+   "created_at": "2026-11-10T11:07:20Z",
+   "user": {
+    "login": "agarwalla-chirag"
+   }
+  },
+  {
+   "number": 14266,
+   "title": "Type checkers complain when invoking super().method() if method was decorated with @model_validator",
+   "body": "### Initial Checks\n\n- [x] I confirm that I'm using Pydantic V2\n\n### Description\n\nType checkers (mypy, pyright, ty) complain when invoking `super().method()` if `method` was decorated with `@model_validator`.\n\n### Example Code\n\n```Python\nfrom typing import Self, override\n\nfrom pydantic import BaseModel, model_validator\n\n\nclass A(BaseModel):\n    a: int\n\n    @model_validator(mode=\"after\")\n    def _validate(self) -> Self:\n        # validate self.a\n        return self\n\n\nclass B(A):\n    b: int\n\n    @override\n    @model_validator(mode=\"after\")\n    def _validate(self) -> Self:\n        super()._validate()  # \u2192 \"PydanticDescriptorProxy[ModelValidatorDecoratorInfo]\" not callable\n        # validate self.b\n        return self\n```\n\n### Python, Pydantic & OS Version\n\n```Text\npydantic version: 2.14.3\n        pydantic-core version: 2.50.4\n          pydantic-core build: profile=release pgo=false\n               python version: 3.14.3 (main, Mar 10 2026, 18:14:48) [MSC v.1944 64 bit (AMD64)]\n                     platform: Windows-11-10.0.26100-SP0\n             related packages: mypy-2.4.1 typing_extensions-4.16.0\n                       commit: unknown\n```",
+   "html_url": "https://github.com/pydantic/pydantic/issues/14266",
+   "created_at": "2026-11-10T09:07:56Z",
+   "user": {
+    "login": "clo-vis"
+   }
+  },
+  {
+   "number": 14264,
+   "title": "Support PEP 661 sentinels as field annotations",
+   "body": "### Initial Checks\n\n- [x] I have searched Google & GitHub for similar requests and couldn't find anything\n- [x] I have read and followed [the docs](https://pydantic.dev/docs/validation/latest/get-started/) and still think this feature is missing\n\n### Description\n\nPEP 661 is now part of Python 3.15 as the builtin `sentinel()`, and typing_extensions 4.16 backports it. It gives Python a standard way to write sentinel values and to use them directly in type hints:\n\n```python\nMINE = sentinel(\"MINE\")\n\ndef f(x: int | MINE = MINE) -> None: ...\n```\n\nPydantic already supports this for its own `MISSING`, but not for any other sentinel:\n\n```python\nfrom pydantic import BaseModel\n\nMINE = sentinel(\"MINE\")  # or typing_extensions.sentinel(\"MINE\") before 3.15\n\nclass A(BaseModel):\n    x: int | MINE = MINE\n# PydanticSchemaGenerationError: Unable to generate pydantic-core schema for MINE.\n\nclass B(BaseModel):\n    x: MINE = MINE\n# PydanticUserError: Error when building FieldInfo from annotated attribute. (unevaluable-type-annotation)\n```\n\nWith support, `A` would behave like this in Python mode:\n\n```python\nA.model_validate({\"x\": MINE})    # A(x=MINE)\nA.model_validate({\"x\": 1})       # A(x=1)\nA.model_validate({})             # A(x=MINE), from the default\nA.model_validate({\"x\": \"MINE\"})  # ValidationError: neither an int nor MINE\nA().model_dump()                 # {'x': MINE}\n```\n\nThere's no clean workaround either. On 3.15, sentinels can't be subclassed or given attributes, so the usual `__get_pydantic_core_schema__` hook can't be attached. The remaining option is to wrap the type in a custom `Annotated` schema, at which point the annotation is no longer the sentinel.\n\n### Why it would help\n\n- **Typing that reads naturally:** a model could use the same `int | MINE` annotation that type checkers already understand, without a custom schema just to make pydantic accept it.\n- **Sentinels other than `MISSING`:** libraries and applications often need their own sentinels, such as a separate \"unset\" or \"inherit\" value, or a named constant that must not be confused with `None`. Today only pydantic's own sentinel can appear in a model.\n\n### Scope\n\nThis request is only about Python mode:\n\n- Accept a sentinel as a field annotation, including `x: MINE = MINE` and unions such as `int | MINE`.\n- Validate by identity: the sentinel itself passes and any other value is rejected.\n- Have `model_dump()` return the sentinel object unchanged.\n\nJSON mode is out of scope. There's no clear JSON equivalent for a sentinel, so `model_dump_json()`, `model_dump(mode=\"json\")` and `model_json_schema()` would keep their current behaviour and could be discussed separately.\n\n### Prior discussion\n\nA generic sentinel schema for custom sentinels was suggested when `MISSING` was added: https://github.com/pydantic/pydantic/pull/11883#issuecomment-2888280561\n\nNow that PEP 661 is part of Python 3.15, this seems a good time to revisit it.\n\n## Python, Pydantic & OS Version\n\n```\n             pydantic version: 2.14.3\n        pydantic-core version: 2.50.4\n          pydantic-core build: profile=release pgo=false\n               python version: 3.15.2 (main, Oct 26 2026, 14:06:56) [Clang 23.1.3 ]\n                     platform: Linux-6.12.115+deb13.1-amd64-x86_64-with-glibc2.41\n             related packages: typing_extensions-4.16.0\n                       commit: unknown\n```\n\n### Affected Components\n\n- [ ] [Compatibility between releases](https://pydantic.dev/docs/validation/latest/get-started/changelog/)\n- [x] [Data validation/parsing](https://pydantic.dev/docs/validation/latest/concepts/models/#basic-model-usage)\n- [ ] [Data serialization](https://pydantic.dev/docs/validation/latest/concepts/serialization/) - `.model_dump()` and `.model_dump_json()`\n- [ ] [JSON Schema](https://pydantic.dev/docs/validation/latest/concepts/json_schema/)\n- [ ] [Dataclasses](https://pydantic.dev/docs/validation/latest/concepts/dataclasses/)\n- [ ] [Model Config](https://pydantic.dev/docs/validation/latest/concepts/config/)\n- [x] [Field Types](https://pydantic.dev/docs/validation/latest/api/pydantic/types/) - adding or changing a particular data type\n- [ ] [Function validation decorator](https://pydantic.dev/docs/validation/latest/concepts/validation_decorator/)\n- [ ] [Generic Models](https://pydantic.dev/docs/validation/latest/concepts/models/#generic-models)\n- [ ] [Other Model behaviour](https://pydantic.dev/docs/validation/latest/concepts/models/) - `model_construct()`, pickling, private attributes, ORM mode\n- [ ] [Plugins](https://pydantic.dev/docs/validation/latest/integrations/dev-tools/mypy/) and integration with other tools - mypy, FastAPI, python-devtools, Hypothesis, VS Code, PyCharm, etc.",
+   "html_url": "https://github.com/pydantic/pydantic/issues/14264",
+   "created_at": "2026-11-09T17:44:28Z",
+   "user": {
+    "login": "tsangwpx"
+   }
+  },
+  {
+   "number": 14263,
+   "title": "Serialization JSON Schema omits null for an unless-none serializer on an Any field",
+   "body": "### Initial Checks\n\n- [x] I confirm that I'm using Pydantic V2\n\n### Description\n\nThe 2.14.3 note for #13848 reads \"Include `null` in serialization JSON Schema for `unless-none` field serializers\", but the code adds it only when the field schema is `nullable`. Fields typed `Any`, `None` or `Literal[1, None]` accept `None` and dump it as `null`, yet their schema stays `{\"type\": \"string\"}`, so a generated client rejects that `null`.\n\nThe comment at `json_schema.py:515` says the special case \"is only relevant for `nullable` schemas\", while `WhenUsed` defines `'unless-none'` as \"use unless the value is `None`\" for any field type.\n\n### Example Code\n\n```Python\nfrom typing import Any, Literal, Optional\n\nfrom pydantic import BaseModel, field_serializer\n\n\nclass M(BaseModel):\n    a: Any = None\n    n: None = None\n    l: Literal[1, None] = None\n    o: Optional[int] = None\n\n    @field_serializer('a', 'n', 'l', 'o', when_used='unless-none')\n    def ser(self, v) -> str:\n        return f'<{v}>'\n\n\nprops = M.model_json_schema(mode='serialization')['properties']\nfor k in 'anlo':\n    print(props[k])\n#> {'title': 'A', 'type': 'string'}\n#> {'title': 'N', 'type': 'string'}\n#> {'title': 'L', 'type': 'string'}\n#> {'anyOf': [{'type': 'null'}, {'type': 'string'}], 'title': 'O'}\nprint(M().model_dump_json())\n#> {\"a\":null,\"n\":null,\"l\":null,\"o\":null}\n```\n\n### Python, Pydantic & OS Version\n\n```Text\n             pydantic version: 2.15.0a0+dev (main at fe5b5ce)\n        pydantic-core version: 2.50.0\n          pydantic-core build: profile=release pgo=false\n               python version: 3.15.2 (main, Oct 25 2026, 16:57:51) [Clang 21.0.0 (clang-2100.3.34.2)]\n                     platform: macOS-26.7.2-arm64-arm-64bit-Mach-O\n             related packages: typing_extensions-4.16.0\n```\n\n`object` gives the same result. I would have `_is_nullable_schema` (line 3277) return True for `any` and `none`, and for a `literal` whose `expected` contains `None`. Locally that gives all four fields the `anyOf` that `o` has. Does that match how you read #13848?\n",
+   "html_url": "https://github.com/pydantic/pydantic/issues/14263",
+   "created_at": "2026-11-09T11:52:27Z",
+   "user": {
+    "login": "chrikrah"
+   }
+  },
+  {
+   "number": 14258,
+   "title": "JSON Schema generation leaking config/constraints context",
+   "body": "In several places, we need to generate standalone JSON Schemas, that shouldn't take into account the current \"context\": the config, the constraints coming from the config, etc.\n\nhttps://github.com/pydantic/pydantic/pull/14254 fixed one example: the `Decimal` type allows strings as input, so we need to represent this in the JSON Schema, but we need to make sure we don't go through the `GenerateJsonSchema` handler to do so, because it will apply the potential validation constraints set in config (e.g. `str_min_length`).\n\nIdeally, we should have a way to independently generate a JSON Schema, without having to build one manually (e.g. a simple `{\"type\": \"string\"}`). We have a similar concept for core schema generation already:\n\nhttps://github.com/pydantic/pydantic/blob/57ffc4a517ddbd16ce697b4600d24a4fa1e33801/pydantic/annotated_handlers.py#L85-L90\n\nAnother issue related to this is that validation constraints coming from the config are currently reflected in the serialization JSON Schema:\n\n```python\nclass Model(BaseModel, str_min_length=1):\n    a: str\n\nModel.model_json_schema(mode='serialization')['properties']['a']\n#> {'minLength': 1, 'title': 'A', 'type': 'string'}\n```\n\nwhich kind of makes sense (if you assume the model value hasn't been altered, although nothing guarantees this unless the model is frozen, and even then..). But this also affects properties and serializer return types:\n\n```python\nfrom pydantic import BaseModel, ConfigDict, computed_field, field_serializer\n\n\nclass Model(BaseModel):\n    model_config = ConfigDict(str_max_length=5)\n\n    name: str\n    count: int\n\n    @computed_field\n    @property\n    def greeting(self) -> str:\n        return f'Hello, {self.name}!'\n\n    @field_serializer('count')\n    def serialize_count(self, value: int) -> str:\n        return f'{value:,}'\n\n\nm = Model(name='Bob', count=1_000_000)\nprint(m.model_dump(mode='json'))\n#> {'name': 'Bob', 'count': '1,000,000', 'greeting': 'Hello, Bob!'}\nprint(Model.model_json_schema(mode='serialization')['properties'])\n\"\"\"\n{\n    'name': {'maxLength': 5, 'title': 'Name', 'type': 'string'},\n    'count': {'maxLength': 5, 'title': 'Count', 'type': 'string'},\n    'greeting': {'maxLength': 5, 'readOnly': True, 'title': 'Greeting', 'type': 'string'},\n}\n\"\"\"\n```\n\nHere is a diff of a potential quickfix, that doesn't introduce any API design:\n\n<details>\n\n<summary>Diff</summary>\n\n```diff\ndiff --git a/pydantic/json_schema.py b/pydantic/json_schema.py\nindex bc7639c4b..2bb2fcc0d 100644\n--- a/pydantic/json_schema.py\n+++ b/pydantic/json_schema.py\n@@ -19,7 +19,8 @@ import os\n import re\n import warnings\n from collections import Counter, defaultdict\n-from collections.abc import Callable, Hashable, Iterable, Sequence\n+from collections.abc import Callable, Hashable, Iterable, Iterator, Sequence\n+from contextlib import contextmanager\n from copy import deepcopy\n from enum import Enum\n from re import Pattern\n@@ -311,10 +312,24 @@ class GenerateJsonSchema:\n         # of a single instance of a schema generator\n         self._used = False\n\n+        # Set while generating the JSON Schema of values that are only produced during serialization and never\n+        # validated (serializer return types, computed fields). Configuration values that are only applied during\n+        # validation (e.g. `str_min_length`) must not be reflected in these schemas:\n+        self._unvalidated_output = False\n+\n     @property\n     def _config(self) -> _config.ConfigWrapper:\n         return self._config_wrapper_stack.tail\n\n+    @contextmanager\n+    def _set_unvalidated_output(self, value: bool) -> Iterator[None]:\n+        previous = self._unvalidated_output\n+        self._unvalidated_output = value\n+        try:\n+            yield\n+        finally:\n+            self._unvalidated_output = previous\n+\n     @property\n     def mode(self) -> JsonSchemaMode:\n         if self._config.json_schema_mode_override is not None:\n@@ -458,7 +473,11 @@ class GenerateJsonSchema:\n         if schema['type'] in ('model', 'dataclass', 'typed-dict'):\n             # The class config (and in particular `json_schema_mode_override`) must be pushed *before*\n             # the definitions cache lookup, so that the JSON Schema is cached under the mode it was generated with:\n-            with self._config_wrapper_stack.push(_get_class_config(schema)):  # pyright: ignore[reportArgumentType]\n+            with (\n+                self._config_wrapper_stack.push(_get_class_config(schema)),  # pyright: ignore[reportArgumentType]\n+                # The fields of a class are validated on instantiation, even if the class is a serializer return type:\n+                self._set_unvalidated_output(False),\n+            ):\n                 return self._generate_inner(schema)\n         return self._generate_inner(schema)\n\n@@ -828,10 +847,11 @@ class GenerateJsonSchema:\n         \"\"\"\n         json_schema: JsonSchemaValue = {'type': 'string'}\n         self.update_with_validations(json_schema, schema, self.ValidationsMapping.string)\n-        if 'minLength' not in json_schema and self._config.str_min_length:\n-            json_schema['minLength'] = self._config.str_min_length\n-        if 'maxLength' not in json_schema and self._config.str_max_length is not None:\n-            json_schema['maxLength'] = self._config.str_max_length\n+        if not self._unvalidated_output:\n+            if 'minLength' not in json_schema and self._config.str_min_length:\n+                json_schema['minLength'] = self._config.str_min_length\n+            if 'maxLength' not in json_schema and self._config.str_max_length is not None:\n+                json_schema['maxLength'] = self._config.str_max_length\n         if isinstance(json_schema.get('pattern'), Pattern):\n             # TODO: should we add regex flags to the pattern?\n             json_schema['pattern'] = json_schema.get('pattern').pattern  # type: ignore\n@@ -1731,7 +1751,8 @@ class GenerateJsonSchema:\n         Returns:\n             The generated JSON schema.\n         \"\"\"\n-        return self.generate_inner(schema['return_schema'])\n+        with self._set_unvalidated_output(True):\n+            return self.generate_inner(schema['return_schema'])\n\n     def model_schema(self, schema: core_schema.ModelSchema) -> JsonSchemaValue:\n         \"\"\"Generates a JSON schema that matches a schema that defines a model.\n@@ -2352,10 +2373,12 @@ class GenerateJsonSchema:\n                 # PlainSerializerFunctionSerSchema or WrapSerializerFunctionSerSchema\n                 return_schema = schema.get('return_schema')\n                 if return_schema is not None:\n-                    return self.generate_inner(return_schema)\n+                    with self._set_unvalidated_output(True):\n+                        return self.generate_inner(return_schema)\n             case {'type': 'format' | 'to-string'}:\n                 # FormatSerSchema or ToStringSerSchema\n-                return self.str_schema(core_schema.str_schema())\n+                with self._set_unvalidated_output(True):\n+                    return self.str_schema(core_schema.str_schema())\n             case {'type': 'model'}:\n                 # ModelSerSchema\n                 return self.generate_inner(schema['schema'])\ndiff --git a/pydantic/types.py b/pydantic/types.py\nindex 036db5a72..812f05ef8 100644\n--- a/pydantic/types.py\n+++ b/pydantic/types.py\n@@ -1006,7 +1006,7 @@ else:\n\n         @classmethod\n         def __get_pydantic_json_schema__(cls, cs: CoreSchema, handler: GetJsonSchemaHandler) -> JsonSchemaValue:\n-            return handler(core_schema.str_schema())\n+            return {'type': 'string'}\n\n         @staticmethod\n         def _serialize(v: Any) -> str:\n```\n\n</details>",
+   "html_url": "https://github.com/pydantic/pydantic/issues/14258",
+   "created_at": "2026-11-08T13:12:52Z",
+   "user": {
+    "login": "Viicos"
+   }
+  },
+  {
+   "number": 14245,
+   "title": "`ensure_ascii=True` behaves differently from Python's `json.dumps` for lone Unicode surrogates",
+   "body": "### Initial Checks\n\n- [x] I confirm that I'm using Pydantic V2\n\n\n\n\n### Description\n\n\n#### Question\n\nIs the difference in `ensure_ascii=True` behavior intentional, or could Pydantic support this case?\n\n#### Description\n\n`model_dump_json(ensure_ascii=True)` and `TypeAdapter.dump_json(ensure_ascii=True)` fail when serializing Python strings containing lone Unicode surrogates, while the standard-library `json.dumps(ensure_ascii=True)` successfully escapes the same values.\n\nGiven that these APIs expose the same `ensure_ascii` parameter, I'm wondering whether this difference is intentional.\n\n\n#### Expected behavior\n\nIdeally, `ensure_ascii=True` would support escaping lone surrogates consistently with Python's standard-library `json.dumps`.\n\nIf rejecting such values is intentional, it would be helpful to clarify this limitation in the documentation.\n\n#### Context\n\nThis came up when persisting filesystem paths on Linux. Python uses `surrogateescape` to preserve non-UTF-8 filename bytes, so lone surrogates can occur naturally in strings returned by filesystem APIs.\n\nThe standard-library approach allows these paths to be serialized and restored without losing the original filename bytes.\n\n\n### Example Code\n\n```Python\nimport json\nfrom pydantic import BaseModel, TypeAdapter\n\nclass Example(BaseModel):\n    value: str\n\nvalue = \"\\udcff\"\nmodel = Example(value=value)\n\n# Both raise PydanticSerializationError\nmodel.model_dump_json(ensure_ascii=True)\nTypeAdapter(str).dump_json(value, ensure_ascii=True)\n\n# Succeeds\njson.dumps(model.model_dump(mode=\"json\"), ensure_ascii=True)\n# '{\"value\": \"\\\\udcff\"}'\n```\n\n### Python, Pydantic & OS Version\n\n```Text\n             pydantic version: 2.14.3\n        pydantic-core version: 2.50.4\n          pydantic-core build: profile=release pgo=false\n               python version: 3.13.11 (main, Jan 14 2026, 19:38:04) [Clang 21.1.4 ]\n                     platform: Linux-6.8.0-124-generic-x86_64-with-glibc2.35\n             related packages: typing_extensions-4.16.0 fastapi-0.139.0 email-validator-2.3.0 typing_extensions-4.16.0 pydantic-settings-2.14.2\n                       commit: unknown\n```",
+   "html_url": "https://github.com/pydantic/pydantic/issues/14245",
+   "created_at": "2026-11-06T19:10:14Z",
+   "user": {
+    "login": "shengbo-ma"
+   }
+  },
+  {
+   "number": 14243,
+   "title": "TypedDict config is ignored for a shared TypeAliasType (regex_engine and str_to_upper)",
+   "body": "### Initial Checks\n\n- [x] I confirm that I'm using Pydantic V2\n\n### Description\n\nA `TypedDict`'s explicit config is not applied to a named alias (`TypeAliasType`) when that alias is used by two fields. With `regex_engine=\"python-re\"`, a look-ahead pattern raises a Rust-regex `SchemaError` when creating `TypeAdapter(Payload)` (Example 1). Removing the second field makes it build, and so does an ordinary `Annotated[...]` variable alias instead of `TypeAliasType`.\n\nThis appears inconsistent with the documented behavior:\n\n- [`ConfigDict.regex_engine`](https://docs.pydantic.dev/latest/api/config/#pydantic.config.ConfigDict.regex_engine) selects the pattern engine; its example uses a look-ahead with `python-re`.\n- The [Rust regex crate](https://docs.rs/regex/1.13.1/regex/) does not support look-around, so the parse error is expected with the Rust engine; the problem is that the explicitly configured Python engine is not used here.\n- [Configuration propagation](https://docs.pydantic.dev/latest/concepts/config/#configuration-propagation) describes using a `TypedDict`'s own config when it has one. I could not find an exception for shared named aliases.\n\nExample 3 shows the same loss for `str_to_upper`, silently (no error, values are not upper-cased).\n\nTested on CPython 3.11.11: Example 1 fails with the same regex error on 2.7.0, 2.7.4, 2.8.0, 2.8.2, 2.9.2, 2.10.6, 2.11.10, 2.12.5, 2.13.4, 2.14.0, 2.14.1, 2.14.2 and 2.14.3. An equivalent variant using `__pydantic_config__` (`with_config` was added in 2.7.0) also fails on 2.5.0 and 2.6.4. Examples 1 and 3 also reproduce on `main` at 9895381aa55eb2a1e74079f0b4fb745d1ea12d12 (with its declared `pydantic-core==2.50.0`).\n\nIn the core schema, the alias string schema sits in the outer `definitions` list without its owning `TypedDict`'s config, while the `TypedDict` schema itself still has `regex_engine=\"python-re\"`. [The definitions validator](https://github.com/pydantic/pydantic/blob/ea492e04654ab7f7a1f9287ea912419452ead4dd/pydantic-core/src/validators/definitions.rs#L37) builds that definition with the enclosing config, which seems to explain why single-use and shared aliases behave differently.\n\n**Upgrade context (Example 2):** we hit this when upgrading from 2.14.1 to 2.14.2. Example 2 passes on 2.14.1 and fails on 2.14.2/2.14.3 (CPython 3.11.11, 3.12.13, 3.14.8). Since #13994, the forward reference in `RootModel[\"Payload\"]` is resolved immediately, so the intermediate parametrized class is built before `Wrapper` supplies its config. The non-forward-reference form `RootModel[Payload]` already failed this way on 2.14.1, so 2.14.2 only makes the two forms consistent; what makes both fail is the shared-alias config loss above, even though `Payload` sets `python-re` itself.\n\n**Workaround:** for the regex case, `Field(pattern=re.compile(r\"(?=a)\"))` works on all tested releases from 2.8.0 onward (it accepts matching and rejects non-matching input). It does not help the `str_to_upper` case.\n\nRelated, with different reproductions: #14230 (a shared child `TypedDict` inherits the first parent's config) and #12057 (shared alias definitions and config scope during JSON Schema generation).\n\n### Example Code\n\n```Python\n# --- Example 1: fails on all tested releases (independent program) ---\nfrom typing import Annotated\nfrom typing_extensions import TypeAliasType, TypedDict\nfrom pydantic import ConfigDict, Field, TypeAdapter, with_config\n\nAlias = TypeAliasType(\"Alias\", Annotated[str, Field(pattern=r\"(?=a)\")])\n\n\n@with_config(ConfigDict(regex_engine=\"python-re\"))\nclass Payload(TypedDict):\n    a: Alias\n    b: Alias\n\n\nTypeAdapter(Payload)\n# SchemaError: Error building \"definitions\" validator: ...\n# error: look-around, including look-ahead and look-behind, is not supported\n\n\n# --- Example 2: passes on 2.14.1, fails on 2.14.2+ (independent program) ---\nfrom typing import Annotated\nfrom typing_extensions import TypeAliasType, TypedDict\nfrom pydantic import ConfigDict, Field, RootModel, with_config\n\nAlias = TypeAliasType(\"Alias\", Annotated[str, Field(pattern=r\"(?=a)\")])\n\n\n@with_config(ConfigDict(regex_engine=\"python-re\"))\nclass Payload(TypedDict):\n    a: Alias\n    b: Alias\n\n\nclass Wrapper(RootModel[\"Payload\"]):\n    model_config = ConfigDict(regex_engine=\"python-re\")\n\n\nprint(Wrapper.model_validate({\"a\": \"a\", \"b\": \"a\"}))\n\n\n# --- Example 3: silent str_to_upper variant (independent program) ---\nfrom typing_extensions import TypeAliasType, TypedDict\nfrom pydantic import ConfigDict, TypeAdapter, with_config\n\nAlias = TypeAliasType(\"Alias\", str)\n\n\n@with_config(ConfigDict(str_to_upper=True))\nclass Payload(TypedDict):\n    a: Alias\n    b: Alias\n\n\nprint(TypeAdapter(Payload).validate_python({\"a\": \"x\", \"b\": \"y\"}))\n# actual:   {'a': 'x', 'b': 'y'}\n# expected: {'a': 'X', 'b': 'Y'}\n```\n\n### Python, Pydantic & OS Version\n\n```Text\n             pydantic version: 2.14.3\n        pydantic-core version: 2.50.4\n          pydantic-core build: profile=release pgo=false\n               python version: 3.14.8\n                     platform: Linux-6.8.0-138-generic-x86_64-with-glibc2.35\n             related packages: typing_extensions-4.16.0\n```",
+   "html_url": "https://github.com/pydantic/pydantic/issues/14243",
+   "created_at": "2026-11-06T18:49:56Z",
+   "user": {
+    "login": "gbaian10"
+   }
+  },
+  {
+   "number": 14242,
+   "title": "pydantic-core 2.50.4: test process exits during `test_default_validate_default_after_validator_field_name` on macOS arm64, CPython 3.11-3.13",
+   "body": "We build `pydantic_core` 2.50.4 from the sdist for conda and run the project test suite. On macOS arm64 with CPython 3.11, 3.12 and 3.13, the process exits inside `tests/validators/test_with_default.py::test_default_validate_default_after_validator_field_name`. There is no failure report and no pytest summary.\n\nThe same build passes the full suite on macOS arm64 with CPython 3.14, and on linux-64, linux-aarch64, win-64 and win-arm64 with CPython 3.11 to 3.14. Version 2.50.1 passed this test on macOS arm64.\n\nContext for reviewers: our conda packaging pull request (recipe change only, no patches) is https://github.com/AnacondaRecipes/pydantic-core-feedstock/pull/22.\n\n## Environment\n\n| item | value |\n|---|---|\n| package | `pydantic_core` 2.50.4 sdist |\n| build | rust 1.96.0, clang 20, macOS SDK 12.1, maturin release profile |\n| fail | macOS arm64, CPython 3.11.18, 3.12.16, 3.13.18 |\n| pass | macOS arm64 CPython 3.14.10; linux-64, linux-aarch64, win-64, win-arm64, CPython 3.11-3.14 |\n| test stack | pytest 9.1.1, pytest-timeout 2.5.0 |\n\nBuild flags, SDK and test environment are identical across the macOS arm64 variants. Only the CPython version differs.\n\n## Reproduce\n\n```console\npytest -vv tests/validators/test_with_default.py::test_default_validate_default_after_validator_field_name\n```\n\nThe full command we use is in <https://github.com/AnacondaRecipes/pydantic-core-feedstock/pull/22>. The test is unchanged since 2.50.1.\n\n## Actual result\n\n6047 items collected, 6046 results printed. The last result is at 99 percent, for `test_validate_default_raises_dataclass[input_value10-expected10]`. The next test prints nothing. Then the output stops: no `FAILURES` section, no summary, no traceback, no OOM. Peak memory is 6.77 GiB of 32 GiB. The run takes 1m18s, against 1m15s when it passes, so no timeout expired.\n\nThe process dies before the first report of that test. So the fault is in the test setup, or in the `SchemaValidator(...)` call that `tests/conftest.py` wraps with `_GcTraverseChecked`. That wrapper is active for this test.\n\nWe cannot give the exit signal: our wrapper reports only \"command failed\" and drops the tail of the stream. We can capture it if you want.\n\n## Regression range\n\n| version | macOS arm64 3.11 | 3.12 | 3.13 | 3.14 |\n|---|---|---|---|---|\n| 2.50.1 | pass | pass | pass | pass |\n| 2.50.4 | **exit** | **exit** | **exit** | pass |\n\n2.50.1: the macOS arm64 packages we published passed this suite. 2.50.4: our build, recipe changes only the version and the source hash.\n\n## Candidates\n\n1. `ValidationInfo` is now garbage-collected. #13819 moves `__traverse__` and `__clear__` into `#[pymethods]` in `pydantic-core/src/validators/function.rs`. `__traverse__` reports `config`, `context`, `data`, `field_name`. `__clear__` clears only `context` and `data`. This test is the only one that builds a `ValidationInfo` in a `validate_default` path.\n2. `WithDefaultValidator::default_value` now calls `self.validator.validate(...)` instead of `self.validate(...)`.\n\nNeither is proven. A collector that cannot break a cycle usually leaks instead of crashing, so point 1 is a lead only.\n\n## Not reproduced here\n\nFull suite passes on linux-64 CPython 3.12 with the PyPI wheel, also with `gc.set_threshold(1, 1, 1)`. The fault needs macOS arm64.\n\n## Questions\n\n1. Does the test pass on macOS arm64 when you run it alone?\n2. Should `__clear__` on `ValidationInfo` clear `config` and `field_name` too?\n3. Do you want the artifacts, the logs, or a run with a lower GC threshold?\n\nWe deselect this one test on macOS arm64 until a fix ships. Thank you.\n",
+   "html_url": "https://github.com/pydantic/pydantic/issues/14242",
+   "created_at": "2026-11-06T15:00:46Z",
+   "user": {
+    "login": "skupr-anaconda"
+   }
+  },
+  {
+   "number": 14237,
+   "title": "ValidationError traceback cycles retain failed model instances after gc.collect()",
+   "body": "### Initial Checks\n\n- [x] I confirm that I'm using Pydantic V2\n\n### Description\n\nWhen a validator raises `ValueError` and the caller saves the resulting `ValidationError` in a local variable, the failed model instance survives `gc.collect()` after the function returns. Repeating this retains one instance per call.\n\nI found this while investigating objects retained after tests using Click's `CliRunner`, which saves exceptions and tracebacks in its results. The example below reproduces it with just Pydantic and the standard library.\n\nThe assignment to `saved_error` is intentional: it creates a cycle through the traceback frame. Once `attempt()` returns, there are no external strong references to the error or model instance. I would expect the cyclic collector to release them.\n\nObserved output:\n\n```text\nLive instances: 100\n```\n\nExpected output:\n\n```text\nLive instances: 0\n```\n\nA few variations I checked in separate processes:\n\n- Removing `saved_error = error`, or assigning `None` to it before returning, gives zero live instances.\n- Clearing the traceback of the outer `ValidationError` does not help. Clearing the traceback of the original `ValueError` from `error.errors()[0][\"ctx\"][\"error\"]` gives zero live instances.\n- Raising `PydanticCustomError(\"bad_value\", \"bad value\")` instead of `ValueError` also gives zero live instances.\n- Adding `from __future__ import annotations` does not change the result.\n\nThe original `ValueError` is retained inside `ValidationError`, but it does not appear among the references exposed by `gc.get_referents(error)`. Looking at [`ValidationError` and `PyLineError` in v2.14.3](https://github.com/pydantic/pydantic/blob/v2.14.3/pydantic-core/src/errors/validation_exception.rs), I suspect their internal Python references are missing from GC traversal.\n\nI also looked at [#13817](https://github.com/pydantic/pydantic/issues/13817) and [#13819](https://github.com/pydantic/pydantic/pull/13819). This reproducer has no wrap validators or retained handler objects.\n\n### Example Code\n\n```python\nimport gc\nimport weakref\n\nfrom pydantic import BaseModel, ValidationError\n\nrefs = []\n\n\nclass Row(BaseModel):\n    value: int\n\n    def model_post_init(self, context):\n        refs.append(weakref.ref(self))\n        raise ValueError(\"bad value\")\n\n\ndef attempt():\n    try:\n        Row(value=1)\n    except ValidationError as error:\n        saved_error = error\n\n\nfor _ in range(100):\n    attempt()\n\ngc.collect()\nprint(\"Live instances:\", sum(ref() is not None for ref in refs))\n```\n\n### Python, Pydantic & OS Version\n\n```text\n             pydantic version: 2.14.3\n        pydantic-core version: 2.50.4\n          pydantic-core build: profile=release pgo=false\n               python version: 3.14.7 (main, Sep  1 2026, 14:18:09) [Clang 22.1.3 ]\n                     platform: Linux-7.0.0-42-generic-x86_64-with-glibc2.43\n             related packages: mypy-2.4.1 typing_extensions-4.16.0\n                       commit: unknown\n```\n",
+   "html_url": "https://github.com/pydantic/pydantic/issues/14237",
+   "created_at": "2026-11-06T08:38:31Z",
+   "user": {
+    "login": "gleb-chipiga"
+   }
+  },
+  {
+   "number": 14236,
+   "title": "model_json_schema() raises PydanticOmit when a shared PEP 695 alias of SkipJsonSchema is used in two fields",
+   "body": "### Initial Checks\n\n- [x] I confirm that I'm using Pydantic V2\n\n### Description\n\n`model_json_schema()` raises `PydanticOmit` when the same specialized PEP 695 type alias object that wraps `SkipJsonSchema` is used for two or more fields of one model. The field should simply be omitted from the schema, as it is when the alias object is used once, when each field subscripts the alias separately, or when the plain `SkipJsonSchema[...]` object is shared.\n\nReusing the specialized alias object makes pydantic hoist it into a shared core-schema definition. `GenerateJsonSchema.definitions_schema` (`pydantic/json_schema.py`, the loop over `schema['definitions']`) catches `PydanticInvalidForJsonSchema` per definition but not `PydanticOmit`, so the omission raised while generating that definition escapes `model_json_schema()` instead of dropping the referencing fields.\n\nObserved matrix (same script):\n\n| Case | Result |\n| --- | --- |\n| one shared `Skip[R \\| None]` object in 2 fields (local or module-level model) | `PydanticOmit` |\n| `Skip[R \\| None]` subscripted separately in each field | omitted correctly |\n| one shared plain `SkipJsonSchema[R \\| None]` object in 2 fields | omitted correctly |\n| shared `Skip[R \\| None]` object in 1 field | omitted correctly |\n\n### Example Code\n\n```python\nimport pydantic\nfrom pydantic.json_schema import SkipJsonSchema\n\n\nclass R:\n    pass\n\n\ntype Skip[X] = SkipJsonSchema[X]\n\nANN = Skip[R | None]\n\n\nclass Model(pydantic.BaseModel):\n    model_config = pydantic.ConfigDict(arbitrary_types_allowed=True)\n    label: str = \"\"\n    a: ANN = None\n    b: ANN = None\n\n\nprint(Model.model_json_schema())  # raises pydantic_core.PydanticOmit\n```\n\n### Python, Pydantic & OS Version\n\n```text\npydantic version: 2.14.3\npydantic-core version: 2.50.4\npython version: 3.13.18\nplatform: Linux (x86_64)\n```\n",
+   "html_url": "https://github.com/pydantic/pydantic/issues/14236",
+   "created_at": "2026-11-06T02:08:21Z",
+   "user": {
+    "login": "marlon-costa-dc"
+   }
+  },
+  {
+   "number": 14234,
+   "title": "pydantic-core 2.50.2: model_validate_json retains ~25% more memory than 2.50.1 for large JSON payloads",
+   "body": "### Initial Checks\n\n- [x] I confirm that I'm using Pydantic V2\n\n### Description\n\nHi! \n\nWhile bisecting a ~650 MB increase in the peak memory of one of our scheduled jobs, we ended up on a potential pydantic-core regression.\n\n**What we see:** parsing a large JSON document with `model_validate_json` retains noticeably more live memory on pydantic-core 2.50.2 (pydantic 2.14.2) than on 2.50.1 (pydantic 2.14.1), for the *same* parsed object graph. Roughly **+25%** on our workload.\n\n**What we'd expect:** the same retained memory as 2.50.1 for the same input, since the parsed data is identical.\n\nWe verified a few things to narrow it down:\n\n- **Bisected to pydantic-core 2.50.1 \u2192 2.50.2.** It is still present in pydantic 2.14.3 (pydantic-core 2.50.4).\n- **It's live memory, not GC garbage or fragmentation.** The extra memory is still held after `gc.collect()` (we checked VmRSS, not just peak RSS). The parsed objects are all reachable and accounted for \u2014 the new version simply builds them with more overhead.\n- **It scales with the number of mapping entries, not with value size or type.** Varying the number of key/value pairs per object in the same document:\n\n  | entries per object | retained (2.14.1) | retained (2.14.2) | delta |\n  |---|---|---|---|\n  | 5   | 276 MB  | 229 MB  | \u221247 MB (new is *lower*) |\n  | 30  | 463 MB  | 556 MB  | +93 MB |\n  | 100 | 1214 MB | 1675 MB | +461 MB |\n\n  All points fit \u2248 **\u2212740 B per object + 53 B per mapping entry** (break-even at ~14 entries). For a fixed entry count the delta is the same for empty-string, small-int, and ~20-char string values, which makes it look like per-key / per-entry overhead in the dict-building path.\n- **It's not a leak.** Parsing the same document in 6 sequential batches (dropping the result and collecting between batches) gives a flat peak in both versions; only the per-batch peak is higher.\n- **No model machinery required.** A plain `RootModel[dict[str, object]]` reproduces it (see below), as does our real hierarchy of nested models with `alias_generator=to_camel`.\n- **Standalone jiter is not affected.** `jiter.from_json` from the PyPI `jiter` package uses identical RSS on the same payloads in 0.16.0 and 0.18.0. That points at pydantic-core's own JSON \u2192 Python-object construction rather than jiter's top-level object builder (though pydantic-core does consume jiter through the finer-grained iter/string APIs, which also changed between those versions).\n\nFor reference, the 2.50.1 \u2192 2.50.2 window contains two commits that touch exactly this path:\n\n- `331637ca` \u2014 Bump PyO3 to 0.30.1, jiter to 0.18.0, use `PyFrozenDict`\n- `2771e57c` \u2014 Make JSON validation by iteration consistent with Python approach\n\n**Real-world impact:** the job in question parses batches of ~100k objects (~74 MB of JSON, mixed str/int/float/bool values) per hour. After the upgrade its peak on the host went from ~2.0 GB to ~2.7 GB for the same data, which matches the per-entry delta above. The host has limited headroom, so we had to pin pydantic back to 2.14.1 in the meantime.\n\nObserved output (same machine, CPython 3.14.8, Linux x86_64):\n\n```console\n$ uv run --isolated --python 3.14 --with \"pydantic==2.14.1\" python repro.py\npython 3.14.8\npydantic 2.14.1, pydantic-core 2.50.1\njson=47MB  retained_after_validate=356MB\n\n$ uv run --isolated --python 3.14 --with \"pydantic==2.14.2\" python repro.py\npython 3.14.8\npydantic 2.14.2, pydantic-core 2.50.2\njson=47MB  retained_after_validate=443MB\n\n$ uv run --isolated --python 3.14 --with \"pydantic==2.14.3\" python repro.py\npython 3.14.8\npydantic 2.14.3, pydantic-core 2.50.4\njson=47MB  retained_after_validate=443MB\n```\n\nCould you check whether this is a known issue? I'm happy to provide more measurements or traces if that would help.\n\n\n### Example Code\n\n```Python\nimport gc\nimport json\nimport resource\nimport sys\n\nimport pydantic\nimport pydantic_core\nfrom pydantic import RootModel\n\n\nclass Plain(RootModel):\n    root: dict[str, object]\n\n\ndef rss_mb() -> float:\n    return resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024\n\n\ndef build_payload(n_obj: int = 100_000, n_attrs: int = 30) -> str:\n    items = []\n    for i in range(n_obj):\n        items.append(\n            {\n                \"id\": f\"/objects/{i:07d}\",\n                \"kind\": {\"name\": \"thing\", \"version\": \"1.0.0\"},\n                \"attributes\": {f\"key{j}\": \"\" for j in range(n_attrs)},\n            }\n        )\n    return json.dumps({\"items\": items})\n\n\ndef main() -> None:\n    data = build_payload()\n    gc.collect()\n    base = rss_mb()\n    Plain.model_validate_json(data.encode())\n    gc.collect()\n    retained = rss_mb() - base\n    print(f\"python {sys.version.split()[0]}\")\n    print(f\"pydantic {pydantic.VERSION}, pydantic-core {pydantic_core.__version__}\")\n    print(f\"json={len(data) / 1e6:.0f}MB  retained_after_validate={retained:.0f}MB\")\n\n\nif __name__ == \"__main__\":\n    main()\n```\n\n### Python, Pydantic & OS Version\n\n```Text\nRegression (pydantic 2.14.2):\n\n\n             pydantic version: 2.14.2\n        pydantic-core version: 2.50.2\n          pydantic-core build: profile=release pgo=false\n               python version: 3.14.8 (main, Oct 14 2026, 01:04:34) [Clang 23.1.3 ]\n                     platform: Linux-7.2.12+deb14-amd64-x86_64-with-glibc2.43\n             related packages: typing_extensions-4.16.0\n                       commit: unknown\n\n\nBaseline (pydantic 2.14.1):\n\n\n             pydantic version: 2.14.1\n        pydantic-core version: 2.50.1\n          pydantic-core build: profile=release pgo=false\n               python version: 3.14.8 (main, Oct 14 2026, 01:04:34) [Clang 23.1.3 ]\n                     platform: Linux-7.2.12+deb14-amd64-x86_64-with-glibc2.43\n             related packages: typing_extensions-4.16.0\n                       commit: unknown\n\n\nAlso still affected on pydantic 2.14.3 / pydantic-core 2.50.4 (same Python/platform).\n```",
+   "html_url": "https://github.com/pydantic/pydantic/issues/14234",
+   "created_at": "2026-11-05T15:57:57Z",
+   "user": {
+    "login": "leogallot"
+   }
+  }
+ ],
+ "commits": [
+  {
+   "sha": "328b88b52694a64ecd05f3acc92f2b6a160bc2ee",
+   "author": {
+    "login": "Viicos"
+   },
+   "commit": {
+    "message": "Compute exact `ByteSize` values for strings with units (#14307)",
+    "author": {
+     "name": "Victorien",
+     "date": "2026-11-18T15:43:10Z"
+    }
+   }
+  },
+  {
+   "sha": "e72ae52652095f46e3abbeb184105a9382ae394c",
+   "author": {
+    "login": "Viicos"
+   },
+   "commit": {
+    "message": "Fix clippy 1.100 lints (#14308)",
+    "author": {
+     "name": "Victorien",
+     "date": "2026-11-18T15:28:04Z"
+    }
+   }
+  },
+  {
+   "sha": "e56f60fd32273d1d7c397a3ac46bba05e6a73454",
+   "author": {
+    "login": "Manan1801"
+   },
+   "commit": {
+    "message": "Remove unreachable statement from title generator test (#14299)",
+    "author": {
+     "name": "Manan Chavda",
+     "date": "2026-11-17T07:57:58Z"
+    }
+   }
+  },
+  {
+   "sha": "fa156283c7b3bfacf9be38c181dc5427b6c94425",
+   "author": {
+    "login": "aidxhxr"
+   },
+   "commit": {
+    "message": "Fix display of `Callable` parameters in type representations (#14261)",
+    "author": {
+     "name": "aidxhxr",
+     "date": "2026-11-16T09:07:40Z"
+    }
+   }
+  },
+  {
+   "sha": "704d5d40a5f2fb924b0395ae9556d5a46d560a94",
+   "author": {
+    "login": "Viicos"
+   },
+   "commit": {
+    "message": "Respect validation-time `strict=True` for `complex` (#14293)",
+    "author": {
+     "name": "Victorien",
+     "date": "2026-11-16T08:57:57Z"
+    }
+   }
+  },
+  {
+   "sha": "c7b7c291c205a6dd61933013c9106d0b722dbd44",
+   "author": {
+    "login": "Viicos"
+   },
+   "commit": {
+    "message": "Remove unused `test-examples` make target (#14294)",
+    "author": {
+     "name": "Victorien",
+     "date": "2026-11-16T08:54:46Z"
+    }
+   }
+  },
+  {
+   "sha": "cd1d8be820a8036818d6e82603a3ab07e0f855b5",
+   "author": {
+    "login": "dependabot[bot]"
+   },
+   "commit": {
+    "message": "Bump dnspython from 2.7.0 to 2.9.2 (#14279)\n\nSigned-off-by: dependabot[bot] <support@github.com>\nCo-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>",
+    "author": {
+     "name": "dependabot[bot]",
+     "date": "2026-11-15T11:59:25Z"
+    }
+   }
+  },
+  {
+   "sha": "66ea4aff04c2f18cb79b79a4bd6b87db9f85c353",
+   "author": {
+    "login": "Viicos"
+   },
+   "commit": {
+    "message": "Fix Graalpy CI (#14287)",
+    "author": {
+     "name": "Victorien",
+     "date": "2026-11-15T11:01:01Z"
+    }
+   }
+  },
+  {
+   "sha": "560f0f96a37d6913afdfddb2de22030ef08e68c3",
+   "author": {
+    "login": "agarwalla-chirag"
+   },
+   "commit": {
+    "message": "Correct typo in contribution guide (#14268)",
+    "author": {
+     "name": "Chirag Agarwalla",
+     "date": "2026-11-10T11:17:51Z"
+    }
+   }
+  },
+  {
+   "sha": "fe5b5ce5581f10626a16dc7ff4159cf3cb6ddbec",
+   "author": {
+    "login": "aidxhxr"
+   },
+   "commit": {
+    "message": "Fix model signature when a field alias is the name used for extra kwargs (#14255)",
+    "author": {
+     "name": "aidxhxr",
+     "date": "2026-11-09T08:46:16Z"
+    }
+   }
+  },
+  {
+   "sha": "2c1ff6d6c9c15b5c8e0ff5606546240ef6ed436e",
+   "author": {
+    "login": "liorma6"
+   },
+   "commit": {
+    "message": "Correct the polymorphic serialization example description (#14260)",
+    "author": {
+     "name": "Lior Mashiach",
+     "date": "2026-11-09T08:44:25Z"
+    }
+   }
+  },
+  {
+   "sha": "6a210d0f191a5561e66df88d21837726bd853e03",
+   "author": {
+    "login": "Alvi-Rahman"
+   },
+   "commit": {
+    "message": "Exclude `InitVar` fields from the serialization JSON schema (#14223)\n\nCo-authored-by: Victorien <65306057+Viicos@users.noreply.github.com>",
+    "author": {
+     "name": "Alvi Rahman",
+     "date": "2026-11-08T18:43:40Z"
+    }
+   }
+  },
+  {
+   "sha": "9fcca16fa794f136b4f1153243c5a7fbe02277e4",
+   "author": {
+    "login": "aidxhxr"
+   },
+   "commit": {
+    "message": "Fix validation constraints leaking into the `Decimal` JSON Schema (#14254)\n\nCo-authored-by: Viicos <65306057+Viicos@users.noreply.github.com>",
+    "author": {
+     "name": "aidxhxr",
+     "date": "2026-11-08T13:06:40Z"
+    }
+   }
+  },
+  {
+   "sha": "57ffc4a517ddbd16ce697b4600d24a4fa1e33801",
+   "author": {
+    "login": "Viicos"
+   },
+   "commit": {
+    "message": "Fix more issues about GC tracking in `pydantic-core` (#14253)",
+    "author": {
+     "name": "Victorien",
+     "date": "2026-11-08T11:52:37Z"
+    }
+   }
+  },
+  {
+   "sha": "1e40cc1354854b1a4a94ad1ccdc0f75c66ec7cb4",
+   "author": {
+    "login": "Viicos"
+   },
+   "commit": {
+    "message": "Cache UTC `TzInfo` instance (#14256)",
+    "author": {
+     "name": "Victorien",
+     "date": "2026-11-08T11:44:52Z"
+    }
+   }
+  },
+  {
+   "sha": "b947584cc89eb0f4e57ba6efd0debdcccdcd3515",
+   "author": {
+    "login": "Viicos"
+   },
+   "commit": {
+    "message": "Support list and `DecimalTuple` inputs for `Decimal` (#14249)",
+    "author": {
+     "name": "Victorien",
+     "date": "2026-11-07T11:29:47Z"
+    }
+   }
+  },
+  {
+   "sha": "216a1ec6bda064ad4e482be94b10280893f5075a",
+   "author": {
+    "login": "Viicos"
+   },
+   "commit": {
+    "message": "Drop support for Python 3.10 (#14250)",
+    "author": {
+     "name": "Victorien",
+     "date": "2026-11-07T10:06:01Z"
+    }
+   }
+  },
+  {
+   "sha": "dabcc6461dafa4337c52faf3e9941431ea41ce4a",
+   "author": {
+    "login": "b84330808"
+   },
+   "commit": {
+    "message": "Fix `Decimal` JSON Schema patterns accepting bare `0` when no whole digits are allowed (#14244)\n\nCo-authored-by: Viicos <65306057+Viicos@users.noreply.github.com>",
+    "author": {
+     "name": "Wei-Lun Li",
+     "date": "2026-11-06T21:28:05Z"
+    }
+   }
+  },
+  {
+   "sha": "c9b92900dc74802a04cc20519b753a7d8f3d2844",
+   "author": {
+    "login": "Viicos"
+   },
+   "commit": {
+    "message": "Bump jiter to v0.19.0 (#14247)",
+    "author": {
+     "name": "Victorien",
+     "date": "2026-11-06T21:09:19Z"
+    }
+   }
+  },
+  {
+   "sha": "1400371ea83dd5b94ce995411278d1d8d7af2f03",
+   "author": {
+    "login": "liorma6"
+   },
+   "commit": {
+    "message": "Correct the documented `Decimal` validation inputs (#14248)",
+    "author": {
+     "name": "Lior Mashiach",
+     "date": "2026-11-06T21:04:26Z"
+    }
+   }
+  },
+  {
+   "sha": "62c615a375b1d41d60d72bb98b56a9862a029c3d",
+   "author": {
+    "login": "Viicos"
+   },
+   "commit": {
+    "message": "Change the arguments schema for `@validate_call`\u00a0 (#14246)",
+    "author": {
+     "name": "Victorien",
+     "date": "2026-11-06T20:57:56Z"
+    }
+   }
+  },
+  {
+   "sha": "9895381aa55eb2a1e74079f0b4fb745d1ea12d12",
+   "author": {
+    "login": "Alvi-Rahman"
+   },
+   "commit": {
+    "message": "Respect `repr=False` on the `root` field of `RootModel` (#14225)",
+    "author": {
+     "name": "Alvi Rahman",
+     "date": "2026-11-06T09:42:12Z"
+    }
+   }
+  },
+  {
+   "sha": "07349b90710a394d89c2d2d78a232f0e61ba40da",
+   "author": {
+    "login": "ninglinLiu"
+   },
+   "commit": {
+    "message": "Fix typo in `ErrorTypeDefaults` comment (#14226)\n\nCo-authored-by: ninglinLiu <ninglinLiu@users.noreply.github.com>",
+    "author": {
+     "name": "NingLin Liu",
+     "date": "2026-11-06T09:40:51Z"
+    }
+   }
+  },
+  {
+   "sha": "425ee962a712daa07adf4f6f9b8b11dec570bd91",
+   "author": {
+    "login": "dependabot[bot]"
+   },
+   "commit": {
+    "message": "Bump oauthlib from 4.0.0 to 4.0.1 (#14235)\n\nSigned-off-by: dependabot[bot] <support@github.com>\nCo-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>",
+    "author": {
+     "name": "dependabot[bot]",
+     "date": "2026-11-06T09:40:11Z"
+    }
+   }
+  },
+  {
+   "sha": "a813d406d144cff8ef9848e791769216666e7a0a",
+   "author": {
+    "login": "Viicos"
+   },
+   "commit": {
+    "message": "Fix JSON Schema for `arguments` schema (#13953)",
+    "author": {
+     "name": "Victorien",
+     "date": "2026-11-05T15:09:29Z"
+    }
+   }
+  }
+ ]
+}

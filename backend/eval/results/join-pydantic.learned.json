@@ -1,0 +1,302 @@
+[
+ {
+  "task": "memory_then_github-1",
+  "statement": "The schema team owns tests/test_titles.py.",
+  "stored": [
+   {
+    "subject": "file:pydantic/pydantic:tests/test_titles.py",
+    "relation": "OWNED_BY",
+    "object": "mem:schema-team",
+    "replaced": 0
+   }
+  ]
+ },
+ {
+  "task": "memory_then_github-2",
+  "statement": "The internals team owns pydantic/_internal/_repr.py.",
+  "stored": [
+   {
+    "subject": "file:pydantic/pydantic:pydantic/_internal/_repr.py",
+    "relation": "OWNED_BY",
+    "object": "mem:internals-team",
+    "replaced": 0
+   }
+  ]
+ },
+ {
+  "task": "memory_then_github-3",
+  "statement": "The docs team owns docs/concepts/serialization.md.",
+  "stored": [
+   {
+    "subject": "file:pydantic/pydantic:docs/concepts/serialization.md",
+    "relation": "OWNED_BY",
+    "object": "mem:docs-team",
+    "replaced": 0
+   }
+  ]
+ },
+ {
+  "task": "memory_then_github-4",
+  "statement": "The types team owns tests/types/test_bytesize.py.",
+  "stored": [
+   {
+    "subject": "file:pydantic/pydantic:tests/types/test_bytesize.py",
+    "relation": "OWNED_BY",
+    "object": "mem:types-team",
+    "replaced": 0
+   }
+  ]
+ },
+ {
+  "task": "memory_then_github-5",
+  "statement": "The signature team owns pydantic/_internal/_signature.py.",
+  "stored": [
+   {
+    "subject": "file:pydantic/pydantic:pydantic/_internal/_signature.py",
+    "relation": "OWNED_BY",
+    "object": "mem:signature-team",
+    "replaced": 0
+   }
+  ]
+ },
+ {
+  "task": "memory_then_github-6",
+  "statement": "The root model team owns tests/test_root_model.py.",
+  "stored": [
+   {
+    "subject": "file:pydantic/pydantic:tests/test_root_model.py",
+    "relation": "OWNED_BY",
+    "object": "mem:root-model-team",
+    "replaced": 0
+   }
+  ]
+ },
+ {
+  "task": "github_then_memory-1",
+  "statement": "Manan1801 sits in the validation guild.",
+  "stored": [
+   {
+    "subject": "person:Manan1801",
+    "relation": "MEMBER_OF",
+    "object": "mem:validation-guild",
+    "replaced": 0
+   }
+  ]
+ },
+ {
+  "task": "github_then_memory-2",
+  "statement": "agarwalla-chirag sits in the settings guild.",
+  "stored": [
+   {
+    "subject": "person:agarwalla-chirag",
+    "relation": "MEMBER_OF",
+    "object": "mem:settings-guild",
+    "replaced": 0
+   }
+  ]
+ },
+ {
+  "task": "github_then_memory-3",
+  "statement": "b84330808 sits in the mypy guild.",
+  "stored": [
+   {
+    "subject": "person:b84330808",
+    "relation": "MEMBER_OF",
+    "object": "mem:mypy-guild",
+    "replaced": 0
+   }
+  ]
+ },
+ {
+  "task": "github_then_memory-4",
+  "statement": "ninglinLiu sits in the json schema guild.",
+  "stored": [
+   {
+    "subject": "person:ninglinLiu",
+    "relation": "MEMBER_OF",
+    "object": "mem:json-schema-guild",
+    "replaced": 0
+   }
+  ]
+ },
+ {
+  "task": "github_then_memory-5",
+  "statement": "liorma6 sits in the serialization guild.",
+  "stored": [
+   {
+    "subject": "person:liorma6",
+    "relation": "MEMBER_OF",
+    "object": "mem:serialization-guild",
+    "replaced": 0
+   }
+  ]
+ },
+ {
+  "task": "github_then_memory-6",
+  "statement": "Alvi-Rahman sits in the dataclasses guild.",
+  "stored": [
+   {
+    "subject": "person:Alvi-Rahman",
+    "relation": "MEMBER_OF",
+    "object": "mem:dataclasses-guild",
+    "replaced": 0
+   }
+  ]
+ },
+ {
+  "task": "through_a_reporter-1",
+  "statement": "chuckyblack works from the Lisbon office.",
+  "stored": [
+   {
+    "subject": "person:chuckyblack",
+    "relation": "WORKS_FROM",
+    "object": "mem:lisbon-office",
+    "replaced": 0
+   }
+  ]
+ },
+ {
+  "task": "through_a_reporter-2",
+  "statement": "dsfaccini works from the Toronto office.",
+  "stored": [
+   {
+    "subject": "person:dsfaccini",
+    "relation": "WORKS_FROM",
+    "object": "mem:toronto-office",
+    "replaced": 0
+   }
+  ]
+ },
+ {
+  "task": "through_a_reporter-3",
+  "statement": "krish-goradia works from the Pune office.",
+  "stored": [
+   {
+    "subject": "person:krish-goradia",
+    "relation": "WORKS_FROM",
+    "object": "mem:pune-office",
+    "replaced": 0
+   }
+  ]
+ },
+ {
+  "task": "through_a_reporter-4",
+  "statement": "phatstraws works from the Austin office.",
+  "stored": [
+   {
+    "subject": "person:phatstraws",
+    "relation": "WORKS_FROM",
+    "object": "mem:austin-office",
+    "replaced": 0
+   }
+  ]
+ },
+ {
+  "task": "through_a_reporter-5",
+  "statement": "DetachHead works from the Perth office.",
+  "stored": [
+   {
+    "subject": "person:DetachHead",
+    "relation": "WORKS_FROM",
+    "object": "mem:perth-office",
+    "replaced": 0
+   }
+  ]
+ },
+ {
+  "task": "through_a_reporter-6",
+  "statement": "tsangwpx works from the Taipei office.",
+  "stored": [
+   {
+    "subject": "person:tsangwpx",
+    "relation": "WORKS_FROM",
+    "object": "mem:taipei-office",
+    "replaced": 0
+   }
+  ]
+ },
+ {
+  "task": "join_after_update-1",
+  "statement": "Viicos is in the core squad.",
+  "stored": [
+   {
+    "subject": "person:Viicos",
+    "relation": "MEMBER_OF",
+    "object": "mem:core-squad",
+    "replaced": 0
+   }
+  ]
+ },
+ {
+  "task": "join_after_update-2",
+  "statement": "dolfinus is in the packaging squad.",
+  "stored": [
+   {
+    "subject": "person:dolfinus",
+    "relation": "MEMBER_OF",
+    "object": "mem:packaging-squad",
+    "replaced": 0
+   }
+  ]
+ },
+ {
+  "task": "join_after_update-3",
+  "statement": "koriyoshi2041 is in the triage squad.",
+  "stored": [
+   {
+    "subject": "person:koriyoshi2041",
+    "relation": "MEMBER_OF",
+    "object": "mem:triage-squad",
+    "replaced": 0
+   }
+  ]
+ },
+ {
+  "task": "join_missing-5",
+  "statement": "Avery-Quill sits in the benchmarks guild.",
+  "stored": [
+   {
+    "subject": "mem:avery-quill",
+    "relation": "MEMBER_OF",
+    "object": "mem:benchmarks-guild",
+    "replaced": 0
+   }
+  ]
+ },
+ {
+  "task": "join_after_update-1",
+  "statement": "Viicos moved from the core squad to the rust squad.",
+  "stored": [
+   {
+    "subject": "person:Viicos",
+    "relation": "MEMBER_OF",
+    "object": "mem:rust-squad",
+    "replaced": 1
+   }
+  ]
+ },
+ {
+  "task": "join_after_update-2",
+  "statement": "dolfinus moved from the packaging squad to the ci squad.",
+  "stored": [
+   {
+    "subject": "person:dolfinus",
+    "relation": "MEMBER_OF",
+    "object": "mem:ci-squad",
+    "replaced": 1
+   }
+  ]
+ },
+ {
+  "task": "join_after_update-3",
+  "statement": "koriyoshi2041 moved from the triage squad to the typing squad.",
+  "stored": [
+   {
+    "subject": "person:koriyoshi2041",
+    "relation": "MEMBER_OF",
+    "object": "mem:typing-squad",
+    "replaced": 1
+   }
+  ]
+ }
+]

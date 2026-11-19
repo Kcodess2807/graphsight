@@ -161,6 +161,48 @@ the 24 tasks where a join exists (sign test, p<0.05).
 - **One gold is debatable:** the reviewers of PR #15227 include its own author, which the
   baselines' records leave out. Full context missed it for that reason.
 
+### Three hops, tested on a repo nothing was tuned on
+
+The pytest run showed the walk losing when a told fact came first. A told fact is a hop of
+its own, so team -> file -> PR -> author needs three hops, and the walk stopped at two. A
+probe with no model calls found a second cause: the fact list was capped at 20, and facts
+from unrelated seeds pushed out the one that answered. On the 6 pytest tasks in that
+direction the answer reached the model on 2 before, 2 with three hops alone, and 6 with
+three hops and a cap of 60.
+
+Before changing any code, 28 new join tasks were written on a frozen snapshot of
+`pydantic/pydantic`, which no earlier run or fix had seen (`tasks/join_pydantic.json`,
+commit a9573ac). Two readings were fixed in that file: graph memory beats episodic recall on
+the join tasks (sign test, p<0.05), and it answers at least 4 of the 6 told-then-GitHub
+tasks. From `results/join-pydantic.md`:
+
+| Setup | told, then GitHub | GitHub, then told | through a reporter | through a file | after an update | one half missing | all |
+|---|---|---|---|---|---|---|---|
+| full context | 6/6 | 6/6 | 0/6 | 2/2 | 3/3 | 5/5 | 22/28 |
+| none | 0/6 | 0/6 | 0/6 | 0/2 | 0/3 | 5/5 | 5/28 |
+| episodic | 5/6 | 0/6 | 0/6 | 0/2 | 0/3 | 5/5 | 10/28 |
+| graph memory | 6/6 | 6/6 | 5/6 | 2/2 | 3/3 | 5/5 | 27/28 |
+
+- **Both registered readings are met.** On the 23 join tasks graph memory was alone in being
+  right on 17 and episodic on none (p<0.0001). It answered 6 of 6 told-then-GitHub tasks.
+- **Episodic's misses are real.** On every task that starts from GitHub it answered
+  "unknown": the question shares no words with the statement it needs.
+- **Graph memory did not beat full context.** Full context did all six reporter joins and
+  wrote "Lisbon" where the gold is "Lisbon office", so the grader failed it. Read that way it
+  scores 28 of 28 to graph memory's 27. The gold wording is a flaw in tasks written for this
+  run, and it is reported, not corrected.
+- **Graph memory's one miss** named the reporter alongside the office.
+- **Still small.** 75 records fit in one prompt, so this shows the graph matches putting
+  everything in the prompt, at a fraction of the tokens. It does not show the graph is needed.
+
+The pytest join set was rerun with the change as a check, not a test, since the change was
+found on it (`results/join-pytest-3hop.md`): graph memory 19 to 23 of 29, against episodic's
+12, 12 to 1 on the join tasks (p=0.003). Three of its six misses are still "RUN-7 board"
+against the gold "RUN-7".
+
+**Not rerun:** the 175 retrieval tasks. Three hops and up to 60 facts send the model more
+text per question, and neither the score nor the token cost has been measured there.
+
 ## How to read these numbers
 
 - **click is a development set.** The fixes below were made against those tasks, so its

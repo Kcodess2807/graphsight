@@ -1,0 +1,300 @@
+[
+ {
+  "task": "memory_then_github-1",
+  "statement": "The execution team owns src/_pytest/runner.py.",
+  "stored": [
+   {
+    "subject": "file:pytest-dev/pytest:src/_pytest/runner.py",
+    "relation": "OWNED_BY",
+    "object": "mem:the-execution-team",
+    "replaced": 0
+   }
+  ]
+ },
+ {
+  "task": "memory_then_github-2",
+  "statement": "The tooling team owns scripts/update-plugin-list.py.",
+  "stored": [
+   {
+    "subject": "file:pytest-dev/pytest:scripts/update-plugin-list.py",
+    "relation": "OWNED_BY",
+    "object": "mem:the-tooling-team",
+    "replaced": 0
+   }
+  ]
+ },
+ {
+  "task": "memory_then_github-3",
+  "statement": "The supply chain team owns .github/dependabot.yml.",
+  "stored": [
+   {
+    "subject": "file:pytest-dev/pytest:.github/dependabot.yml",
+    "relation": "OWNED_BY",
+    "object": "mem:the-supply-chain-team",
+    "replaced": 0
+   }
+  ]
+ },
+ {
+  "task": "memory_then_github-4",
+  "statement": "The console team owns src/_pytest/terminal.py.",
+  "stored": [
+   {
+    "subject": "file:pytest-dev/pytest:src/_pytest/terminal.py",
+    "relation": "OWNED_BY",
+    "object": "mem:the-console-team",
+    "replaced": 0
+   }
+  ]
+ },
+ {
+  "task": "memory_then_github-5",
+  "statement": "The collection team owns src/_pytest/fixtures.py.",
+  "stored": [
+   {
+    "subject": "file:pytest-dev/pytest:src/_pytest/fixtures.py",
+    "relation": "OWNED_BY",
+    "object": "mem:the-collection-team",
+    "replaced": 0
+   }
+  ]
+ },
+ {
+  "task": "memory_then_github-6",
+  "statement": "The markers team owns src/_pytest/mark/structures.py.",
+  "stored": [
+   {
+    "subject": "file:pytest-dev/pytest:src/_pytest/mark/structures.py",
+    "relation": "OWNED_BY",
+    "object": "mem:the-markers-team",
+    "replaced": 0
+   }
+  ]
+ },
+ {
+  "task": "github_then_memory-1",
+  "statement": "simukappu sits in the plugins guild.",
+  "stored": []
+ },
+ {
+  "task": "github_then_memory-2",
+  "statement": "LuanaPBueno sits in the onboarding cohort.",
+  "stored": []
+ },
+ {
+  "task": "github_then_memory-3",
+  "statement": "paneendrakumar0 sits in the typing guild.",
+  "stored": [
+   {
+    "subject": "person:paneendrakumar0",
+    "relation": "MEMBER_OF",
+    "object": "mem:the-typing-guild",
+    "replaced": 0
+   }
+  ]
+ },
+ {
+  "task": "github_then_memory-4",
+  "statement": "Lothnic sits in the docs guild.",
+  "stored": [
+   {
+    "subject": "person:Lothnic",
+    "relation": "MEMBER_OF",
+    "object": "mem:the-docs-guild",
+    "replaced": 0
+   }
+  ]
+ },
+ {
+  "task": "github_then_memory-5",
+  "statement": "gerlero sits in the numerics guild.",
+  "stored": [
+   {
+    "subject": "person:gerlero",
+    "relation": "MEMBER_OF",
+    "object": "mem:the-numerics-guild",
+    "replaced": 0
+   }
+  ]
+ },
+ {
+  "task": "github_then_memory-6",
+  "statement": "seifertm sits in the async guild.",
+  "stored": [
+   {
+    "subject": "person:seifertm",
+    "relation": "MEMBER_OF",
+    "object": "mem:the-async-guild",
+    "replaced": 0
+   }
+  ]
+ },
+ {
+  "task": "through_an_issue-1",
+  "statement": "Issue #15201 is tracked on the RUN-7 board.",
+  "stored": [
+   {
+    "subject": "issue:pytest-dev/pytest#15201",
+    "relation": "TRACKED_IN",
+    "object": "mem:run-7-board",
+    "replaced": 0
+   }
+  ]
+ },
+ {
+  "task": "through_an_issue-2",
+  "statement": "Issue #15290 is tracked on the DEP-3 board.",
+  "stored": [
+   {
+    "subject": "issue:pytest-dev/pytest#15290",
+    "relation": "TRACKED_IN",
+    "object": "mem:dep-3-board",
+    "replaced": 0
+   }
+  ]
+ },
+ {
+  "task": "through_an_issue-3",
+  "statement": "Issue #15254 is tracked on the TMP-12 board.",
+  "stored": [
+   {
+    "subject": "issue:pytest-dev/pytest#15254",
+    "relation": "TRACKED_IN",
+    "object": "mem:tmp-12-board",
+    "replaced": 0
+   }
+  ]
+ },
+ {
+  "task": "through_an_issue-4",
+  "statement": "Issue #15242 is tracked on the DOC-41 board.",
+  "stored": [
+   {
+    "subject": "issue:pytest-dev/pytest#15242",
+    "relation": "TRACKED_IN",
+    "object": "mem:doc-41-board",
+    "replaced": 0
+   }
+  ]
+ },
+ {
+  "task": "through_an_issue-5",
+  "statement": "Issue #7323 is tracked on the TERM-9 board.",
+  "stored": [
+   {
+    "subject": "issue:pytest-dev/pytest#7323",
+    "relation": "TRACKED_IN",
+    "object": "mem:term-9-board",
+    "replaced": 0
+   }
+  ]
+ },
+ {
+  "task": "through_an_issue-6",
+  "statement": "Issue #15190 is tracked on the QA-205 board.",
+  "stored": [
+   {
+    "subject": "issue:pytest-dev/pytest#15190",
+    "relation": "TRACKED_IN",
+    "object": "mem:qa-205-board",
+    "replaced": 0
+   }
+  ]
+ },
+ {
+  "task": "through_a_file-1",
+  "statement": "The ecosystem team owns doc/en/reference/plugin_list.rst.",
+  "stored": [
+   {
+    "subject": "file:pytest-dev/pytest:doc/en/reference/plugin_list.rst",
+    "relation": "OWNED_BY",
+    "object": "mem:the-ecosystem-team",
+    "replaced": 0
+   }
+  ]
+ },
+ {
+  "task": "join_after_update-1",
+  "statement": "webknjaz is in the release squad.",
+  "stored": [
+   {
+    "subject": "person:webknjaz",
+    "relation": "MEMBER_OF",
+    "object": "mem:the-release-squad",
+    "replaced": 0
+   }
+  ]
+ },
+ {
+  "task": "join_after_update-2",
+  "statement": "Pierre-Sassoulas is in the triage squad.",
+  "stored": [
+   {
+    "subject": "person:Pierre-Sassoulas",
+    "relation": "MEMBER_OF",
+    "object": "mem:the-triage-squad",
+    "replaced": 0
+   }
+  ]
+ },
+ {
+  "task": "join_after_update-3",
+  "statement": "bluetech is in the core squad.",
+  "stored": [
+   {
+    "subject": "person:bluetech",
+    "relation": "MEMBER_OF",
+    "object": "mem:the-core-squad",
+    "replaced": 0
+   }
+  ]
+ },
+ {
+  "task": "join_missing-5",
+  "statement": "Avery-Quill sits in the benchmarks guild.",
+  "stored": [
+   {
+    "subject": "mem:avery-quill",
+    "relation": "MEMBER_OF",
+    "object": "mem:the-benchmarks-guild",
+    "replaced": 0
+   }
+  ]
+ },
+ {
+  "task": "join_after_update-1",
+  "statement": "webknjaz moved from the release squad to the security squad.",
+  "stored": [
+   {
+    "subject": "person:webknjaz",
+    "relation": "MEMBER_OF",
+    "object": "mem:the-security-squad",
+    "replaced": 1
+   }
+  ]
+ },
+ {
+  "task": "join_after_update-2",
+  "statement": "Pierre-Sassoulas moved from the triage squad to the ci squad.",
+  "stored": [
+   {
+    "subject": "person:Pierre-Sassoulas",
+    "relation": "MEMBER_OF",
+    "object": "mem:the-ci-squad",
+    "replaced": 1
+   }
+  ]
+ },
+ {
+  "task": "join_after_update-3",
+  "statement": "bluetech moved from the core squad to the backports squad.",
+  "stored": [
+   {
+    "subject": "person:bluetech",
+    "relation": "MEMBER_OF",
+    "object": "mem:the-backports-squad",
+    "replaced": 1
+   }
+  ]
+ }
+]
