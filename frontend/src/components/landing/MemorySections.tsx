@@ -262,6 +262,18 @@ export function Results() {
         sub="Tasks were written and committed before any run, and graded by exact match with no LLM judge. The memory facts are invented and written by the author. Every result file is in the repo."
       />
       <div className="mt-12 grid grid-cols-1 gap-5 lg:grid-cols-2">
+        <Reveal className="h-full lg:col-span-2">
+          <Bars
+            title="Can memory join what it was told to what GitHub records?"
+            note="28 tasks on pydantic/pydantic, a repo nothing was tuned on, written before the code change. Example: which group does the author of PR #14299 sit in? Putting the whole snapshot in the prompt did as well as graph memory."
+            total={28}
+            bars={[
+              { label: "No memory", value: 5 },
+              { label: "Episodic recall", value: 10 },
+              { label: "Graph memory", value: 27, ours: true },
+            ]}
+          />
+        </Reveal>
         <Reveal className="h-full">
           <Bars
             title="Does memory change the answer?"
@@ -280,10 +292,10 @@ export function Results() {
             note="175 retrieval tasks over pallets/click and pytest-dev/pytest, same model and prompt for every retriever."
             total={175}
             bars={[
-              { label: "Whole repo in prompt", value: 171 },
+              { label: "Whole repo in prompt", value: 170 },
               { label: "Vector search", value: 88 },
-              { label: "Keyword (BM25)", value: 155 },
-              { label: "Graph", value: 154, ours: true },
+              { label: "Keyword (BM25)", value: 157 },
+              { label: "Graph", value: 153, ours: true },
             ]}
           />
         </Reveal>
@@ -297,10 +309,10 @@ export function Results() {
             </span>
           </p>
           <p className="text-[13.5px] leading-relaxed text-zinc-600">
-            Putting the whole snapshot in the prompt beat every retriever, because these repos
-            are small enough to fit. The graph ties keyword search and beats vector search, and
-            ties episodic recall on memory. Nothing here is measured at a size where retrieval
-            is required.{" "}
+            These repos are small enough to fit in one prompt, and doing that matched or beat
+            every retriever. The graph ties keyword search on lookups and ties episodic recall on
+            single facts. Where it pulls ahead is joining a told fact to a GitHub fact. Nothing
+            here is measured at a size where retrieval is required.{" "}
             <a
               href="https://github.com/Kcodess2807/graphsight/tree/main/backend/eval"
               target="_blank"
