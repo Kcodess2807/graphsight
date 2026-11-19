@@ -129,6 +129,38 @@ they target, not a held-out result.
 - **Not rerun:** click, and the 175 retrieval tasks, which share the answer prompt and the fact
   format. Their numbers above are from before these changes.
 
+## The join test: does the graph add anything over replaying statements?
+
+29 tasks on pytest (`tasks/join_pytest.json`), committed in PR #17 before any run. Each needs a
+fact the agent was told joined to a fact GitHub records, and the question never names the
+entity in the middle. The reading was fixed first: graph memory has to beat episodic recall on
+the 24 tasks where a join exists (sign test, p<0.05).
+
+**It did not meet that bar.** From `results/join-pytest.md`:
+
+| Setup | told, then GitHub | GitHub, then told | through an issue | through a file | after an update | one half missing | all |
+|---|---|---|---|---|---|---|---|
+| full context | 5/6 | 6/6 | 6/6 | 3/3 | 3/3 | 5/5 | 28/29 |
+| none | 0/6 | 0/6 | 0/6 | 0/3 | 0/3 | 5/5 | 5/29 |
+| episodic | 4/6 | 0/6 | 3/6 | 0/3 | 0/3 | 5/5 | 12/29 |
+| graph memory | 1/6 | 5/6 | 2/6 | 3/3 | 3/3 | 5/5 | 19/29 |
+
+- **The registered comparison:** on the 24 join tasks graph memory was alone in being right on
+  12 and episodic on 5. Two-sided sign test p=0.143, so the difference is not established.
+- **Full context won again,** 28 of 29, because 75 records and 26 statements fit in one prompt.
+- **Where the graph is clearly better:** questions that start from GitHub and end at a told
+  fact. It answered 11 of the 12 across three categories where episodic answered none, because
+  word overlap between "the author of PR #15246" and "simukappu sits in the plugins guild" is
+  nil. The graph reaches the statement through the author node.
+- **Where the graph is worse:** told fact first, then GitHub, 1 of 6 against episodic's 4. The
+  walk stops at two hops, so team -> file -> PR is found and the PR's author is not. Episodic
+  recall returns the statement and the PR record together.
+- **Four graph misses are the grader:** it answered "RUN-7 board" where the gold is "RUN-7",
+  with the join done correctly. Counting those would give 14 wins to 3 (p=0.013). That is a
+  reading made after seeing the answers, so it is reported here and not claimed.
+- **One gold is debatable:** the reviewers of PR #15227 include its own author, which the
+  baselines' records leave out. Full context missed it for that reason.
+
 ## How to read these numbers
 
 - **click is a development set.** The fixes below were made against those tasks, so its

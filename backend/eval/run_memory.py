@@ -20,6 +20,7 @@ import shutil
 import sys
 import tempfile
 from collections import defaultdict
+from math import comb
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -28,9 +29,9 @@ sys.path.insert(0, str(HERE.parent / "scripts"))
 
 from graphsight_langgraph import LangGraphTracer  # noqa: E402
 
-from episodic_agent import build_agent  # noqa: E402
+from episodic_agent import PROMPT, build_agent  # noqa: E402
 from eval.grade import grade, normalize  # noqa: E402
-from eval.run import FORMAT, K  # noqa: E402
+from eval.run import FORMAT, K, records  # noqa: E402
 from tracerag import config  # noqa: E402
 from tracerag.db import TraceDB  # noqa: E402
 from tracerag.integrations.langchain import TraceRAGRetriever  # noqa: E402
@@ -44,6 +45,7 @@ def main() -> int:
     parser.add_argument("--tasks", default="memory_click", help="name in eval/tasks/")
     parser.add_argument("--db", type=Path, required=True)
     parser.add_argument("--label", required=True)
+    parser.add_argument("--corpus", help="name in eval/corpus/; adds a full-context arm as the ceiling")
     args = parser.parse_args()
     logging.disable(logging.WARNING)
 
@@ -84,6 +86,18 @@ def main() -> int:
                      "question": task["question"], "gold": task["gold"], **graded,
                      "stale": bool(stale), "answer": answer, **extra})
 
+    if args.corpus:
+        # the ceiling: every record and every statement in the prompt, no retrieval at all
+        corpus = json.loads((HERE / f"corpus/{args.corpus}.json").read_text(encoding="utf-8"))
+        everything = ("\n\n".join(records(corpus)) + "\n\nWhat the team said, oldest first:\n"
+                      + "\n".join(text for _, text in statements))
+        for task in tasks:
+            prompt = PROMPT.format(question=task["question"], episodes="(none)", evidence=everything) + FORMAT
+            resp = llm.chat.completions.create(
+                model=model, temperature=0, messages=[{"role": "user", "content": prompt}])
+            record(task, "full_context", resp.choices[0].message.content or "")
+        print("full_context: done", flush=True)
+
     # the graph is still clean here, so these two can't see graph memory
     for task in tasks:
         record(task, "none", ask(task["question"], False)[0])
@@ -116,8 +130,8 @@ def summarize(rows: list[dict], learned: list[dict], model: str) -> str:
     for r in rows:
         table[r["condition"], r["category"]].append(r)
         table[r["condition"], "all"].append(r)
-    cats = [c for c in ("new_info", "update", "retracted", "never_stated")
-            if any(k == c for _, k in table)] + ["all"]
+    cats = list(dict.fromkeys(r["category"] for r in rows)) + ["all"]
+    setups = list(dict.fromkeys(r["condition"] for r in rows))
 
     def cell(c, k):
         got = table[c, k]
@@ -126,14 +140,28 @@ def summarize(rows: list[dict], learned: list[dict], model: str) -> str:
     lines = [f"Model: `{model}`. Correct means the exact answer set.\n",
              "| Setup | " + " | ".join(cats) + " | stale answers on changed facts |",
              "|---|" + "---|" * (len(cats) + 1)]
-    for c in ("none", "episodic", "graph_memory"):
-        changed = table[c, "update"] + table[c, "retracted"]
+    for c in setups:
+        changed = table[c, "update"] + table[c, "retracted"] + table[c, "join_after_update"]
         stale = sum(r["stale"] for r in changed)
         lines.append(f"| {c} | " + " | ".join(cell(c, k) for k in cats) + f" | {stale}/{len(changed)} |")
     facts = sum(len(x["stored"]) for x in learned)
     empty = sum(not x["stored"] for x in learned)
     lines.append(f"\nExtraction stored {facts} facts from {len(learned)} statements; {empty} statements stored nothing.")
+    lines.append(paired(rows, "graph_memory", "episodic"))
     return "\n".join(lines) + "\n"
+
+
+def paired(rows: list[dict], a: str, b: str) -> str:
+    """Sign test on the tasks where a real join exists. join_missing asks for
+    'unknown', which tests abstaining, not joining, so it is left out here."""
+    right = {(r["task"], r["condition"]): r["correct"] for r in rows if r["category"] != "join_missing"}
+    ids = {t for t, _ in right}
+    a_only = sum(right[t, a] and not right[t, b] for t in ids)
+    b_only = sum(right[t, b] and not right[t, a] for t in ids)
+    n, k = a_only + b_only, max(a_only, b_only)
+    p = min(1.0, 2 * sum(comb(n, i) for i in range(k, n + 1)) / 2 ** n) if n else 1.0
+    return (f"\n{a} vs {b}, {len(ids)} tasks: {a} alone right on {a_only}, {b} alone on {b_only}, "
+            f"two-sided sign test p={p:.3f}.")
 
 
 if __name__ == "__main__":
