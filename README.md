@@ -141,6 +141,11 @@ recall. It answered 5 of 6 changed facts against episodic's 3, which is too few 
 also gives confident wrong answers on questions that sound like a stated fact.
 [Details](backend/eval/README.md#memory-writes).
 
+**Joins:** on 28 tasks written for a repo nothing was tuned on (pydantic), each needing a told
+fact joined to a GitHub fact, graph memory answered 27 and episodic recall 10, and every
+episodic miss was a question that starts from GitHub. Putting the whole snapshot in the prompt
+did as well as graph memory. [Details](backend/eval/README.md#three-hops-tested-on-a-repo-nothing-was-tuned-on).
+
 ## What this actually is
 
 Two halves, deliberately separable.
