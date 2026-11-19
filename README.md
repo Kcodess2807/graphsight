@@ -108,6 +108,8 @@ that uses this with the graph engine, and `--no-memory` gives you the baseline.
 
 ### Graph memory
 
+Experimental, and not on PyPI: it runs from a clone of this repo.
+
 An agent can write facts into the graph, correct them, and delete them. They sit beside the facts
 read from GitHub without ever overwriting them.
 
@@ -121,7 +123,7 @@ memory.forget("checkout-service", "owned by", "billing team")
 ```
 
 - **Labelled.** Remembered facts reach the model as
-  `checkout-service <-> billing team: OWNED_BY (remembered, source: run-57)`, and they weigh less
+  `checkout-service OWNED_BY billing team (remembered, source: run-57)`, and they weigh less
   than any fact read from GitHub.
 - **Replaced, not lost.** `replace=True` ends the older fact. It stops being retrieved but stays
   in the store with the time it ended.
@@ -153,7 +155,7 @@ Two halves, deliberately separable.
 This half works on **flat traces**. No graph, no database, no ingestion. If your agent does
 plain vector RAG, you still get the retrieved-vs-used signal, run history, and run diffing.
 
-### 2. The graph memory engine: the moat, heavier
+### 2. The graph memory engine: experimental, clone to use
 
 A local-first hybrid store where **vectors and the relationship graph live in one `.lbug`
 file**, no graph-DB ↔ vector-DB sync problem, behind a two-tier entity resolver and an
@@ -440,42 +442,9 @@ the two repos. The graph clearly beats plain vector search. Token savings agains
 57% on click to 16% on pytest, so they don't generalize. Episodic recall improved 4 follow-up
 tasks and worsened none, on tasks built so a past run could help, which isn't proof yet.
 
-The older benchmark below is kept for the record. Its script and corpus are no longer in the repo.
-
-LLM-as-a-judge (Groq) over 10 queries (5 semantic, 5 relational), hybrid router vs. a pure-vector
-baseline:
-
-```
-Category      Queries   Hybrid Tok   Baseline Tok   Reduction   Accuracy
-─────────────────────────────────────────────────────────────────────────
-semantic            5       3233.4         3189.0       -1.4%       0.0%
-relational          5       3883.2         3837.0       -1.2%      40.0%
-─────────────────────────────────────────────────────────────────────────
-OVERALL            10       3558.3         3513.0       -1.3%      20.0%
-```
-
-These are not flattering and they are real.
-
-**Token reduction ≈ 0%.** On this dense single-domain corpus the top-k vector chunks and the
-top-k graph-traversed chunks heavily overlap, the graph surfaces largely the *same* evidence
-the vectors already found. After global chunk deduplication the two contexts reach parity. (An
-earlier −70% figure was a genuine bug: chunks were repeated once *per mentioning entity*.
-Global dedup fixed it, and we deleted the claim.)
-
-**Accuracy capped at 20%,** from two avoidable causes: GLiNER was blocked on the benchmark machine by
-an `onnxruntime` DLL load failure, so the spaCy fallback extracted the wrong things for this
-domain (markdown artifacts, `CARDINAL` numbers, timestamps) and the graph was noisy; and Groq's
-free tier capped the judge at 5,000 characters of context, hiding relevant evidence past the
-cutoff.
-
-**Treat this as a baseline, not a verdict.** These are data-quality and environment constraints.
-The path forward: raise the judge budget and re-scope the token comparison against naive over-retrieval rather than equal-k
-vector retrieval, which is where graph precision would actually save tokens.
-
-**One more caveat, stated plainly:** this benchmark predates the typed-edge and recency work. The
-engine now produces a materially different graph, and these numbers have not been re-run against
-it. They can't be re-run as they stand: the corpus isn't in this repo, and "accuracy" here was a
-relevance judge, not a grade of the answer.
+Full context beat every retriever, 171 of 175, because each snapshot is small enough to fit in
+one prompt. These runs compare the retrievers with each other. They don't show that retrieval
+is needed at this size, and nothing here has been measured on a repo too large for one prompt.
 
 ---
 

@@ -222,4 +222,7 @@ RECENCY_HALF_LIFE_DAYS = {
 DEFAULT_HALF_LIFE_DAYS = float(os.getenv("TRACERAG_HALF_LIFE_DAYS", "90"))
 # Never decay an item to nothing — old but on-topic still beats unrelated.
 RECENCY_FLOOR = float(os.getenv("TRACERAG_RECENCY_FLOOR", "0.35"))
+# Set to a unix time to age items against a fixed clock; evals pin it so a frozen
+# snapshot scores the same next month. None means the real clock.
+RECENCY_NOW: float | None = None
 VECTOR_METRIC = "cosine"

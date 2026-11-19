@@ -46,9 +46,9 @@ def hit(node_id, sim, ntype="PR", ts=0, label=None):
             "similarity": sim, "ts": ts}
 
 
-def nbr(node_id, relation, ntype="PR", ts=0):
+def nbr(node_id, relation, ntype="PR", ts=0, out=True):
     return {"id": node_id, "label": node_id, "type": ntype, "ts": ts,
-            "relation": relation,
+            "relation": relation, "out": out,
             "confidence": config.RELATION_WEIGHTS[relation]}
 
 
@@ -125,35 +125,35 @@ def test_facts_carry_typed_links_but_not_proximity_guesses():
     """A link the answer model never sees can't change an answer."""
     router = make_router(
         hits=[hit("issue", 0.9, ntype="Ticket", label="Issue #1")],
-        neighbours={"issue": [nbr("pr", config.RELATION_RESOLVES),
+        neighbours={"issue": [nbr("pr", config.RELATION_RESOLVES, out=False),
                               nbr("noise", config.RELATION_CO_OCCURS)],
                     "pr": [nbr("issue", config.RELATION_RESOLVES)]},
     )
     res = router.route("which pr fixed this", top_k=10)
-    assert res.facts == ["Issue #1 <-> pr: RESOLVES"]  # one line, though walked both ways
-    assert "Issue #1 <-> pr: RESOLVES" in router.build_context(res.results, res.facts)
+    assert res.facts == ["pr RESOLVES Issue #1"]  # one line, though walked both ways
+    assert "pr RESOLVES Issue #1" in router.build_context(res.results, res.facts)
 
 
 def test_an_id_in_the_question_seeds_the_walk_without_similarity():
     """'issue #3907' must not depend on how close its embedding happens to be."""
-    router = make_router(hits=[], neighbours={"i": [nbr("pr", config.RELATION_RESOLVES)]})
+    router = make_router(hits=[], neighbours={"i": [nbr("pr", config.RELATION_RESOLVES, out=False)]})
     router.db.find_nodes_by_label = lambda label: (
         [{"id": "i", "label": label, "type": "Ticket"}] if label == "Issue #7" else [])
     router._get_extractor = lambda: type("E", (), {"extract": lambda self, q: []})()
     res = router.route("who fixed issue #7?", top_k=5)
     assert res.trace_log["execution_path"]["linked_seeds"] == ["i"]
-    assert res.facts == ["Issue #7 <-> pr: RESOLVES"]
+    assert res.facts == ["pr RESOLVES Issue #7"]
 
 
 def test_facts_survive_when_the_node_misses_the_top_k():
     """The PR that answers the question can rank below the cut; its link must not."""
     router = make_router(
         hits=[hit("issue", 0.9, ntype="Ticket", label="Issue #1")],
-        neighbours={"issue": [nbr("pr", config.RELATION_RESOLVES)]},
+        neighbours={"issue": [nbr("pr", config.RELATION_RESOLVES, out=False)]},
     )
     res = router.route("which pr fixed this", top_k=1)
     assert [r.id for r in res.results] == ["issue"]
-    assert res.facts == ["Issue #1 <-> pr: RESOLVES"]
+    assert res.facts == ["pr RESOLVES Issue #1"]
 
 
 def test_trace_log_exposes_relations_and_recency():
@@ -194,5 +194,13 @@ def test_remembered_facts_have_their_own_budget():
     hops = [{"from_id": f"p{i}", "to_id": "svc", "relation": "AUTHORED", "origin": "api"} for i in range(30)]
     hops.append({"from_id": "svc", "to_id": "team", "relation": "OWNED_BY", "origin": "agent", "source": "r1"})
     out = graph_facts(hops, {})
-    assert out[0] == "svc <-> team: OWNED_BY (remembered, source: r1)"
+    assert out[0] == "svc OWNED_BY team (remembered, source: r1)"
     assert len(out) == config.GRAPH_MAX_FACTS + 1
+
+
+def test_intent_markers_match_whole_words():
+    """Regression: "who" fired on "whole", sending a summary question down the graph."""
+    router = make_router(hits=[], neighbours={})
+    router._classify_intent_llm = lambda q: (0.5, 0.5, "llm")
+    assert router._classify_intent("who reviewed it")[2] == "relational"
+    assert router._classify_intent("the whole design")[2] == "llm"

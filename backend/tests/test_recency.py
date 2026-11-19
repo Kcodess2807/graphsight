@@ -71,3 +71,12 @@ def test_the_failure_demo_scenario():
 
 if __name__ == "__main__":
     pytest.main([__file__, "-q"])
+
+
+def test_a_pinned_clock_gives_the_same_age_every_day(monkeypatch):
+    """Evals pin the clock, so a frozen snapshot can't drift with the calendar."""
+    from tracerag import config
+    from tracerag.recency import age_days
+
+    monkeypatch.setattr(config, "RECENCY_NOW", 1_000_000.0 + 10 * 86400)
+    assert age_days(1_000_000) == 10

@@ -62,21 +62,31 @@ class RouterResponse:
     facts: list[str] = field(default_factory=list)
 
 
+def _markers(words: tuple[str, ...]) -> re.Pattern:
+    # whole words only: "who" must not fire on "whole"
+    return re.compile(r"\b(?:" + "|".join(map(re.escape, words)) + r")\b")
+
+
+_RELATIONAL_RE = _markers(config.RELATIONAL_QUERY_MARKERS)
+_SEMANTIC_RE = _markers(config.SEMANTIC_QUERY_MARKERS)
+
+
 def graph_facts(hops: list[dict], meta: dict[str, dict]) -> list[str]:
     """Typed hops as lines of text, nearest first. Without these the model sees
     entities and chunks but not one relation, so the graph can't change an answer."""
-    seen: set[tuple[frozenset[str], str]] = set()
+    seen: set[tuple[str, str, str]] = set()
     facts: list[str] = []
     remembered: list[str] = []
     for hop in hops:
-        key = (frozenset((hop["from_id"], hop["to_id"])), hop["relation"])
+        # the walk is undirected, but each edge knows which end it starts from
+        src, dst = (hop["from_id"], hop["to_id"]) if hop.get("out", True) else (hop["to_id"], hop["from_id"])
+        key = (src, dst, hop["relation"])
         # proximity is a guess, so it stays out of what the model treats as fact
         if key in seen or hop["relation"] == config.RELATION_CO_OCCURS:
             continue
         seen.add(key)
-        a, b = (meta.get(i, {}).get("label") or i for i in (hop["from_id"], hop["to_id"]))
-        # <-> because traversal is undirected, so the hop doesn't know which way it points
-        fact = f"{a} <-> {b}: {hop['relation']}"
+        a, b = (meta.get(i, {}).get("label") or i for i in (src, dst))
+        fact = f"{a} {hop['relation']} {b}"
         # an agent's own fact must never pass for one read from the source system
         if hop.get("origin") == "agent":
             fact += f" (remembered, source: {hop.get('source') or 'unknown'})"
@@ -185,10 +195,10 @@ class TraceRouter:
 
     def _classify_intent(self, query: str) -> tuple[float, float, str]:
         q = query.lower()
-        if any(m in q for m in config.RELATIONAL_QUERY_MARKERS):
+        if _RELATIONAL_RE.search(q):
             w = config.ROUTER_WEIGHTS_RELATIONAL
             return w["vector"], w["graph"], "relational"
-        if any(m in q for m in config.SEMANTIC_QUERY_MARKERS):
+        if _SEMANTIC_RE.search(q):
             w = config.ROUTER_WEIGHTS_CONCEPTUAL
             return w["vector"], w["graph"], "semantic"
         return self._classify_intent_llm(query)
@@ -269,6 +279,7 @@ class TraceRouter:
                         "from_id": node_id, "to_id": to_id,
                         "confidence": conf, "relation": relation,
                         "origin": nb.get("origin", "api"), "source": nb.get("source", ""),
+                        "out": nb.get("out", True),
                     })
                     meta.setdefault(to_id, {"label": nb["label"], "type": nb["type"],
                                             "ts": nb.get("ts", 0)})

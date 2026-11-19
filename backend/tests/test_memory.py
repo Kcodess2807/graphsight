@@ -44,8 +44,8 @@ def router(db: TraceDB) -> TraceRouter:
 
 
 def has_fact(found: list[str], a: str, b: str, relation: str, remembered: bool) -> bool:
-    """Facts are undirected, so either end can print first."""
-    return any(a in f and b in f and f": {relation}" in f and ("remembered" in f) == remembered
+    """Facts read in the edge's own direction: a RELATION b."""
+    return any(f.startswith(f"{a} {relation} {b}") and ("remembered" in f) == remembered
                for f in found)
 
 
@@ -63,7 +63,7 @@ def agent_edges(db: TraceDB) -> list[dict]:
 def test_a_remembered_fact_is_retrieved_and_labelled(db):
     AgentMemory(db, embed).remember("checkout-service", "owned by", "payments team", source="run-1")
     found = facts(db, "checkout-service")
-    assert any(f.endswith(": OWNED_BY (remembered, source: run-1)") for f in found)
+    assert "checkout-service OWNED_BY payments team (remembered, source: run-1)" in found
     # the GitHub fact on the same node is still there, and unlabelled
     assert has_fact(found, "PR #7", "checkout-service", "TOUCHES", remembered=False)
 
@@ -159,7 +159,9 @@ class FakeLLM:
     def __init__(self, reply):
         msg = type("M", (), {"content": reply})()
         resp = type("R", (), {"choices": [type("C", (), {"message": msg})()]})()
-        self.chat = type("Ch", (), {"completions": type("Co", (), {"create": lambda s, **k: resp})()})()
+        self.prompts = []
+        create = lambda s, **k: (self.prompts.append(k["messages"][0]["content"]), resp)[1]  # noqa: E731
+        self.chat = type("Ch", (), {"completions": type("Co", (), {"create": create})()})()
 
 
 def test_learn_stores_what_the_model_extracts_and_skips_bad_facts(db):
@@ -205,3 +207,22 @@ def test_learn_passes_a_retraction_through(db):
     memory.remember("checkout-service", "OWNED_BY", "payments team", source="msg-1")
     reply = '{"facts": [{"subject": "checkout-service", "relation": "OWNED_BY", "object": null, "retracts": true}]}'
     assert memory.learn("no owner now", FakeLLM(reply), "m", source="msg-2")[0]["retracted"] == 1
+
+
+def test_a_fact_reads_in_its_own_direction(db):
+    """Regression: "PR #7 BLOCKED_BY Issue #9" was printed undirected, and the model
+    answered that the issue was blocked by the PR."""
+    AgentMemory(db, embed).remember("PR #7", "blocked by", "Issue #9", source="run-1")
+    found = facts(db, "Issue #9")
+    assert has_fact(found, "PR #7", "Issue #9", "BLOCKED_BY", remembered=True)
+    assert not has_fact(found, "Issue #9", "PR #7", "BLOCKED_BY", remembered=True)
+
+
+def test_learn_shows_the_extractor_what_is_already_remembered(db):
+    """Regression: an update named the same dashboard differently, so it stood beside
+    the old fact instead of replacing it."""
+    memory = AgentMemory(db, embed)
+    memory.remember("CI dashboard", "hosted on", "Grafana", source="msg-1")
+    llm = FakeLLM('{"facts": []}')
+    memory.learn("the dashboard moved to Datadog", llm, "m", source="msg-2")
+    assert "CI dashboard | HOSTED_ON | Grafana" in llm.prompts[0]

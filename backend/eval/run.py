@@ -39,6 +39,8 @@ from tracerag.llm import make_client  # noqa: E402
 from tracerag.router import TraceRouter  # noqa: E402
 
 K = config.TOP_K_VECTOR  # every retriever gets the same number of results
+# the day of the first committed run; ages are measured from here, not from today
+config.RECENCY_NOW = 1794009600  # 2026-11-07T00:00:00Z
 POISON_TASKS = 10
 
 FORMAT = """
