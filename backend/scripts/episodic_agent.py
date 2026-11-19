@@ -23,10 +23,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from graphsight_langgraph import EpisodeRetriever, LangGraphTracer, capture  # noqa: E402
 
-from tracerag import config as engine_config  # noqa: E402
-from tracerag.db import TraceDB  # noqa: E402
-from tracerag.integrations.langchain import TraceRAGRetriever  # noqa: E402
-from tracerag.llm import make_client  # noqa: E402
+from graphsight_memory import config as engine_config  # noqa: E402
+from graphsight_memory.db import TraceDB  # noqa: E402
+from graphsight_memory.integrations.langchain import TraceRAGRetriever  # noqa: E402
+from graphsight_memory.llm import make_client  # noqa: E402
 
 PROMPT = """Answer the question from the context. Name the specific PRs, people, and files.
 If the context does not contain the answer, say so plainly rather than guessing.

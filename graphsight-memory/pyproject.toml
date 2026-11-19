@@ -1,0 +1,45 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "graphsight-memory"
+version = "0.1.0"
+description = "Project memory for coding agents: GitHub history as a typed graph, plus the facts an agent was told, each with its source."
+readme = "README.md"
+# LadybugDB's vector index fails to build on 3.11
+requires-python = ">=3.12"
+license = { text = "MIT" }
+authors = [{ name = "Arush Karnatak" }]
+keywords = ["agents", "memory", "knowledge-graph", "rag", "github", "mcp"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+dependencies = [
+    # ponytail: pinned; 0.21+ needs a separately downloaded C library
+    "ladybug==0.18.3",
+    "fastembed>=0.4",
+    "pandas>=2.1",
+    "requests>=2.31",
+]
+
+[project.optional-dependencies]
+# learn(), and intent classification for questions the keyword check can't place
+llm = ["openai>=1.40", "python-dotenv>=1.0"]
+# entity extraction from free text, used by the backend's document ingest
+text = ["spacy>=3.7", "gliner>=0.2"]
+# graphsight_memory.integrations.langchain: the store as a LangChain retriever
+langchain = ["langchain-core>=0.3"]
+
+[project.urls]
+Repository = "https://github.com/Kcodess2807/graphsight"
+Documentation = "https://github.com/Kcodess2807/graphsight/tree/main/graphsight-memory"
+
+[tool.setuptools.packages.find]
+include = ["graphsight_memory*"]

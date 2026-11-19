@@ -32,11 +32,11 @@ from graphsight_langgraph import LangGraphTracer, capture  # noqa: E402
 
 from episodic_agent import PROMPT, build_agent  # noqa: E402
 from eval.grade import grade  # noqa: E402
-from tracerag import config  # noqa: E402
-from tracerag.db import TraceDB  # noqa: E402
-from tracerag.integrations.langchain import TraceRAGRetriever, format_page_content  # noqa: E402
-from tracerag.llm import make_client  # noqa: E402
-from tracerag.router import TraceRouter  # noqa: E402
+from graphsight_memory import config  # noqa: E402
+from graphsight_memory.db import TraceDB  # noqa: E402
+from graphsight_memory.integrations.langchain import TraceRAGRetriever, format_page_content  # noqa: E402
+from graphsight_memory.llm import make_client  # noqa: E402
+from graphsight_memory.router import TraceRouter  # noqa: E402
 
 K = config.TOP_K_VECTOR  # every retriever gets the same number of results
 # the day of the first committed run; ages are measured from here, not from today

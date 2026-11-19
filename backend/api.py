@@ -15,10 +15,10 @@ from pydantic import BaseModel
 from slowapi.errors import RateLimitExceeded
 from slowapi import _rate_limit_exceeded_handler
 
-from tracerag import config
-from tracerag.db import TraceDB
-from tracerag.router import TraceRouter, shutdown_embed_executor
-from tracerag.integrations.langchain import format_page_content
+from graphsight_memory import config
+from graphsight_memory.db import TraceDB
+from graphsight_memory.router import TraceRouter, shutdown_embed_executor
+from graphsight_memory.integrations.langchain import format_page_content
 
 from auth import get_current_user
 from cache import LRUCache
@@ -197,7 +197,7 @@ async def subgraph(
 
 # swap the active .lbug without restarting; router models stay warm
 def _graphs_dir() -> Path:
-    return config.PROJECT_ROOT / "graphs"
+    return Path(__file__).resolve().parent / "graphs"
 
 
 def _graph_label(path: Path) -> str:
@@ -357,7 +357,7 @@ def _answer_client():
     """Lazily build and cache the OpenRouter client."""
     client = _state.get("llm")
     if client is None:
-        from tracerag.llm import make_client
+        from graphsight_memory.llm import make_client
 
         client = make_client()
         _state["llm"] = client

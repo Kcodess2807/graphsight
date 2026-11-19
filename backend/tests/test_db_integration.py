@@ -13,10 +13,10 @@ import pytest
 
 lb = pytest.importorskip("ladybug", reason="LadybugDB driver not installed")
 
-from tracerag import config                                   # noqa: E402
-from tracerag.db import TraceDB                               # noqa: E402
-from tracerag.github_graph import GitHubGraphBuilder          # noqa: E402
-from tracerag.router import TraceRouter                       # noqa: E402
+from graphsight_memory import config                                   # noqa: E402
+from graphsight_memory.db import TraceDB                               # noqa: E402
+from graphsight_memory.github_graph import GitHubGraphBuilder          # noqa: E402
+from graphsight_memory.router import TraceRouter                       # noqa: E402
 
 DAY = 86400
 NOW = int(time.time())

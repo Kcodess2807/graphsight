@@ -5,18 +5,16 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
-
-# load local .env if present; real env vars still win
+# a .env in the working directory, if python-dotenv is installed; real env vars still win
 try:
-    from dotenv import load_dotenv
+    from dotenv import find_dotenv, load_dotenv
 
-    load_dotenv(PROJECT_ROOT / ".env")
+    load_dotenv(find_dotenv(usecwd=True))
 except ImportError:
     pass
 
-DB_PATH = Path(os.getenv("TRACERAG_DB_PATH", PROJECT_ROOT / "memory.lbug"))
-DATASETS_DIR = Path(os.getenv("TRACERAG_DATASETS_DIR", PROJECT_ROOT / "datasets"))
+DB_PATH = Path(os.getenv("TRACERAG_DB_PATH", "memory.lbug"))
+DATASETS_DIR = Path(os.getenv("TRACERAG_DATASETS_DIR", "datasets"))
 
 
 EMBED_MODEL = os.getenv("TRACERAG_EMBED_MODEL", "all-MiniLM-L6-v2")

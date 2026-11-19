@@ -32,12 +32,12 @@ from graphsight_langgraph import LangGraphTracer  # noqa: E402
 from episodic_agent import PROMPT, build_agent  # noqa: E402
 from eval.grade import grade, normalize  # noqa: E402
 from eval.run import FORMAT, K, records  # noqa: E402
-from tracerag import config  # noqa: E402
-from tracerag.db import TraceDB  # noqa: E402
-from tracerag.integrations.langchain import TraceRAGRetriever  # noqa: E402
-from tracerag.llm import make_client  # noqa: E402
-from tracerag.memory import AgentMemory  # noqa: E402
-from tracerag.router import TraceRouter  # noqa: E402
+from graphsight_memory import config  # noqa: E402
+from graphsight_memory.db import TraceDB  # noqa: E402
+from graphsight_memory.integrations.langchain import TraceRAGRetriever  # noqa: E402
+from graphsight_memory.llm import make_client  # noqa: E402
+from graphsight_memory.memory import AgentMemory  # noqa: E402
+from graphsight_memory.router import TraceRouter  # noqa: E402
 
 
 def main() -> int:

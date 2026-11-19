@@ -27,10 +27,10 @@ from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from typing import Callable, Optional
 
-from tracerag import config
-from tracerag.db import TraceDB
-from tracerag.memory import AgentMemory
-from tracerag.router import TraceRouter
+from graphsight_memory import config
+from graphsight_memory.db import TraceDB
+from graphsight_memory.memory import AgentMemory
+from graphsight_memory.router import TraceRouter
 
 logger = logging.getLogger("tracerag.mcp")
 

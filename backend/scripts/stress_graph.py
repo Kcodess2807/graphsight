@@ -24,9 +24,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from tracerag import config                     # noqa: E402
-from tracerag.db import TraceDB                  # noqa: E402
-from tracerag.router import TraceRouter          # noqa: E402
+from graphsight_memory import config                     # noqa: E402
+from graphsight_memory.db import TraceDB                  # noqa: E402
+from graphsight_memory.router import TraceRouter          # noqa: E402
 
 # (label, query, category, expect_hits)
 #   valid    -> must return results; we also spot-check correctness

@@ -16,10 +16,10 @@ from typing import Iterator
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from tracerag import config                       # noqa: E402
-from tracerag.db import TraceDB                    # noqa: E402
-from tracerag.extract import EntityExtractor       # noqa: E402
-from tracerag.curation import CurationEngine, IngestStats  # noqa: E402
+from graphsight_memory import config                       # noqa: E402
+from graphsight_memory.db import TraceDB                    # noqa: E402
+from graphsight_memory.extract import EntityExtractor       # noqa: E402
+from graphsight_memory.curation import CurationEngine, IngestStats  # noqa: E402
 
 logger = logging.getLogger("tracerag.ingest")
 
@@ -118,7 +118,7 @@ def ingest_text(
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     p = argparse.ArgumentParser(description="TraceRAG headless ingest.")
-    p.add_argument("--datasets", type=Path, default=config.DATASETS_DIR)
+    p.add_argument("--datasets", type=Path, default=Path(__file__).resolve().parents[1] / "datasets")
     p.add_argument("--db", type=Path, default=config.DB_PATH)
     p.add_argument("--reset", action="store_true",
                    help="Delete the existing .lbug file before ingesting.")
