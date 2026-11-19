@@ -50,6 +50,14 @@ export interface TraceEdge {
   relation?: string;
 }
 
+// one line of what the model was told, e.g. "PR #7 RESOLVES Issue #9"
+export interface MemoryFact {
+  text: string;
+  // written by an agent, as opposed to read from the source system
+  remembered: boolean;
+  source?: string;
+}
+
 export interface TraceState {
   id: string;
   query: string;
@@ -63,4 +71,6 @@ export interface TraceState {
     edges: TraceEdge[];
   };
   context?: string;
+  // the typed facts this answer was given, remembered ones first
+  facts?: MemoryFact[];
 }

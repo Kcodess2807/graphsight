@@ -6,6 +6,13 @@ export const MOCK_TRACE: TraceState = {
   query: "Which PR caused the payments outage?",
   computedAt: "2026-06-02T14:21:09Z",
   metrics: { queryTimeSec: 1.24 },
+  facts: [
+    { text: "payments-service OWNED_BY Payments Platform", remembered: true, source: "reorg-memo" },
+    { text: "PR #402 CAUSED INC-238", remembered: true, source: "postmortem-review" },
+    { text: "Priya Raman AUTHORED PR #402", remembered: false },
+    { text: "PR #402 TOUCHES payments-service", remembered: false },
+    { text: "PR #410 RESOLVES JIRA-5821", remembered: false },
+  ],
   graph: {
     nodes: [
       // active traced path: Document -> PR -> Service
